@@ -1,0 +1,33 @@
+export const GAME_NAMES = {
+  drinking: 'วงเหล้า',
+  spyfall: 'สปายฟอล',
+  target: 'เลขเป้า',
+  werewolf: 'หมาป่า',
+  truthordare: 'จริงหรือกล้า',
+  quiz: 'ควิซ',
+  drawing: 'วาดรูปทายคำ',
+  wouldyourather: 'เลือกข้าง',
+  wordbomb: 'บอมบ์คำ',
+  neverhaveiever: 'ไม่เคย...',
+  taboo: 'ใบ้คำ',
+  mathrace: 'คำนวณเร็ว',
+  twentyquestions: 'Insider',
+  fakeartist: 'ศิลปินปลอม',
+};
+
+export const GAME_ICONS = {
+  drinking: '🍺',
+  spyfall: '🕵️‍♂️',
+  target: '🎯',
+  werewolf: '🐺',
+  truthordare: '🎭',
+  quiz: '🧠',
+  drawing: '🎨',
+  wouldyourather: '⚖️',
+  wordbomb: '💣',
+  neverhaveiever: '🙋',
+  taboo: '🤫',
+  mathrace: '🔢',
+  twentyquestions: '🕵️',
+  fakeartist: '🎭',
+};

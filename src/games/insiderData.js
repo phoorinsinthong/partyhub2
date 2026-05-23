@@ -1,0 +1,138 @@
+const words = [
+  { word: 'ช้าง', category: 'สัตว์' },
+  { word: 'แมวส้ม', category: 'สัตว์' },
+  { word: 'ปลาฉลาม', category: 'สัตว์' },
+  { word: 'นกยูง', category: 'สัตว์' },
+  { word: 'หมีแพนด้า', category: 'สัตว์' },
+  { word: 'ปลาหมึกยักษ์', category: 'สัตว์' },
+  { word: 'ค้างคาว', category: 'สัตว์' },
+  { word: 'นกฮูก', category: 'สัตว์' },
+  { word: 'แมงกะพรุน', category: 'สัตว์' },
+  { word: 'กิ้งก่า', category: 'สัตว์' },
+
+  { word: 'ส้มตำ', category: 'อาหาร' },
+  { word: 'ข้าวมันไก่', category: 'อาหาร' },
+  { word: 'ต้มยำกุ้ง', category: 'อาหาร' },
+  { word: 'ซูชิ', category: 'อาหาร' },
+  { word: 'พิซซ่า', category: 'อาหาร' },
+  { word: 'ชาไข่มุก', category: 'อาหาร' },
+  { word: 'ผัดกะเพรา', category: 'อาหาร' },
+  { word: 'หมูกระทะ', category: 'อาหาร' },
+  { word: 'ราเมน', category: 'อาหาร' },
+  { word: 'ไก่ทอด', category: 'อาหาร' },
+  { word: 'มาม่า', category: 'อาหาร' },
+  { word: 'ข้าวเหนียวมะม่วง', category: 'อาหาร' },
+
+  { word: 'วัดพระแก้ว', category: 'สถานที่' },
+  { word: 'สยามพารากอน', category: 'สถานที่' },
+  { word: 'เกาะพีพี', category: 'สถานที่' },
+  { word: 'หอไอเฟล', category: 'สถานที่' },
+  { word: 'เยาวราช', category: 'สถานที่' },
+  { word: 'ดอยอินทนนท์', category: 'สถานที่' },
+  { word: 'ตลาดนัดจตุจักร', category: 'สถานที่' },
+  { word: 'ดิสนีย์แลนด์', category: 'สถานที่' },
+  { word: 'ถนนข้าวสาร', category: 'สถานที่' },
+  { word: 'สนามหลวง', category: 'สถานที่' },
+
+  { word: 'ลิซ่า BLACKPINK', category: 'บุคคล' },
+  { word: 'อีลอน มัสก์', category: 'บุคคล' },
+  { word: 'เทย์เลอร์ สวิฟต์', category: 'บุคคล' },
+  { word: 'โดราเอมอน', category: 'บุคคล' },
+  { word: 'สตีฟ จ็อบส์', category: 'บุคคล' },
+  { word: 'แฮร์รี่ พอตเตอร์', category: 'บุคคล' },
+  { word: 'ชนาธิป', category: 'บุคคล' },
+  { word: 'พี่ตูน บอดี้สแลม', category: 'บุคคล' },
+
+  { word: 'ร่ม', category: 'สิ่งของ' },
+  { word: 'ไอโฟน', category: 'สิ่งของ' },
+  { word: 'กระจก', category: 'สิ่งของ' },
+  { word: 'หมอนข้าง', category: 'สิ่งของ' },
+  { word: 'กล้องถ่ายรูป', category: 'สิ่งของ' },
+  { word: 'แว่นกันแดด', category: 'สิ่งของ' },
+  { word: 'พัดลม', category: 'สิ่งของ' },
+  { word: 'หูฟัง', category: 'สิ่งของ' },
+  { word: 'ลูกโป่ง', category: 'สิ่งของ' },
+  { word: 'ไฟแช็ก', category: 'สิ่งของ' },
+
+  { word: 'มวยไทย', category: 'กีฬา' },
+  { word: 'เซิร์ฟบอร์ด', category: 'กีฬา' },
+  { word: 'โยคะ', category: 'กีฬา' },
+  { word: 'แบดมินตัน', category: 'กีฬา' },
+  { word: 'ดำน้ำ', category: 'กีฬา' },
+  { word: 'โบว์ลิ่ง', category: 'กีฬา' },
+  { word: 'วิ่งมาราธอน', category: 'กีฬา' },
+
+  { word: 'Squid Game', category: 'ภาพยนตร์' },
+  { word: 'Avengers', category: 'ภาพยนตร์' },
+  { word: 'Harry Potter', category: 'ภาพยนตร์' },
+  { word: 'One Piece', category: 'ภาพยนตร์' },
+  { word: 'Frozen', category: 'ภาพยนตร์' },
+  { word: 'Spider-Man', category: 'ภาพยนตร์' },
+  { word: 'พี่มาก..พระโขนง', category: 'ภาพยนตร์' },
+  { word: 'ฉลาดเกมส์โกง', category: 'ภาพยนตร์' },
+
+  // ปั่นๆ ฮาๆ
+  { word: 'คนนอนดึก', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนกินจุ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ตื่นสาย', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนเมารถ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'WiFi สาธารณะ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ลืมรหัสผ่าน', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'เบาะรถเมล์', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนถ่ายรูปอาหาร', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'แอร์ห้องประชุม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ลิฟต์เต็ม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนแชทช้า', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนส่งสติกเกอร์ท่วม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'เพื่อนยืมเงิน', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คิวหมอ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนลืมชื่อ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'รถติด', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ฝนตกไม่พกร่ม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนอ่าน seen ไม่ตอบ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนแย่งปลั๊กชาร์จ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนตัดคิว', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนเปิดลำโพงในรถไฟฟ้า', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'โปรเน็ตหมด', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ห้องน้ำสาธารณะ', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนพูดสปอยล์หนัง', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ส่งข้อความผิดกลุ่ม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'โทรศัพท์ตกส้วม', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนกดลิฟต์ทุกชั้น', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'เดทแรก', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'แอปหาคู่', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ประชุมที่ควรเป็นอีเมล', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนตื่นสายวันจันทร์', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'เมนูหมด', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนจามไม่ปิดปาก', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ถุงเท้าไม่เข้าคู่', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'แฟนเก่า', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'Friend Zone', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'Ghosting', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนโพสต์ฟิตเนส', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'ดราม่าออนไลน์', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนนินทา', category: 'ปั่นๆ ฮาๆ' },
+  { word: 'คนขี้เกียจ', category: 'ปั่นๆ ฮาๆ' },
+];
+
+export const ALL_CATEGORIES = [...new Set(words.map(w => w.category))];
+
+export function getRandomWord(usedWords = [], filterCategory = '') {
+  let pool = words;
+  if (filterCategory) {
+    pool = words.filter(w => w.category === filterCategory);
+    if (pool.length === 0) pool = words;
+  }
+  const available = pool.filter(w => !usedWords.includes(w.word));
+  if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];
+  return available[Math.floor(Math.random() * available.length)];
+}
+
+export function getWordChoices(count = 3, usedWords = []) {
+  const available = words.filter(w => !usedWords.includes(w.word));
+  if (available.length === 0) return [words[0]];
+  const shuffled = [...available].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+export default words;
