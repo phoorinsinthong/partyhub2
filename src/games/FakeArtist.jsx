@@ -43,7 +43,11 @@ const WORD_CATEGORIES = {
 
 const ALL_WORDS = Object.values(WORD_CATEGORIES).flatMap(c => c.words);
 
-const TURN_TIME = 15;
+const TURN_TIME_OPTIONS = [
+  { label: '10 วิ', seconds: 10 },
+  { label: '15 วิ', seconds: 15 },
+  { label: '30 วิ', seconds: 30 },
+];
 const ROUNDS_PER_GAME = 2;
 
 function shuffle(arr) {
@@ -66,7 +70,9 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const [customWord, setCustomWord] = useState('');
   const [wordMode, setWordMode] = useState('random');
   const [selectedCategory, setSelectedCategory] = useState('animals');
-  const [timeLeft, setTimeLeft] = useState(TURN_TIME);
+  const [selectedTurnTime, setSelectedTurnTime] = useState(15);
+  const turnTime = gameData.turnTime || 15;
+  const [timeLeft, setTimeLeft] = useState(turnTime);
   const [skippedPlayer, setSkippedPlayer] = useState(null);
   const [showFullCanvas, setShowFullCanvas] = useState(false);
 
@@ -139,7 +145,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   // Turn timer — auto-skip if time runs out
   useEffect(() => {
     if (phase !== 'drawing') return;
-    setTimeLeft(TURN_TIME);
+    setTimeLeft(turnTime);
     setSkippedPlayer(null);
     autoSkipRef.current = false;
     const interval = setInterval(() => {
@@ -341,6 +347,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         turnOrder: order,
         currentTurnIndex: startIndex,
         currentRound: 1,
+        turnTime: selectedTurnTime,
         paths: [],
         votes: null,
         colorMap: colors,
@@ -482,7 +489,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             หาให้เจอว่าใครคือศิลปินปลอม
           </p>
           <div className="text-[12px] text-olive-400 mb-4">
-            ผู้เล่น {players.length} คน • วาด {ROUNDS_PER_GAME} รอบ • {TURN_TIME} วิ/ตา
+            ผู้เล่น {players.length} คน • วาด {ROUNDS_PER_GAME} รอบ • {selectedTurnTime} วิ/ตา
           </div>
           {isHost ? (
             <div className="space-y-3">
@@ -523,6 +530,24 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
                   className="w-full px-4 py-3 rounded-xl border-2 border-olive-200 text-center font-bold text-[15px] focus:border-sage-400 outline-none"
                 />
               )}
+              <div>
+                <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">เวลาวาดต่อตา</p>
+                <div className="flex gap-2 justify-center">
+                  {TURN_TIME_OPTIONS.map(opt => (
+                    <button
+                      key={opt.seconds}
+                      onClick={() => setSelectedTurnTime(opt.seconds)}
+                      className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
+                        selectedTurnTime === opt.seconds
+                          ? 'bg-sage-500 border-sage-500 text-white'
+                          : 'bg-white border-olive-100 text-olive-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 onClick={handleStartGame}
                 disabled={wordMode === 'custom' && !customWord.trim()}
@@ -614,7 +639,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
           <div className="h-1 bg-olive-100 rounded-full mb-2 overflow-hidden">
             <motion.div
               className={`h-full rounded-full ${timeLeft <= 5 ? 'bg-red-400' : timeLeft <= 10 ? 'bg-amber-400' : 'bg-sage-400'}`}
-              animate={{ width: `${(timeLeft / TURN_TIME) * 100}%` }}
+              animate={{ width: `${(timeLeft / turnTime) * 100}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
