@@ -36,6 +36,18 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    // Clear stale SW caches that cause white screen
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        names.forEach(function(name) {
+          if (name.indexOf('partyhub-static-v') !== -1 && name !== 'partyhub-static-v3') {
+            caches.delete(name);
+          }
+        });
+      });
+    }
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

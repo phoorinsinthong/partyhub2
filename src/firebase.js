@@ -14,7 +14,7 @@ const firebaseConfig = {
 };
 
 if (!firebaseConfig.databaseURL || !firebaseConfig.apiKey) {
-  throw new Error('Missing Firebase config. Check .env file.');
+  console.error('Missing Firebase config. Check .env file.');
 }
 
 const app = initializeApp(firebaseConfig);

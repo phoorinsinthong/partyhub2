@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   build: {
+    target: ['es2020', 'chrome80', 'safari14', 'firefox80'],
     rollupOptions: {
       output: {
         manualChunks(id) {
