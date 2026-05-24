@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Crown, RotateCcw, LogOut, Play, Clock } from 'lucide-react';
 import { getRandomWord, ALL_CATEGORIES } from './insiderData';
@@ -19,7 +18,6 @@ const DISCUSSION_TIME_OPTIONS = [
 const VOTE_TIME = 180;
 
 const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};
@@ -93,7 +91,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     if (phase === 'voting' && timerEnd && Date.now() >= timerEnd) {
       handleVoteEnd();
     }
-  }, [timeLeft]);
+  }, [timeLeft, phase, timerEnd, isHost]);
 
   useEffect(() => {
     if (phase !== 'finished' || personalRecordedRef.current) return;
@@ -203,9 +201,9 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     const scoreUpdates = {};
     if (caughtInsider) {
       nonHostPlayers.forEach(p => {
-        if (p !== insiderName) scoreUpdates[p] = increment(2);
+        if (p !== insiderName && p !== guesser) scoreUpdates[p] = increment(2);
       });
-      if (guesser) scoreUpdates[guesser] = increment(1);
+      if (guesser && guesser !== insiderName) scoreUpdates[guesser] = increment(3);
     } else {
       scoreUpdates[insiderName] = increment(3);
     }
@@ -227,7 +225,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
 
   // ─── Host: Auto-end voting when all players voted ───
   useEffect(() => {
-    if (phase !== 'voting' || !isHost) return;
+    if (phase !== 'voting' || !isHost || advancingRef.current) return;
     const currentVotes = gameData.votes || {};
     const totalVoted = Object.keys(currentVotes).length;
     if (totalVoted >= nonHostPlayers.length && totalVoted > 0) {
@@ -305,10 +303,6 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     } finally {
       advancingRef.current = false;
     }
-  };
-
-  const handleLeave = () => {
-    requestLeave();
   };
 
   const backToLobbyRef = useRef(false);
@@ -503,6 +497,9 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   // ════════════════════════════════════════════════════════════════
   if (phase === 'discussion') {
     const timerColor = timeLeft <= 15 ? 'text-red-600 bg-red-50' : timeLeft <= 30 ? 'text-amber-600 bg-amber-50' : 'text-sage-600 bg-sage-100';
+    const discMinutes = Math.floor(timeLeft / 60);
+    const discSeconds = timeLeft % 60;
+    const discTimerDisplay = `${discMinutes}:${discSeconds.toString().padStart(2, '0')}`;
 
     return (
       <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in">
@@ -513,7 +510,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
             รอบ {roundNumber}/{nonHostPlayers.length}
           </span>
           <span className={`text-[13px] font-black px-4 py-2 rounded-full ${timerColor}`}>
-            <Clock size={13} className="inline mr-1" />{timeLeft}s
+            <Clock size={13} className="inline mr-1" />{discTimerDisplay}
           </span>
         </div>
 
@@ -787,7 +784,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
             </button>
           </div>
         ) : (
-          <button onClick={handleLeave} className="btn btn-outline w-full py-3.5 text-[14px]">
+          <button onClick={requestLeave} className="btn btn-outline w-full py-3.5 text-[14px]">
             <LogOut size={15} /> ออกจากห้อง
           </button>
         )}

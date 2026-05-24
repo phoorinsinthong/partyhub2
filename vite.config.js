@@ -18,8 +18,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: 'index.html',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
@@ -29,23 +31,6 @@ export default defineConfig({
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
-        ],
-      },
-      manifest: {
-        name: 'Party Hub — เกมปาร์ตี้ออนไลน์',
-        short_name: 'Party Hub',
-        description: 'รวมเกมปาร์ตี้สุดสนุก เล่นกับเพื่อนได้ทุกที่',
-        theme_color: '#f4f5ee',
-        background_color: '#f4f5ee',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/partyhub/',
-        scope: '/partyhub/',
-        icons: [
-          { src: '/partyhub/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/partyhub/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/partyhub/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: '/partyhub/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),
