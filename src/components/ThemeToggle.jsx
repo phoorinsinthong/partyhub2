@@ -24,9 +24,9 @@ const ThemeToggle = ({ className = '' }) => {
         transition={{ duration: 0.25, ease: 'easeOut' }}
       >
         {isDark ? (
-          <span className="text-[18px]"></span>
+          <span className="text-[18px]">{'\u{1F319}'}</span>
         ) : (
-          <span className="text-[18px]"></span>
+          <span className="text-[18px]">{'\u{2600}\u{FE0F}'}</span>
         )}
       </motion.div>
     </button>
