@@ -284,6 +284,27 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}`, { drawingStrokes: localPaths });
   };
 
+  // Register non-passive touch listeners for iOS Safari
+  const drawHandlersRef = useRef({ handleDrawStart, handleDrawMove, handleDrawEnd });
+  drawHandlersRef.current = { handleDrawStart, handleDrawMove, handleDrawEnd };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !isDrawer) return;
+    const opts = { passive: false };
+    const onStart = (e) => drawHandlersRef.current.handleDrawStart(e);
+    const onMove = (e) => drawHandlersRef.current.handleDrawMove(e);
+    const onEnd = (e) => drawHandlersRef.current.handleDrawEnd(e);
+    canvas.addEventListener('touchstart', onStart, opts);
+    canvas.addEventListener('touchmove', onMove, opts);
+    canvas.addEventListener('touchend', onEnd, opts);
+    return () => {
+      canvas.removeEventListener('touchstart', onStart, opts);
+      canvas.removeEventListener('touchmove', onMove, opts);
+      canvas.removeEventListener('touchend', onEnd, opts);
+    };
+  }, [isDrawer]);
+
   const handleClear = async () => {
     if (!isDrawer) return;
     setLocalPaths([]);
@@ -847,9 +868,6 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
           onMouseMove={handleDrawMove}
           onMouseUp={handleDrawEnd}
           onMouseLeave={handleDrawEnd}
-          onTouchStart={handleDrawStart}
-          onTouchMove={handleDrawMove}
-          onTouchEnd={handleDrawEnd}
         />
         {/* Guesses overlay (bottom-left of canvas) */}
         {Object.keys(guesses).length > 0 && (

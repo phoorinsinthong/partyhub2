@@ -291,19 +291,25 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   };
 
   // Register non-passive touch listeners for iOS Safari
+  const drawHandlersRef = useRef({ startDraw, moveDraw, endDraw });
+  drawHandlersRef.current = { startDraw, moveDraw, endDraw };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || phase !== 'drawing') return;
     const opts = { passive: false };
-    canvas.addEventListener('touchstart', startDraw, opts);
-    canvas.addEventListener('touchmove', moveDraw, opts);
-    canvas.addEventListener('touchend', endDraw, opts);
+    const onStart = (e) => drawHandlersRef.current.startDraw(e);
+    const onMove = (e) => drawHandlersRef.current.moveDraw(e);
+    const onEnd = (e) => drawHandlersRef.current.endDraw(e);
+    canvas.addEventListener('touchstart', onStart, opts);
+    canvas.addEventListener('touchmove', onMove, opts);
+    canvas.addEventListener('touchend', onEnd, opts);
     return () => {
-      canvas.removeEventListener('touchstart', startDraw, opts);
-      canvas.removeEventListener('touchmove', moveDraw, opts);
-      canvas.removeEventListener('touchend', endDraw, opts);
+      canvas.removeEventListener('touchstart', onStart, opts);
+      canvas.removeEventListener('touchmove', onMove, opts);
+      canvas.removeEventListener('touchend', onEnd, opts);
     };
-  });
+  }, [phase, canvasSize]);
 
   // Host starts game
   const handleStartGame = async () => {
