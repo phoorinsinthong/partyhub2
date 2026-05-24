@@ -48,7 +48,11 @@ const TURN_TIME_OPTIONS = [
   { label: '15 วิ', seconds: 15 },
   { label: '30 วิ', seconds: 30 },
 ];
-const ROUNDS_PER_GAME = 2;
+const ROUNDS_OPTIONS = [
+  { label: '2 รอบ', value: 2 },
+  { label: '3 รอบ', value: 3 },
+  { label: '4 รอบ', value: 4 },
+];
 
 function shuffle(arr) {
   const a = [...arr];
@@ -71,7 +75,9 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const [wordMode, setWordMode] = useState('random');
   const [selectedCategory, setSelectedCategory] = useState('animals');
   const [selectedTurnTime, setSelectedTurnTime] = useState(15);
+  const [selectedRounds, setSelectedRounds] = useState(2);
   const turnTime = gameData.turnTime || 15;
+  const totalRounds = gameData.totalRounds || 2;
   const [timeLeft, setTimeLeft] = useState(turnTime);
   const [skippedPlayer, setSkippedPlayer] = useState(null);
   const [showFullCanvas, setShowFullCanvas] = useState(false);
@@ -163,7 +169,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             if (nextIndex >= turnOrder.length) {
               nextIndex = 0;
               nextRound = currentRound + 1;
-              if (nextRound > ROUNDS_PER_GAME) {
+              if (nextRound > totalRounds) {
                 nextPhase = 'voting';
               }
             }
@@ -282,7 +288,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     if (nextIndex >= turnOrder.length) {
       nextIndex = 0;
       nextRound = currentRound + 1;
-      if (nextRound > ROUNDS_PER_GAME) {
+      if (nextRound > totalRounds) {
         nextPhase = 'voting';
       }
     }
@@ -348,6 +354,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         currentTurnIndex: startIndex,
         currentRound: 1,
         turnTime: selectedTurnTime,
+        totalRounds: selectedRounds,
         paths: [],
         votes: null,
         colorMap: colors,
@@ -489,7 +496,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             หาให้เจอว่าใครคือศิลปินปลอม
           </p>
           <div className="text-[12px] text-olive-400 mb-4">
-            ผู้เล่น {players.length} คน • วาด {ROUNDS_PER_GAME} รอบ • {selectedTurnTime} วิ/ตา
+            ผู้เล่น {players.length} คน • วาด {selectedRounds} รอบ • {selectedTurnTime} วิ/ตา
           </div>
           {isHost ? (
             <div className="space-y-3">
@@ -539,6 +546,24 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
                       onClick={() => setSelectedTurnTime(opt.seconds)}
                       className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
                         selectedTurnTime === opt.seconds
+                          ? 'bg-sage-500 border-sage-500 text-white'
+                          : 'bg-white border-olive-100 text-olive-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">จำนวนรอบวาด</p>
+                <div className="flex gap-2 justify-center">
+                  {ROUNDS_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSelectedRounds(opt.value)}
+                      className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
+                        selectedRounds === opt.value
                           ? 'bg-sage-500 border-sage-500 text-white'
                           : 'bg-white border-olive-100 text-olive-600'
                       }`}
@@ -623,7 +648,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         {/* Status bar */}
         <div className="card p-3">
           <div className="flex-between mb-2">
-            <span className="text-[12px] font-bold text-olive-500">รอบ {currentRound}/{ROUNDS_PER_GAME}</span>
+            <span className="text-[12px] font-bold text-olive-500">รอบ {currentRound}/{totalRounds}</span>
             <div className="flex items-center gap-1.5">
               <Clock size={12} className={timeLeft <= 5 ? 'text-red-500' : 'text-olive-400'} />
               <span className={`font-black text-[13px] ${timeLeft <= 5 ? 'text-red-500' : 'text-olive-700'}`}>{timeLeft}s</span>
