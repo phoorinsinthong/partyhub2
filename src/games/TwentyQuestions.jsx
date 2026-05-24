@@ -61,8 +61,13 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     if (phase === 'waiting' || phase === 'reveal') {
       personalRecordedRef.current = false;
     }
-    if (phase !== 'voting') {
+    if (phase === 'voting') {
+      feedback('newRound');
+    } else {
       setVotedFor('');
+    }
+    if (phase === 'result') {
+      feedback('spyReveal');
     }
     advancingRef.current = false;
   }, [phase]);
@@ -175,7 +180,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     if (voteRef.current) return;
     voteRef.current = true;
     setVotedFor(target);
-    feedback('tap');
+    feedback('success');
     try {
       await safeUpdate(`rooms/${roomId}/gameData/votes`, { [userNickname]: target });
     } finally {
