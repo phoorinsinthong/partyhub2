@@ -123,18 +123,18 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     }
   }, [phase, voteResult]);
 
-  // Canvas resize
+  // Canvas resize — re-run when phase changes (container may not exist in earlier phases)
   useEffect(() => {
     const resizeCanvas = () => {
       if (!containerRef.current) return;
       const w = containerRef.current.clientWidth;
       const h = Math.min(w, 400);
-      setCanvasSize({ w, h });
+      if (w > 0) setCanvasSize({ w, h });
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, []);
+  }, [phase]);
 
   // Turn timer — auto-skip if time runs out
   useEffect(() => {
