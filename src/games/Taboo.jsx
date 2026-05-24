@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Clock, Crown, SkipForward, EyeOff, LogOut, RotateCcw } from 'lucide-react';
 import { getRandomCards } from './tabooData';
@@ -24,7 +23,6 @@ function shuffle(arr) {
 }
 
 const Taboo = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

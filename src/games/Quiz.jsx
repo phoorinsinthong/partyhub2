@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, increment } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Trophy, Clock, CheckCircle, XCircle, Crown, RotateCcw, LogOut } from 'lucide-react';
 import { getShuffledQuestions, CATEGORY_LABELS } from './quizData';
@@ -15,7 +14,6 @@ const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
 
 const Quiz = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

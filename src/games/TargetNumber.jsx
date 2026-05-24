@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update, get } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Target, User, Trophy, Play, RotateCcw, Crown, Skull, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +9,6 @@ import { useGameLeave } from '../hooks/useGameLeave';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
 const TargetNumber = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = roomData.host === userNickname;
   const gameData = roomData.gameData || {};

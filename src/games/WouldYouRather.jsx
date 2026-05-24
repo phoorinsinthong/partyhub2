@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Play, Timer, Users, Trophy, RotateCcw, ChevronRight, Crown, LogOut } from 'lucide-react';
 import { getShuffledWyrQuestions } from './wyrData';
@@ -15,7 +14,6 @@ const TOTAL_ROUNDS = 10;
 const VOTE_TIME = 15;
 
 const WouldYouRather = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

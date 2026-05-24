@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, push, increment } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Eraser, Palette, RotateCcw, Send, Trophy, Clock, Pencil, LogOut, Share2 } from 'lucide-react';
 import { getWordChoicesFromDifficulty, getRandomWord } from './drawingData';
@@ -25,7 +24,6 @@ function shuffle(arr) {
 }
 
 const Drawing = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

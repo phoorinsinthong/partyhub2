@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, get } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Moon, Sun, Eye, Shield, Skull, Users, Play, RefreshCw, CheckCircle2, XCircle, AlertCircle, Info, ChevronRight, Timer, Volume2, VolumeX, LogOut } from 'lucide-react';
 import { recordWin } from '../components/Scoreboard';
@@ -85,7 +84,6 @@ function checkWinCondition(playersData) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const Werewolf = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = roomData.host === userNickname;
   const gameData = roomData.gameData || {};

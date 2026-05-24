@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, get } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Crown, RotateCcw, LogOut } from 'lucide-react';
 import { getRandomCategories } from './wordBombData';
@@ -117,7 +116,6 @@ function TimerArc({ timeLeft, bombTime }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const WordBomb = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

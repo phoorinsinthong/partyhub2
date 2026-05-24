@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Trophy, Clock, RotateCcw, Crown, LogOut, Play, Send } from 'lucide-react';
 import { generateRound } from './mathRaceData';
@@ -16,7 +15,6 @@ const TOTAL_QUESTIONS = 10;
 const AUTO_ADVANCE_DELAY = 3000;
 
 const MathRace = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};

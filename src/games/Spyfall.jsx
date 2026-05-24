@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { CAT_META } from './spyfallCats';
 import {
@@ -19,7 +18,6 @@ import LeaveConfirmModal from '../components/LeaveConfirmModal';
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const Spyfall = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const nickname = userNickname;
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, nickname);
   const players = roomData.players || {};

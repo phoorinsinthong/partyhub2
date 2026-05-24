@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update } from 'firebase/database';
-import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { Play, Timer, Users, Trophy, RotateCcw, ChevronRight, Skull, Heart, LogOut } from 'lucide-react';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -16,7 +15,6 @@ const VOTE_TIME = 20;
 const STARTING_LIVES = 5;
 
 const NeverHaveIEver = ({ roomId, roomData, userNickname }) => {
-  const navigate = useNavigate();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};
