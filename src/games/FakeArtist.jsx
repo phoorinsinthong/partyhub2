@@ -329,6 +329,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     }
     const fake = players[Math.floor(Math.random() * players.length)];
     const order = shuffle(players);
+    const startIndex = Math.floor(Math.random() * order.length);
     const colors = {};
     players.forEach((p, i) => { colors[p] = PLAYER_COLORS[i % PLAYER_COLORS.length]; });
 
@@ -338,7 +339,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         secretWord: word,
         fakeArtist: fake,
         turnOrder: order,
-        currentTurnIndex: 0,
+        currentTurnIndex: startIndex,
         currentRound: 1,
         paths: [],
         votes: null,
