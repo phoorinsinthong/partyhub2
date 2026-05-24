@@ -290,6 +290,21 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     setLocalPaths([]);
   };
 
+  // Register non-passive touch listeners for iOS Safari
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || phase !== 'drawing') return;
+    const opts = { passive: false };
+    canvas.addEventListener('touchstart', startDraw, opts);
+    canvas.addEventListener('touchmove', moveDraw, opts);
+    canvas.addEventListener('touchend', endDraw, opts);
+    return () => {
+      canvas.removeEventListener('touchstart', startDraw, opts);
+      canvas.removeEventListener('touchmove', moveDraw, opts);
+      canvas.removeEventListener('touchend', endDraw, opts);
+    };
+  });
+
   // Host starts game
   const handleStartGame = async () => {
     if (!isHost || advancingRef.current) return;
@@ -631,9 +646,6 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             onMouseMove={moveDraw}
             onMouseUp={endDraw}
             onMouseLeave={endDraw}
-            onTouchStart={startDraw}
-            onTouchMove={moveDraw}
-            onTouchEnd={endDraw}
           />
         </div>
 
