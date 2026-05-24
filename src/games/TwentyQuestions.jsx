@@ -37,7 +37,6 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   const guesser = gameData.guesser || '';
   const votes = gameData.votes || {};
   const timerEnd = gameData.timerEnd || 0;
-  const pastInsiders = gameData.pastInsiders || [];
 
   const [timeLeft, setTimeLeft] = useState(0);
   const [votedFor, setVotedFor] = useState('');
@@ -124,7 +123,6 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         category: wordObj.category,
         filterCategory: selectedCategory,
         insider,
-        pastInsiders: [insider],
         wordGuessed: false,
         guesser: '',
         votes: {},
@@ -252,9 +250,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           await recordWin(roomId, sortedScores[0][0], 'twentyquestions');
         }
       } else {
-        let candidates = nonHostPlayers.filter(p => !pastInsiders.includes(p));
-        if (candidates.length === 0) candidates = nonHostPlayers.filter(p => p !== insiderName);
-        const nextInsider = candidates[Math.floor(Math.random() * candidates.length)];
+        const nextInsider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
         const wordObj = getRandomWord(newUsedWords, gameData.filterCategory || '');
         await safeUpdate(`rooms/${roomId}/gameData`, {
           phase: 'reveal',
@@ -263,7 +259,6 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           secretWord: wordObj.word,
           category: wordObj.category,
           insider: nextInsider,
-          pastInsiders: [...pastInsiders, nextInsider],
           wordGuessed: false,
           guesser: '',
           votes: {},
@@ -296,7 +291,6 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         category: wordObj.category,
         filterCategory: selectedCategory,
         insider,
-        pastInsiders: [insider],
         wordGuessed: false,
         guesser: '',
         votes: {},
