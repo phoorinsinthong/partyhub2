@@ -250,8 +250,8 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           await recordWin(roomId, sortedScores[0][0], 'twentyquestions');
         }
       } else {
-        const currentIdx = nonHostPlayers.indexOf(insiderName);
-        const nextInsider = nonHostPlayers[(currentIdx + 1) % nonHostPlayers.length];
+        const candidates = nonHostPlayers.filter(p => p !== insiderName);
+        const nextInsider = candidates[Math.floor(Math.random() * candidates.length)];
         const wordObj = getRandomWord(newUsedWords, gameData.filterCategory || '');
         await safeUpdate(`rooms/${roomId}/gameData`, {
           phase: 'reveal',
