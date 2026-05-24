@@ -37,14 +37,19 @@
 <body>
   <div id="root"></div>
   <script>
-    // Clear stale SW caches that cause white screen
+    // Clear ALL stale caches + force SW update to fix white screen on mobile
     if ('caches' in window) {
       caches.keys().then(function(names) {
         names.forEach(function(name) {
-          if (name.indexOf('partyhub-static-v') !== -1 && name !== 'partyhub-static-v3') {
+          if (name !== 'partyhub-static-v4' && name !== 'partyhub-fonts-v1') {
             caches.delete(name);
           }
         });
+      });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(function(reg) {
+        if (reg) reg.update();
       });
     }
   </script>

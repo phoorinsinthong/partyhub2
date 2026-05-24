@@ -1,33 +1,25 @@
-const CACHE_VERSION = 'partyhub-v3';
-const STATIC_CACHE = 'partyhub-static-v3';
+const CACHE_VERSION = 'partyhub-v4';
+const STATIC_CACHE = 'partyhub-static-v4';
 const FONT_CACHE = 'partyhub-fonts-v1';
 const BASE = '/partyhub/';
 
-const PRECACHE_ASSETS = [
-  BASE,
-  BASE + 'index.html',
-  BASE + 'manifest.json',
-  BASE + 'favicon.svg',
-  BASE + 'icons.svg',
-];
-
-// Install: cache app shell
+// Install: skip waiting immediately to take over
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_ASSETS))
-  );
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// Activate: delete ALL old caches, then claim clients and force reload
 self.addEventListener('activate', (event) => {
-  const keepCaches = [STATIC_CACHE, FONT_CACHE];
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => !keepCaches.includes(k)).map((k) => caches.delete(k)))
-    )
+      Promise.all(
+        keys.filter((k) => k !== STATIC_CACHE && k !== FONT_CACHE).map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
+     .then(() => self.clients.matchAll()).then((clients) => {
+       clients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+     })
   );
-  self.clients.claim();
 });
 
 // Fetch strategies
@@ -46,7 +38,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Google Fonts: Cache-first with long TTL
+  // Google Fonts: Cache-first
   if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     event.respondWith(
       caches.open(FONT_CACHE).then((cache) =>
@@ -62,7 +54,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation: Network-first, fallback to cached index.html
+  // Navigation: Network-first, fallback to network only (no stale HTML)
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request)
@@ -76,7 +68,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (JS/CSS/images): Stale-while-revalidate
+  // Static assets: Network-first with cache fallback
   if (
     url.pathname.endsWith('.js') ||
     url.pathname.endsWith('.css') ||
@@ -88,18 +80,15 @@ self.addEventListener('fetch', (event) => {
     url.pathname.endsWith('.json')
   ) {
     event.respondWith(
-      caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(event.request).then((cached) => {
-          const fetchPromise = fetch(event.request)
-            .then((response) => {
-              if (response.ok) cache.put(event.request, response.clone());
-              return response;
-            })
-            .catch(() => cached);
-
-          return cached || fetchPromise;
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
         })
-      )
+        .catch(() => caches.open(STATIC_CACHE).then((cache) => cache.match(event.request)))
     );
     return;
   }
