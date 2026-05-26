@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
-import { Crown, RotateCcw, LogOut, Play, Clock } from 'lucide-react';
+import { Crown, RotateCcw, LogOut, Play, Clock, Shuffle } from 'lucide-react';
 import { getRandomWord, ALL_CATEGORIES } from './insiderData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
@@ -153,6 +153,22 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
       await safeUpdate(`rooms/${roomId}/gameData`, {
         phase: 'discussion',
         timerEnd: Date.now() + discussionTime * 1000,
+      });
+    } finally {
+      advancingRef.current = false;
+    }
+  };
+
+  // ─── Host: Re-roll word ───
+  const handleRerollWord = async () => {
+    if (!isHost || advancingRef.current) return;
+    advancingRef.current = true;
+    feedback('tap');
+    const wordObj = getRandomWord([...usedWords, secretWord], gameData.filterCategories || '');
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData`, {
+        secretWord: wordObj.word,
+        category: wordObj.category,
       });
     } finally {
       advancingRef.current = false;
@@ -478,9 +494,14 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
             {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
             <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
             <p className="text-[11px] text-olive-400 mt-3">ตอบ ใช่/ไม่ใช่ ด้วยวาจา</p>
-            <button onClick={handleStartDiscussion} className="btn btn-primary w-full mt-4 py-3 text-[14px]">
-              <Clock size={16} /> เริ่มจับเวลา ({Math.floor(discussionTime / 60)} นาที)
-            </button>
+            <div className="flex gap-2 mt-4 w-full">
+              <button onClick={handleRerollWord} className="btn btn-outline flex-1 py-3 text-[13px]">
+                <Shuffle size={14} /> สุ่มใหม่
+              </button>
+              <button onClick={handleStartDiscussion} className="btn btn-primary flex-1 py-3 text-[14px]">
+                <Clock size={16} /> เริ่ม ({Math.floor(discussionTime / 60)} นาที)
+              </button>
+            </div>
           </motion.div>
         )}
 

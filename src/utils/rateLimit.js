@@ -28,5 +28,5 @@ export function rateLimitCreateRoom() {
 }
 
 export function rateLimitJoinRoom() {
-  return rateLimit('joinRoom', 5, 60000);
+  return rateLimit('joinRoom', 10, 60000);
 }
