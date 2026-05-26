@@ -101,12 +101,14 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const turnOrder = gameData.turnOrder || [];
   const currentTurnIndex = gameData.currentTurnIndex ?? 0;
   const currentRound = gameData.currentRound ?? 1;
+  const turnsPlayed = gameData.turnsPlayed ?? 0;
   const paths = gameData.paths || [];
   const votes = gameData.votes || null;
   const colorMap = gameData.colorMap || {};
   const fakeGuess = gameData.fakeGuess || '';
   const voteResult = gameData.voteResult || null;
 
+  const totalTurnsNeeded = turnOrder.length * totalRounds;
   const currentPlayer = turnOrder[currentTurnIndex] || '';
   const isMyTurn = currentPlayer === userNickname;
   const iAmFakeArtist = fakeArtist === userNickname;
@@ -166,19 +168,14 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             autoSkipRef.current = true;
             setSkippedPlayer(currentPlayer);
             setTimeout(() => setSkippedPlayer(null), 2000);
-            let nextIndex = currentTurnIndex + 1;
-            let nextRound = currentRound;
-            let nextPhase = 'drawing';
-            if (nextIndex >= turnOrder.length) {
-              nextIndex = 0;
-              nextRound = currentRound + 1;
-              if (nextRound > totalRounds) {
-                nextPhase = 'voting';
-              }
-            }
+            const newTurnsPlayed = turnsPlayed + 1;
+            let nextIndex = (currentTurnIndex + 1) % turnOrder.length;
+            let nextRound = currentRound + (currentTurnIndex + 1 >= turnOrder.length ? 1 : 0);
+            let nextPhase = newTurnsPlayed >= totalTurnsNeeded ? 'voting' : 'drawing';
             safeUpdate(`rooms/${roomId}/gameData`, {
               currentTurnIndex: nextIndex,
               currentRound: nextRound,
+              turnsPlayed: newTurnsPlayed,
               phase: nextPhase,
               turnStartedAt: Date.now(),
             });
@@ -284,22 +281,16 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     }
 
     const newPaths = [...paths, myPath];
-    let nextIndex = currentTurnIndex + 1;
-    let nextRound = currentRound;
-    let nextPhase = 'drawing';
-
-    if (nextIndex >= turnOrder.length) {
-      nextIndex = 0;
-      nextRound = currentRound + 1;
-      if (nextRound > totalRounds) {
-        nextPhase = 'voting';
-      }
-    }
+    const newTurnsPlayed = turnsPlayed + 1;
+    let nextIndex = (currentTurnIndex + 1) % turnOrder.length;
+    let nextRound = currentRound + (currentTurnIndex + 1 >= turnOrder.length ? 1 : 0);
+    let nextPhase = newTurnsPlayed >= totalTurnsNeeded ? 'voting' : 'drawing';
 
     await safeUpdate(`rooms/${roomId}/gameData`, {
       paths: newPaths,
       currentTurnIndex: nextIndex,
       currentRound: nextRound,
+      turnsPlayed: newTurnsPlayed,
       phase: nextPhase,
     });
     setLocalPaths([]);
@@ -356,6 +347,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         turnOrder: order,
         currentTurnIndex: startIndex,
         currentRound: 1,
+        turnsPlayed: 0,
         turnTime: selectedTurnTime,
         totalRounds: selectedRounds,
         paths: [],
@@ -429,6 +421,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         turnOrder: null,
         currentTurnIndex: 0,
         currentRound: 1,
+        turnsPlayed: 0,
         paths: null,
         votes: null,
         colorMap: null,
