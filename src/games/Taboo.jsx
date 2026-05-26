@@ -7,6 +7,7 @@ import { getRandomCards } from './tabooData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
 
@@ -41,6 +42,8 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
 
   const currentDescriber = describerOrder[currentDescriberIndex] || '';
   const isDescriber = userNickname === currentDescriber;
+
+  useTurnNotification(isDescriber, phase);
 
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
   const [showGuesserPicker, setShowGuesserPicker] = useState(false);

@@ -44,6 +44,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   const [selectedTime, setSelectedTime] = useState(300);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [showCategorySetting, setShowCategorySetting] = useState(true);
+  const [confirmGuesser, setConfirmGuesser] = useState(null);
   const discussionTime = gameData.discussionTime || 300;
   const showCategory = gameData.showCategory !== false;
   const personalRecordedRef = useRef(false);
@@ -599,33 +600,57 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {/* Host: mark who guessed correctly */}
         {isModerator && !wordGuessed && (
           <div className="card p-4">
-            <p className="text-[11px] font-bold text-olive-500 mb-3">ใครทายถูก? (กดเมื่อผู้เล่นพูดคำตอบถูก)</p>
-            <div className="flex flex-wrap gap-2">
-              {nonHostPlayers.map(p => (
-                <button
-                  key={p}
-                  onClick={async () => {
-                    if (advancingRef.current) return;
-                    advancingRef.current = true;
-                    feedback('correctGuess');
-                    try {
-                      await safeUpdate(`rooms/${roomId}/gameData`, {
-                        wordGuessed: true,
-                        guesser: p,
-                        phase: 'voting',
-                        timerEnd: Date.now() + VOTE_TIME * 1000,
-                        votes: {},
-                      });
-                    } finally {
-                      advancingRef.current = false;
-                    }
-                  }}
-                  className="text-[13px] font-bold px-4 py-2.5 rounded-xl bg-sage-100 text-sage-700 active:scale-95 border-2 border-sage-200"
-                >
-                  ✓ {p}
-                </button>
-              ))}
-            </div>
+            {!confirmGuesser ? (
+              <>
+                <p className="text-[11px] font-bold text-olive-500 mb-3">ใครทายถูก? (กดเมื่อผู้เล่นพูดคำตอบถูก)</p>
+                <div className="flex flex-wrap gap-2">
+                  {nonHostPlayers.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setConfirmGuesser(p)}
+                      className="text-[13px] font-bold px-4 py-2.5 rounded-xl bg-sage-100 text-sage-700 active:scale-95 border-2 border-sage-200"
+                    >
+                      ✓ {p}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center">
+                <p className="text-[13px] font-bold text-olive-700 mb-3">ยืนยัน: <span className="text-sage-600">{confirmGuesser}</span> ทายถูก?</p>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={() => setConfirmGuesser(null)}
+                    className="btn btn-outline py-2.5 px-5 text-[13px]"
+                  >
+                    ยกเลิก
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (advancingRef.current) return;
+                      advancingRef.current = true;
+                      feedback('correctGuess');
+                      const p = confirmGuesser;
+                      setConfirmGuesser(null);
+                      try {
+                        await safeUpdate(`rooms/${roomId}/gameData`, {
+                          wordGuessed: true,
+                          guesser: p,
+                          phase: 'voting',
+                          timerEnd: Date.now() + VOTE_TIME * 1000,
+                          votes: {},
+                        });
+                      } finally {
+                        advancingRef.current = false;
+                      }
+                    }}
+                    className="btn btn-primary py-2.5 px-5 text-[13px]"
+                  >
+                    ยืนยัน
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { feedback } from '../utils/feedback';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
 const ROUND_TIME = { easy: 60, medium: 60, hard: 60, funny: 90, random: 75, custom: 60 };
@@ -52,6 +53,8 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
 
   const isDrawer = userNickname === currentDrawer;
   const hasGuessedCorrectly = guesses[userNickname]?.correct;
+
+  useTurnNotification(isDrawer, phase);
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);

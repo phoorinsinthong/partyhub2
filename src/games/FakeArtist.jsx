@@ -7,6 +7,7 @@ import { feedback } from '../utils/feedback';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
 const PLAYER_COLORS = [
@@ -109,6 +110,8 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const currentPlayer = turnOrder[currentTurnIndex] || '';
   const isMyTurn = currentPlayer === userNickname;
   const iAmFakeArtist = fakeArtist === userNickname;
+
+  useTurnNotification(isMyTurn, phase === 'drawing' ? 'playing' : phase);
 
   const safeUpdate = async (refPath, data) => {
     try {

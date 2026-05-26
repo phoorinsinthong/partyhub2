@@ -7,6 +7,7 @@ import { getRandomCategories } from './wordBombData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
 
@@ -135,6 +136,8 @@ const WordBomb = ({ roomId, roomData, userNickname }) => {
   const activePlayers = turnOrder.filter(p => !eliminated.includes(p));
   const activePlayer = turnOrder[currentTurnIndex] || '';
   const isMyTurn = activePlayer === userNickname;
+
+  useTurnNotification(isMyTurn, phase);
 
   const [timeLeft, setTimeLeft] = useState(bombTime);
   const [exploding, setExploding] = useState(false);
