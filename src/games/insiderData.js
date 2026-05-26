@@ -1,4 +1,5 @@
 const words = [
+  // สัตว์
   { word: 'ช้าง', category: 'สัตว์' },
   { word: 'แมวส้ม', category: 'สัตว์' },
   { word: 'ปลาฉลาม', category: 'สัตว์' },
@@ -9,7 +10,18 @@ const words = [
   { word: 'นกฮูก', category: 'สัตว์' },
   { word: 'แมงกะพรุน', category: 'สัตว์' },
   { word: 'กิ้งก่า', category: 'สัตว์' },
+  { word: 'โลมา', category: 'สัตว์' },
+  { word: 'เสือ', category: 'สัตว์' },
+  { word: 'ม้าลาย', category: 'สัตว์' },
+  { word: 'นกแก้ว', category: 'สัตว์' },
+  { word: 'จระเข้', category: 'สัตว์' },
+  { word: 'หมึกสาย', category: 'สัตว์' },
+  { word: 'กระต่าย', category: 'สัตว์' },
+  { word: 'อูฐ', category: 'สัตว์' },
+  { word: 'เพนกวิน', category: 'สัตว์' },
+  { word: 'แรด', category: 'สัตว์' },
 
+  // อาหาร
   { word: 'ส้มตำ', category: 'อาหาร' },
   { word: 'ข้าวมันไก่', category: 'อาหาร' },
   { word: 'ต้มยำกุ้ง', category: 'อาหาร' },
@@ -22,7 +34,16 @@ const words = [
   { word: 'ไก่ทอด', category: 'อาหาร' },
   { word: 'มาม่า', category: 'อาหาร' },
   { word: 'ข้าวเหนียวมะม่วง', category: 'อาหาร' },
+  { word: 'แกงเขียวหวาน', category: 'อาหาร' },
+  { word: 'ผัดไทย', category: 'อาหาร' },
+  { word: 'ข้าวซอย', category: 'อาหาร' },
+  { word: 'โจ๊ก', category: 'อาหาร' },
+  { word: 'ลูกชิ้นปิ้ง', category: 'อาหาร' },
+  { word: 'หม่าล่า', category: 'อาหาร' },
+  { word: 'ชาบู', category: 'อาหาร' },
+  { word: 'ขนมครก', category: 'อาหาร' },
 
+  // สถานที่
   { word: 'วัดพระแก้ว', category: 'สถานที่' },
   { word: 'สยามพารากอน', category: 'สถานที่' },
   { word: 'เกาะพีพี', category: 'สถานที่' },
@@ -33,7 +54,18 @@ const words = [
   { word: 'ดิสนีย์แลนด์', category: 'สถานที่' },
   { word: 'ถนนข้าวสาร', category: 'สถานที่' },
   { word: 'สนามหลวง', category: 'สถานที่' },
+  { word: 'เขาใหญ่', category: 'สถานที่' },
+  { word: 'พัทยา', category: 'สถานที่' },
+  { word: 'เชียงใหม่', category: 'สถานที่' },
+  { word: 'สะพานมอญ', category: 'สถานที่' },
+  { word: 'อยุธยา', category: 'สถานที่' },
+  { word: 'ตลาดน้ำ', category: 'สถานที่' },
+  { word: 'เซเว่น', category: 'สถานที่' },
+  { word: 'ห้องสมุด', category: 'สถานที่' },
+  { word: 'สนามบินสุวรรณภูมิ', category: 'สถานที่' },
+  { word: 'วัดอรุณ', category: 'สถานที่' },
 
+  // บุคคล
   { word: 'ลิซ่า BLACKPINK', category: 'บุคคล' },
   { word: 'อีลอน มัสก์', category: 'บุคคล' },
   { word: 'เทย์เลอร์ สวิฟต์', category: 'บุคคล' },
@@ -42,7 +74,20 @@ const words = [
   { word: 'แฮร์รี่ พอตเตอร์', category: 'บุคคล' },
   { word: 'ชนาธิป', category: 'บุคคล' },
   { word: 'พี่ตูน บอดี้สแลม', category: 'บุคคล' },
+  { word: 'มาริโอ้', category: 'บุคคล' },
+  { word: 'ซน โกคู', category: 'บุคคล' },
+  { word: 'โอปอล์', category: 'บุคคล' },
+  { word: 'BamBam GOT7', category: 'บุคคล' },
+  { word: 'ครูพี่แนน', category: 'บุคคล' },
+  { word: 'ป๋อมแป๋ม', category: 'บุคคล' },
+  { word: 'มิลลิ', category: 'บุคคล' },
+  { word: 'นารูโตะ', category: 'บุคคล' },
+  { word: 'ลุฟี่', category: 'บุคคล' },
+  { word: 'ไอรอนแมน', category: 'บุคคล' },
+  { word: 'ซานตาคลอส', category: 'บุคคล' },
+  { word: 'ป้าทิพย์', category: 'บุคคล' },
 
+  // สิ่งของ
   { word: 'ร่ม', category: 'สิ่งของ' },
   { word: 'ไอโฟน', category: 'สิ่งของ' },
   { word: 'กระจก', category: 'สิ่งของ' },
@@ -53,7 +98,18 @@ const words = [
   { word: 'หูฟัง', category: 'สิ่งของ' },
   { word: 'ลูกโป่ง', category: 'สิ่งของ' },
   { word: 'ไฟแช็ก', category: 'สิ่งของ' },
+  { word: 'กระเป๋าเป้', category: 'สิ่งของ' },
+  { word: 'นาฬิกา', category: 'สิ่งของ' },
+  { word: 'รีโมท', category: 'สิ่งของ' },
+  { word: 'เตารีด', category: 'สิ่งของ' },
+  { word: 'กรรไกร', category: 'สิ่งของ' },
+  { word: 'ไม้แขวนเสื้อ', category: 'สิ่งของ' },
+  { word: 'ปากกา', category: 'สิ่งของ' },
+  { word: 'ตู้เย็น', category: 'สิ่งของ' },
+  { word: 'โคมไฟ', category: 'สิ่งของ' },
+  { word: 'กุญแจ', category: 'สิ่งของ' },
 
+  // กีฬา
   { word: 'มวยไทย', category: 'กีฬา' },
   { word: 'เซิร์ฟบอร์ด', category: 'กีฬา' },
   { word: 'โยคะ', category: 'กีฬา' },
@@ -61,7 +117,21 @@ const words = [
   { word: 'ดำน้ำ', category: 'กีฬา' },
   { word: 'โบว์ลิ่ง', category: 'กีฬา' },
   { word: 'วิ่งมาราธอน', category: 'กีฬา' },
+  { word: 'ฟุตบอล', category: 'กีฬา' },
+  { word: 'บาสเกตบอล', category: 'กีฬา' },
+  { word: 'ปิงปอง', category: 'กีฬา' },
+  { word: 'กอล์ฟ', category: 'กีฬา' },
+  { word: 'มวยปล้ำ', category: 'กีฬา' },
+  { word: 'สเก็ตบอร์ด', category: 'กีฬา' },
+  { word: 'ว่ายน้ำ', category: 'กีฬา' },
+  { word: 'เทนนิส', category: 'กีฬา' },
+  { word: 'ยิงธนู', category: 'กีฬา' },
+  { word: 'ปีนผา', category: 'กีฬา' },
+  { word: 'วอลเลย์บอล', category: 'กีฬา' },
+  { word: 'ยูโด', category: 'กีฬา' },
+  { word: 'เบสบอล', category: 'กีฬา' },
 
+  // ภาพยนตร์
   { word: 'Squid Game', category: 'ภาพยนตร์' },
   { word: 'Avengers', category: 'ภาพยนตร์' },
   { word: 'Harry Potter', category: 'ภาพยนตร์' },
@@ -70,6 +140,18 @@ const words = [
   { word: 'Spider-Man', category: 'ภาพยนตร์' },
   { word: 'พี่มาก..พระโขนง', category: 'ภาพยนตร์' },
   { word: 'ฉลาดเกมส์โกง', category: 'ภาพยนตร์' },
+  { word: 'Fast & Furious', category: 'ภาพยนตร์' },
+  { word: 'Titanic', category: 'ภาพยนตร์' },
+  { word: 'Jurassic Park', category: 'ภาพยนตร์' },
+  { word: 'Star Wars', category: 'ภาพยนตร์' },
+  { word: 'Batman', category: 'ภาพยนตร์' },
+  { word: 'นาคี', category: 'ภาพยนตร์' },
+  { word: 'Demon Slayer', category: 'ภาพยนตร์' },
+  { word: 'Toy Story', category: 'ภาพยนตร์' },
+  { word: 'The Lion King', category: 'ภาพยนตร์' },
+  { word: 'Attack on Titan', category: 'ภาพยนตร์' },
+  { word: 'Minecraft: The Movie', category: 'ภาพยนตร์' },
+  { word: 'John Wick', category: 'ภาพยนตร์' },
 
   // ปั่นๆ ฮาๆ
   { word: 'คนนอนดึก', category: 'ปั่นๆ ฮาๆ' },
@@ -117,11 +199,14 @@ const words = [
 
 export const ALL_CATEGORIES = [...new Set(words.map(w => w.category))];
 
-export function getRandomWord(usedWords = [], filterCategory = '') {
+export function getRandomWord(usedWords = [], filterCategories = '') {
   let pool = words;
-  if (filterCategory) {
-    pool = words.filter(w => w.category === filterCategory);
-    if (pool.length === 0) pool = words;
+  if (filterCategories) {
+    const cats = Array.isArray(filterCategories) ? filterCategories : [filterCategories];
+    if (cats.length > 0) {
+      pool = words.filter(w => cats.includes(w.category));
+      if (pool.length === 0) pool = words;
+    }
   }
   const available = pool.filter(w => !usedWords.includes(w.word));
   if (available.length === 0) return pool[Math.floor(Math.random() * pool.length)];

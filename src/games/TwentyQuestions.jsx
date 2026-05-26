@@ -42,8 +42,10 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   const [votedFor, setVotedFor] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [selectedTime, setSelectedTime] = useState(300);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [showCategorySetting, setShowCategorySetting] = useState(true);
   const discussionTime = gameData.discussionTime || 300;
+  const showCategory = gameData.showCategory !== false;
   const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
 
@@ -115,7 +117,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     feedback('gameStart');
     const initScores = {};
     players.forEach(p => { initScores[p] = 0; });
-    const wordObj = getRandomWord([], selectedCategory);
+    const wordObj = getRandomWord([], selectedCategories.length > 0 ? selectedCategories : '');
     const insider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
 
     try {
@@ -126,7 +128,8 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         usedWords: [],
         secretWord: wordObj.word,
         category: wordObj.category,
-        filterCategory: selectedCategory,
+        filterCategories: selectedCategories.length > 0 ? selectedCategories : null,
+        showCategory: showCategorySetting,
         insider,
         wordGuessed: false,
         guesser: '',
@@ -256,7 +259,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         }
       } else {
         const nextInsider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
-        const wordObj = getRandomWord(newUsedWords, gameData.filterCategory || '');
+        const wordObj = getRandomWord(newUsedWords, gameData.filterCategories || '');
         await safeUpdate(`rooms/${roomId}/gameData`, {
           phase: 'reveal',
           roundNumber: roundNumber + 1,
@@ -283,7 +286,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     feedback('gameStart');
     const initScores = {};
     players.forEach(p => { initScores[p] = 0; });
-    const wordObj = getRandomWord([], selectedCategory);
+    const wordObj = getRandomWord([], selectedCategories.length > 0 ? selectedCategories : '');
     const insider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
 
     try {
@@ -294,7 +297,8 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         usedWords: [],
         secretWord: wordObj.word,
         category: wordObj.category,
-        filterCategory: selectedCategory,
+        filterCategories: selectedCategories.length > 0 ? selectedCategories : null,
+        showCategory: showCategorySetting,
         insider,
         wordGuessed: false,
         guesser: '',
@@ -380,12 +384,12 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">หมวดคำศัพท์</p>
+              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">หมวดคำศัพท์ (เลือกได้หลายหมวด)</p>
               <div className="flex flex-wrap gap-1.5 justify-center">
                 <button
-                  onClick={() => setSelectedCategory('')}
+                  onClick={() => setSelectedCategories([])}
                   className={`py-2 px-3 rounded-2xl text-[12px] font-bold border-2 transition-colors ${
-                    selectedCategory === ''
+                    selectedCategories.length === 0
                       ? 'bg-sage-500 border-sage-500 text-white'
                       : 'bg-white border-olive-100 text-olive-600'
                   }`}
@@ -395,9 +399,11 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
                 {ALL_CATEGORIES.map(cat => (
                   <button
                     key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => setSelectedCategories(prev =>
+                      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+                    )}
                     className={`py-2 px-3 rounded-2xl text-[12px] font-bold border-2 transition-colors ${
-                      selectedCategory === cat
+                      selectedCategories.includes(cat)
                         ? 'bg-sage-500 border-sage-500 text-white'
                         : 'bg-white border-olive-100 text-olive-600'
                     }`}
@@ -405,6 +411,17 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
                     {cat}
                   </button>
                 ))}
+              </div>
+            </div>
+            <div className="w-full max-w-xs">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[11px] font-bold text-olive-500">แสดงหมวดหมู่ระหว่างเล่น</p>
+                <button
+                  onClick={() => setShowCategorySetting(!showCategorySetting)}
+                  className={`w-12 h-7 rounded-full transition-colors relative ${showCategorySetting ? 'bg-sage-500' : 'bg-olive-200'}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCategorySetting ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
               </div>
             </div>
             <div className="w-full max-w-xs">
@@ -458,7 +475,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {isModerator && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
             <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">คุณเป็นกรรมการ 👑</p>
-            <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
             <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
             <p className="text-[11px] text-olive-400 mt-3">ตอบ ใช่/ไม่ใช่ ด้วยวาจา</p>
             <button onClick={handleStartDiscussion} className="btn btn-primary w-full mt-4 py-3 text-[14px]">
@@ -470,7 +487,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {isInsider && !isModerator && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-purple-50 to-fuchsia-50 border-2 border-purple-200">
             <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">คุณเป็น Insider 🕵️</p>
-            <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
             <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
             <p className="text-[11px] text-olive-400 mt-3">นำทางให้คนอื่นทาย แต่อย่าให้ถูกจับได้!</p>
             <div className="mt-3 flex-center gap-2 text-olive-400">
@@ -483,7 +500,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {!isModerator && !isInsider && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center">
             <p className="text-[10px] font-bold text-sage-600 uppercase tracking-widest mb-2">คุณเป็นชาวบ้าน 🏘️</p>
-            <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
             <p className="font-display font-black text-[28px] text-olive-300">???</p>
             <p className="text-[11px] text-olive-400 mt-3">ถามคำถามเพื่อเดาคำลับ!</p>
             <div className="mt-3 flex-center gap-2 text-olive-400">
@@ -518,22 +535,26 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           </span>
         </div>
 
-        {/* Category */}
+        {/* Category + Word hints */}
         <div className="card p-3 flex items-center justify-between">
+          {showCategory && (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] font-bold text-olive-500">หมวด:</span>
+              <span className="text-[14px] font-extrabold text-sage-600">{category}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-bold text-olive-500">หมวด:</span>
-            <span className="text-[14px] font-extrabold text-sage-600">{category}</span>
+            {isModerator && (
+              <span className="text-[12px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
+                คำตอบ: {secretWord}
+              </span>
+            )}
+            {isInsider && !isModerator && (
+              <span className="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
+                🕵️ {secretWord}
+              </span>
+            )}
           </div>
-          {isModerator && (
-            <span className="text-[12px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-              คำตอบ: {secretWord}
-            </span>
-          )}
-          {isInsider && !isModerator && (
-            <span className="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-              🕵️ {secretWord}
-            </span>
-          )}
         </div>
 
         {/* Instructions */}
