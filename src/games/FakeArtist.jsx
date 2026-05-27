@@ -120,8 +120,10 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const [selectedCategory, setSelectedCategory] = useState('animals');
   const [selectedTurnTime, setSelectedTurnTime] = useState(15);
   const [selectedRounds, setSelectedRounds] = useState(2);
+  const [turnAnnounce, setTurnAnnounce] = useState('');
   const turnTime = gameData.turnTime || 15;
   const totalRounds = gameData.totalRounds || 2;
+  const usedWords = gameData.usedWords || [];
   const [timeLeft, setTimeLeft] = useState(turnTime);
   const [skippedPlayer, setSkippedPlayer] = useState(null);
   const [showFullCanvas, setShowFullCanvas] = useState(false);
@@ -157,6 +159,14 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const iAmFakeArtist = fakeArtist === userNickname;
 
   useTurnNotification(isMyTurn, phase === 'drawing' ? 'playing' : phase);
+
+  useEffect(() => {
+    if (phase === 'drawing' && currentPlayer) {
+      setTurnAnnounce(currentPlayer);
+      const t = setTimeout(() => setTurnAnnounce(''), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [phase, currentTurnIndex]);
 
   const safeUpdate = async (refPath, data) => {
     try {
@@ -372,9 +382,13 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
       word = customWord.trim();
     } else if (wordMode === 'category') {
       const catWords = WORD_CATEGORIES[selectedCategory]?.words || ALL_WORDS;
-      word = catWords[Math.floor(Math.random() * catWords.length)];
+      const available = catWords.filter(w => !usedWords.includes(w));
+      const pool = available.length > 0 ? available : catWords;
+      word = pool[Math.floor(Math.random() * pool.length)];
     } else {
-      word = ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)];
+      const available = ALL_WORDS.filter(w => !usedWords.includes(w));
+      const pool = available.length > 0 ? available : ALL_WORDS;
+      word = pool[Math.floor(Math.random() * pool.length)];
     }
     const fake = players[Math.floor(Math.random() * players.length)];
     const order = shuffle(players);
@@ -393,6 +407,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         turnsPlayed: 0,
         turnTime: selectedTurnTime,
         totalRounds: selectedRounds,
+        usedWords: [...usedWords, word],
         paths: [],
         votes: null,
         colorMap: colors,
@@ -465,6 +480,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         currentTurnIndex: 0,
         currentRound: 1,
         turnsPlayed: 0,
+        usedWords: usedWords,
         paths: null,
         votes: null,
         colorMap: null,
@@ -680,6 +696,17 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
               className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-2xl font-bold text-[12px] shadow-xl"
             >
               {skippedPlayer} หมดเวลา! ข้ามตา
+            </motion.div>
+          )}
+          {turnAnnounce && !skippedPlayer && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sage-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[13px] shadow-xl flex items-center gap-2"
+            >
+              <Pencil size={14} />
+              {turnAnnounce === userNickname ? 'ถึงตาคุณวาด!' : `ถึงตา ${turnAnnounce} วาด`}
             </motion.div>
           )}
         </AnimatePresence>
