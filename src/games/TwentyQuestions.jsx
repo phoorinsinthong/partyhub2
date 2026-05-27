@@ -176,13 +176,12 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     }
   };
 
-  // ─── Host: Time's up (nobody guessed) ───
+  // ─── Host: Time's up (nobody guessed) — no one scores ───
   const handleTimeUp = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
     try {
       await safeUpdate(`rooms/${roomId}/gameData`, {
-        [`scores/${insiderName}`]: increment(3),
         phase: 'result',
         wordGuessed: false,
         caughtInsider: false,
@@ -752,7 +751,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <span className="text-5xl">{caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}</span>
           <h3 className="font-display font-bold text-[20px] text-olive-800 mt-2">
-            {!wordGuessed ? 'หมดเวลา! Insider ชนะ' : caughtInsider ? 'จับ Insider ได้!' : 'Insider หลุดรอด!'}
+            {!wordGuessed ? 'หมดเวลา! ไม่มีใครได้คะแนน' : caughtInsider ? 'จับ Insider ได้!' : 'Insider หลุดรอด!'}
           </h3>
         </motion.div>
 
