@@ -845,7 +845,20 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
 
   // ─── FAKE GUESS PHASE ───
   if (phase === 'fake_guess') {
-    const syllableCount = secretWord.replace(/[\s\-]/g, '').length;
+    const countSyllables = (text) => {
+      const words = text.split(/[\s\-]+/).filter(Boolean);
+      let total = 0;
+      for (const w of words) {
+        const thaiVowels = w.match(/[ะาิีึืุูเแโใไำๅ]/g);
+        const count = thaiVowels ? thaiVowels.length : 0;
+        const englishVowels = w.match(/[aeiouAEIOU]+/g);
+        const engCount = englishVowels ? englishVowels.length : 0;
+        const syllables = count + engCount;
+        total += syllables || 1;
+      }
+      return total;
+    };
+    const syllableCount = countSyllables(secretWord);
     return (
       <div className="flex flex-col gap-4 animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
@@ -858,7 +871,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             แต่ถ้าเดาคำถูก ก็ยังชนะได้...
           </p>
           <p className="text-[13px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1.5 rounded-full mb-4">
-            💡 ใบ้: {syllableCount} ตัวอักษร
+            💡 ใบ้: {syllableCount} พยางค์
           </p>
 
           {iAmFakeArtist ? (
