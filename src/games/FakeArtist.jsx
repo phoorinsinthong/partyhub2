@@ -818,6 +818,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
 
   // ─── FAKE GUESS PHASE ───
   if (phase === 'fake_guess') {
+    const syllableCount = secretWord.replace(/[\s\-]/g, '').length;
     return (
       <div className="flex flex-col gap-4 animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
@@ -825,9 +826,12 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         <div className="card p-6 text-center">
           <div className="text-4xl mb-3">🎯</div>
           <h2 className="font-display font-bold text-lg text-olive-800 mb-2">จับศิลปินปลอมได้!</h2>
-          <p className="text-olive-500 text-sm mb-4">
+          <p className="text-olive-500 text-sm mb-2">
             <span className="font-bold text-red-500">{fakeArtist}</span> คือศิลปินปลอม!<br />
             แต่ถ้าเดาคำถูก ก็ยังชนะได้...
+          </p>
+          <p className="text-[13px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1.5 rounded-full mb-4">
+            💡 ใบ้: {syllableCount} ตัวอักษร
           </p>
 
           {iAmFakeArtist ? (
