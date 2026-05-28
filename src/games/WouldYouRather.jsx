@@ -182,11 +182,12 @@ const WouldYouRather = ({ roomId, roomData, userNickname }) => {
       else if (v === 'B') voteCounts.B++;
     });
 
-    const majority = voteCounts.A >= voteCounts.B ? 'A' : 'B';
+    const isTie = voteCounts.A === voteCounts.B;
+    const majority = voteCounts.A > voteCounts.B ? 'A' : 'B';
     const newScores = { ...majorityScores };
 
     Object.entries(currentVotes).forEach(([player, vote]) => {
-      if (vote === majority) {
+      if (isTie || vote === majority) {
         newScores[player] = (newScores[player] || 0) + 1;
       }
     });

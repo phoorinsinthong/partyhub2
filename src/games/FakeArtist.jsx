@@ -207,40 +207,48 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   }, [phase]);
 
   // Turn timer — auto-skip if time runs out
+  const timerExpiredRef = useRef(false);
   useEffect(() => {
     if (phase !== 'drawing') return;
     setTimeLeft(turnTime);
     setSkippedPlayer(null);
     autoSkipRef.current = false;
+    timerExpiredRef.current = false;
     const interval = setInterval(() => {
       setTimeLeft((t) => {
-        if (t <= 1) {
+        if (t <= 1 && !timerExpiredRef.current) {
+          timerExpiredRef.current = true;
           clearInterval(interval);
-          feedback('timeUp');
-          if (isHost && !autoSkipRef.current) {
-            autoSkipRef.current = true;
-            setSkippedPlayer(currentPlayer);
-            setTimeout(() => setSkippedPlayer(null), 2000);
-            const newTurnsPlayed = turnsPlayed + 1;
-            let nextIndex = (currentTurnIndex + 1) % turnOrder.length;
-            let nextRound = currentRound + (currentTurnIndex + 1 >= turnOrder.length ? 1 : 0);
-            let nextPhase = newTurnsPlayed >= totalTurnsNeeded ? 'voting' : 'drawing';
-            safeUpdate(`rooms/${roomId}/gameData`, {
-              currentTurnIndex: nextIndex,
-              currentRound: nextRound,
-              turnsPlayed: newTurnsPlayed,
-              phase: nextPhase,
-              turnStartedAt: Date.now(),
-            });
-          }
           return 0;
         }
-        if (t <= 6) feedback('countdown');
-        return t - 1;
+        if (t <= 6 && t > 1) feedback('countdown');
+        return t > 1 ? t - 1 : 0;
       });
     }, 1000);
     return () => clearInterval(interval);
   }, [phase, currentTurnIndex, currentRound]);
+
+  // Handle timer expiry separately (outside state setter)
+  useEffect(() => {
+    if (timeLeft !== 0 || phase !== 'drawing' || !timerExpiredRef.current) return;
+    feedback('timeUp');
+    if (isHost && !autoSkipRef.current) {
+      autoSkipRef.current = true;
+      setSkippedPlayer(currentPlayer);
+      setTimeout(() => setSkippedPlayer(null), 2000);
+      const newTurnsPlayed = turnsPlayed + 1;
+      let nextIndex = (currentTurnIndex + 1) % turnOrder.length;
+      let nextRound = currentRound + (currentTurnIndex + 1 >= turnOrder.length ? 1 : 0);
+      let nextPhase = newTurnsPlayed >= totalTurnsNeeded ? 'voting' : 'drawing';
+      safeUpdate(`rooms/${roomId}/gameData`, {
+        currentTurnIndex: nextIndex,
+        currentRound: nextRound,
+        turnsPlayed: newTurnsPlayed,
+        phase: nextPhase,
+        turnStartedAt: Date.now(),
+      });
+    }
+  }, [timeLeft]);
 
   // Draw all paths on canvas
   useEffect(() => {

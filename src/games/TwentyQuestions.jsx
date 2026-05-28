@@ -91,12 +91,16 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   }, [timerEnd, phase]);
 
   // Host auto-advance when timer expires
+  const timerFiredRef = useRef(false);
+  useEffect(() => { timerFiredRef.current = false; }, [phase, timerEnd]);
   useEffect(() => {
-    if (!isHost || timeLeft > 0) return;
+    if (!isHost || timeLeft > 0 || timerFiredRef.current) return;
     if (phase === 'discussion' && timerEnd && Date.now() >= timerEnd) {
+      timerFiredRef.current = true;
       handleTimeUp();
     }
     if (phase === 'voting' && timerEnd && Date.now() >= timerEnd) {
+      timerFiredRef.current = true;
       handleVoteEnd();
     }
   }, [timeLeft, phase, timerEnd, isHost]);

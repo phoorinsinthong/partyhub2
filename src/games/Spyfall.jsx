@@ -87,15 +87,18 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
   useEffect(() => {
     if (roomData.status === 'playing' && gameData.timerEnd && gameData.status === 'playing') {
+      let transitioned = false;
       const interval = setInterval(() => {
         const now = Date.now();
         const diff = Math.max(0, Math.floor((gameData.timerEnd - now) / 1000));
         setTimeLeft(diff);
 
         // Auto-transition to voting when timer reaches 0
-        if (diff === 0 && isHost && gameData.status === 'playing') {
+        if (diff === 0 && isHost && !transitioned && !voteResultRef.current) {
+          transitioned = true;
           clearInterval(interval);
-          if (!voteResultRef.current) {
+          const snap = roomData.gameData || {};
+          if (snap.status === 'playing') {
             safeUpdate(`rooms/${roomId}/gameData`, {
               status: 'voting',
               timerEnd: null

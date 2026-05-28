@@ -133,8 +133,9 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     const winner = wwData.winnerTeam;
     const wwPlayers = wwData.players || {};
     const myRoleResult = wwPlayers[userNickname]?.role;
-    const iWon = (winner === 'werewolf' && (myRoleResult === 'werewolf' || myRoleResult === 'minion')) ||
-                 (winner === 'villager' && myRoleResult !== 'werewolf' && myRoleResult !== 'minion' && myRoleResult !== 'gm') ||
+    const isWolfTeam = WOLF_ROLES.includes(myRoleResult) || myRoleResult === 'minion';
+    const iWon = (winner === 'werewolf' && isWolfTeam) ||
+                 (winner === 'villager' && !isWolfTeam && myRoleResult !== 'gm') ||
                  (winner === 'independent');
     recordPersonalGame('werewolf');
     if (iWon) recordPersonalWin('werewolf');
@@ -142,8 +143,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       const winningPlayers = Object.entries(wwPlayers)
         .filter(([, p]) => p.isAlive && p.role !== 'gm')
         .filter(([, p]) => {
-          if (winner === 'werewolf') return p.role === 'werewolf' || p.role === 'minion';
-          if (winner === 'villager') return p.role !== 'werewolf' && p.role !== 'minion';
+          if (winner === 'werewolf') return WOLF_ROLES.includes(p.role) || p.role === 'minion';
+          if (winner === 'villager') return !WOLF_ROLES.includes(p.role) && p.role !== 'minion';
           return false;
         });
       if (winningPlayers.length > 0) {
