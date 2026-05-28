@@ -55,7 +55,7 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
   const currentCard = gameData.currentCard || null;
   const lastAction = gameData.lastAction || null;
 
-  const playerNames = roomData.players ? Object.keys(roomData.players) : [];
+  const playerNames = roomData.players ? Object.keys(roomData.players).sort() : [];
   const turnIndex = gameData.turnIndex ?? 0;
   const currentTurnPlayer = playerNames[turnIndex % playerNames.length] || '';
   const isMyTurn = currentTurnPlayer === nickname;

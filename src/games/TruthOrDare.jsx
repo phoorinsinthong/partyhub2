@@ -221,7 +221,7 @@ const TruthOrDare = ({ roomId, roomData, userNickname }) => {
   };
 
   const gameData = roomData.gameData || {};
-  const players = roomData.players ? Object.keys(roomData.players) : [];
+  const players = roomData.players ? Object.keys(roomData.players).sort() : [];
 
   const currentCard = gameData.currentCard || null;
   const turnIndex = gameData.turnIndex ?? 0;

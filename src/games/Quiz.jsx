@@ -172,6 +172,11 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
   };
 
   // Timer
+  const timerFiredRef = useRef(false);
+  useEffect(() => {
+    timerFiredRef.current = false;
+  }, [phase, currentQ, gameData.questionStartedAt]);
+
   useEffect(() => {
     if (phase !== 'playing' || !gameData.questionStartedAt) return;
 
@@ -193,7 +198,8 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
         feedback('timeUp');
         setShowResult(true);
         clearInterval(interval);
-        if (isHost) {
+        if (isHost && !timerFiredRef.current) {
+          timerFiredRef.current = true;
           autoAdvanceRef.current = setTimeout(() => handleNextQuestion(), 3000);
         }
       }

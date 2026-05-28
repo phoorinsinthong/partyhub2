@@ -176,6 +176,11 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
   };
 
   // ─── Timer ───
+  const timerFiredRef = useRef(false);
+  useEffect(() => {
+    timerFiredRef.current = false;
+  }, [phase, roundStartedAt]);
+
   useEffect(() => {
     if (phase !== 'playing' || !roundStartedAt) return;
     const interval = setInterval(() => {
@@ -188,8 +193,11 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
       }
       if (remaining === 0) {
         feedback('timeUp');
-        if (isHost) handleEndRound();
         clearInterval(interval);
+        if (isHost && !timerFiredRef.current) {
+          timerFiredRef.current = true;
+          handleEndRound();
+        }
       }
     }, 500);
     return () => clearInterval(interval);
