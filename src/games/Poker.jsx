@@ -48,10 +48,11 @@ const Poker = ({ roomId, roomData, userNickname }) => {
     const startChips = gameData.settings?.startingChips || localSettings.startingChips || STARTING_CHIPS;
 
     playerNames.forEach(name => {
+      const chips = playersData[name]?.chips !== undefined ? playersData[name].chips : startChips;
       playersInit[name] = {
-        chips: playersData[name]?.chips || startChips, // Keep existing chips if playing next round
+        chips: chips, // Keep existing chips if playing next round
         hand: [],
-        folded: false,
+        folded: chips <= 0, // Auto fold if out of chips
         currentRoundBet: 0,
         totalBet: 0,
         hasActed: false,
@@ -104,9 +105,34 @@ const Poker = ({ roomId, roomData, userNickname }) => {
 
   const advancePhase = async (updates, currentPlayers) => {
     const active = Object.values(currentPlayers).filter(p => !p.folded);
+    const activeNonAllIn = active.filter(p => p.chips > 0);
     
-    if (active.length <= 1) {
-      // Showdown immediately
+    if (active.length <= 1 || activeNonAllIn.length <= 1) {
+      // Refund unmatched bets for the lone non-all-in player
+      if (activeNonAllIn.length === 1 && active.length > 1) {
+        const lonePlayer = activeNonAllIn[0];
+        const lonePlayerName = Object.keys(currentPlayers).find(n => currentPlayers[n] === lonePlayer);
+        const otherActive = active.filter(p => p !== lonePlayer);
+        const maxOtherBet = Math.max(...otherActive.map(p => p.currentRoundBet));
+        
+        if (lonePlayer.currentRoundBet > maxOtherBet) {
+          const refund = lonePlayer.currentRoundBet - maxOtherBet;
+          updates[`players/${lonePlayerName}/chips`] = lonePlayer.chips + refund;
+          updates.pot = (updates.pot !== undefined ? updates.pot : pot) - refund;
+        }
+      }
+
+      // Fast-forward to showdown
+      if (active.length > 1) {
+         let newDeck = updates.deck || [...deck];
+         let newCommunity = updates.communityCards || [...communityCards];
+         while (newCommunity.length < 5) {
+             newCommunity.push(newDeck.pop());
+         }
+         updates.deck = newDeck;
+         updates.communityCards = newCommunity;
+      }
+      
       updates.phase = 'showdown';
       return updates;
     }
@@ -413,27 +439,29 @@ const Poker = ({ roomId, roomData, userNickname }) => {
                 หมอบ (FOLD)
               </button>
               <button className="btn btn-primary flex-1 font-bold shadow-md" onClick={() => handleAction('call')}>
-                {toCall > 0 ? `ตาม (CALL ${toCall})` : 'ผ่าน (CHECK)'}
+                {toCall > 0 ? (toCall >= myData.chips ? `เทหมดหน้าตัก (ALL-IN ${myData.chips})` : `ตาม (CALL ${toCall})`) : 'ผ่าน (CHECK)'}
               </button>
             </div>
-            <div className="flex gap-sm items-center bg-stone-100 p-2 rounded-xl">
-              <input 
-                type="range" 
-                min={toCall + 10} 
-                max={myData.chips} 
-                step={10} 
-                value={raiseAmount} 
-                onChange={(e) => setRaiseAmount(Number(e.target.value))}
-                className="flex-1 accent-primary"
-              />
-              <button 
-                className="btn bg-stone-800 text-white font-bold py-2 px-4 shadow-md" 
-                onClick={() => handleAction('raise', raiseAmount - toCall)}
-                disabled={raiseAmount > myData.chips}
-              >
-                เกทับ (RAISE {raiseAmount})
-              </button>
-            </div>
+            {toCall < myData.chips && (
+              <div className="flex gap-sm items-center bg-stone-100 p-2 rounded-xl">
+                <input 
+                  type="range" 
+                  min={toCall + 10} 
+                  max={myData.chips} 
+                  step={10} 
+                  value={raiseAmount} 
+                  onChange={(e) => setRaiseAmount(Number(e.target.value))}
+                  className="flex-1 accent-primary"
+                />
+                <button 
+                  className="btn bg-stone-800 text-white font-bold py-2 px-4 shadow-md" 
+                  onClick={() => handleAction('raise', raiseAmount - toCall)}
+                  disabled={raiseAmount > myData.chips || raiseAmount < toCall + 10}
+                >
+                  เกทับ (RAISE {raiseAmount})
+                </button>
+              </div>
+            )}
           </div>
         ) : phase !== 'showdown' && (
           <div className="text-center text-stone-400 font-bold text-sm h-12 flex-center">
