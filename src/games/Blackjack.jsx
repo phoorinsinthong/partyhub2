@@ -37,13 +37,18 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
     const playersInit = {};
     const dealerInit = { hand: [newDeck.pop(), newDeck.pop()] };
 
-    const activePlayers = playerNames;
+    const activePlayers = playerNames.filter(name => name !== roomData.host);
     activePlayers.forEach(name => {
       playersInit[name] = {
         hand: [newDeck.pop(), newDeck.pop()],
         status: 'playing', // playing, stand, bust
       };
     });
+
+    if (activePlayers.length === 0) {
+      setErrorMsg('ต้องมีผู้เล่นอื่นอย่างน้อย 1 คน');
+      return;
+    }
 
     await safeUpdate({
       phase: 'playing',
@@ -187,7 +192,7 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
               <div key={idx} className="-ml-6 first:ml-0 hover:-translate-y-2 transition-transform">
                 <PlayingCard 
                   card={card} 
-                  hidden={phase === 'playing' && idx === 1} // Hide second card during playing
+                  hidden={!isHost && phase === 'playing' && idx === 1} // Hide second card during playing
                 />
               </div>
             ))}
@@ -241,7 +246,7 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
 
       {/* Other Players Preview (Very Small) */}
       <div className="flex gap-sm overflow-x-auto pb-sm snap-x">
-        {Object.entries(playersData).filter(([name]) => name !== userNickname).map(([name, p]) => (
+        {Object.entries(playersData).filter(([name]) => name !== userNickname && name !== roomData.host).map(([name, p]) => (
           <div key={name} className="flex-shrink-0 card p-sm min-w-[120px] text-center snap-center bg-stone-50 border-stone-100">
             <p className="text-[10px] font-bold text-stone-500 truncate mb-xs">{name}</p>
             <div className="flex-center -space-x-4">
@@ -256,42 +261,46 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
         ))}
       </div>
 
-      {/* My Area */}
-      <div className={`mt-auto card p-md shadow-xl border-t-4 transition-colors ${currentTurn === userNickname ? 'border-primary bg-primary/5' : 'border-stone-200'}`}>
-        <div className="flex justify-between items-center mb-md">
-          <div>
-            <h3 className="font-black text-lg leading-none">ไพ่ของคุณ</h3>
-            <p className="text-xs text-stone-500 font-bold">{userNickname}</p>
+      {/* My Area (Hide for Host in Blackjack since Host is only Dealer) */}
+      {!isHost && (
+        <div className={`mt-auto card p-md shadow-xl border-t-4 transition-colors ${currentTurn === userNickname ? 'border-primary bg-primary/5' : 'border-stone-200'}`}>
+          <div className="flex justify-between items-center mb-md">
+            <div>
+              <h3 className="font-black text-lg leading-none">ไพ่ของคุณ</h3>
+              <p className="text-xs text-stone-500 font-bold">{userNickname}</p>
+            </div>
+            <div className={`px-4 py-1.5 rounded-full font-black text-lg shadow-inner ${myScore > 21 ? 'bg-red-500 text-white' : myScore === 21 ? 'bg-success text-white' : 'bg-stone-200 text-stone-700'}`}>
+              {myScore > 21 ? 'BUST' : myScore === 21 ? '21!' : myScore}
+            </div>
           </div>
-          <div className={`px-4 py-1.5 rounded-full font-black text-lg shadow-inner ${myScore > 21 ? 'bg-red-500 text-white' : myScore === 21 ? 'bg-success text-white' : 'bg-stone-200 text-stone-700'}`}>
-            {myScore > 21 ? 'BUST' : myScore === 21 ? '21!' : myScore}
+
+          <div className="flex-center gap-xs min-h-[140px] mb-md relative">
+            <AnimatePresence>
+              {(myData.hand || []).map((card, idx) => (
+                <div key={idx} className="-ml-6 first:ml-0 hover:-translate-y-4 transition-transform z-10 hover:z-20">
+                  <PlayingCard card={card} />
+                </div>
+              ))}
+            </AnimatePresence>
           </div>
+
+          {/* Controls */}
+          {phase === 'playing' && currentTurn === userNickname && myScore <= 21 && (
+            <div className="flex gap-sm mt-4">
+              <button className="btn btn-outline flex-1 py-4 text-lg font-black" onClick={handleStand}>STAND</button>
+              <button className="btn btn-primary flex-1 py-4 text-lg font-black shadow-xl shadow-primary/30" onClick={handleHit}>HIT</button>
+            </div>
+          )}
         </div>
+      )}
 
-        <div className="flex-center gap-xs min-h-[140px] mb-md relative">
-          <AnimatePresence>
-            {(myData.hand || []).map((card, idx) => (
-              <div key={idx} className="-ml-6 first:ml-0 hover:-translate-y-4 transition-transform z-10 hover:z-20">
-                <PlayingCard card={card} />
-              </div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Controls */}
-        {phase === 'playing' && currentTurn === userNickname && myScore <= 21 && (
-          <div className="flex gap-sm mt-4">
-            <button className="btn btn-outline flex-1 py-4 text-lg font-black" onClick={handleStand}>STAND</button>
-            <button className="btn btn-primary flex-1 py-4 text-lg font-black shadow-xl shadow-primary/30" onClick={handleHit}>HIT</button>
-          </div>
-        )}
-
-        {phase === 'result' && isHost && (
+      {phase === 'result' && isHost && (
+        <div className="p-md mt-auto">
           <button className="btn btn-primary w-full py-4 mt-4 font-black shadow-lg" onClick={playAgain}>
             เล่นรอบใหม่
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

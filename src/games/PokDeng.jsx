@@ -231,7 +231,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         <div className="flex-center gap-xs min-h-[100px]">
           {dealer?.hand?.map((c, i) => (
             <div key={i} className="-ml-4 first:ml-0">
-               <PlayingCard card={c} hidden={phase === 'playing' && !dealer.isPok && i > 0} />
+               <PlayingCard card={c} hidden={!isHost && phase === 'playing' && !dealer.isPok && i > 0} />
             </div>
           ))}
         </div>
@@ -264,7 +264,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
                   ))}
                 </div>
                 
-                {(name === userNickname || phase === 'result' || p.isPok || phase === 'dealer_action') && (
+                {(name === userNickname || phase === 'result' || p.isPok || (phase === 'dealer_action' && isHost)) && (
                   <div className="text-right">
                     <p className="font-black text-lg text-stone-800">{stats.type !== 'Normal' ? stats.type : `${stats.score} แต้ม`}</p>
                     {stats.deng > 1 && <p className="text-sm font-bold text-orange-500">{stats.deng} เด้ง</p>}
