@@ -23,6 +23,7 @@ const calculatePokDeng = (cards) => {
   
   let deng = 1;
   let type = 'Normal';
+  let weight = score;
 
   // 2 Cards
   if (cards.length === 2) {
@@ -32,6 +33,7 @@ const calculatePokDeng = (cards) => {
     
     if (score >= 8) {
       type = `Pok ${score}`;
+      weight = score === 9 ? 19 : 18; // Pok 9 = 19, Pok 8 = 18
     }
   } 
   // 3 Cards
@@ -41,17 +43,17 @@ const calculatePokDeng = (cards) => {
     const isFace = ['J','Q','K'].includes(cards[0].value) && ['J','Q','K'].includes(cards[1].value) && ['J','Q','K'].includes(cards[2].value);
     
     if (isTong) {
-      return { score: 10, deng: 5, type: 'Tong (ตอง)' }; // Special pseudo-score
+      return { score, deng: 5, type: 'Tong (ตอง)', weight: 17 };
     }
     if (isFace) {
-      return { score: 9.5, deng: 3, type: 'Sam Lueng (เซียน)' };
+      return { score, deng: 3, type: 'Sam Lueng (เซียน)', weight: 14 };
     }
     if (isSameSuit) {
       deng = 3;
     }
   }
   
-  return { score, deng, type };
+  return { score, deng, type, weight };
 };
 
 const PokDeng = ({ roomId, roomData, userNickname }) => {
@@ -94,7 +96,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
       };
       
       const stats = calculatePokDeng([c1, c2]);
-      if (stats.score >= 8) {
+      if (stats.weight >= 8) {
         playersInit[name].isPok = true;
         playersInit[name].status = 'stand'; // Pok forces stand
       }
@@ -148,10 +150,10 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         let hostWinCount = 0;
         
         // Dealer wins if score is higher, or if score is same but Dealer is Host (usually dealer wins ties in simple rules, but let's do push for ties unless Deng differs)
-        if (pStats.score > dStats.score) {
+        if (pStats.weight > dStats.weight) {
           winAmount = p.bet * pStats.deng;
           recordWin(roomId, name, 'pokdeng');
-        } else if (pStats.score < dStats.score) {
+        } else if (pStats.weight < dStats.weight) {
           winAmount = -(p.bet * dStats.deng);
           hostWinCount++;
         } else {

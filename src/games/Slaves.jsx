@@ -23,24 +23,73 @@ const analyzePlay = (cards) => {
     if (cards.length === 3) return { type: 'triple', highestCard, count: 3 };
     if (cards.length === 4) return { type: 'quad', highestCard, count: 4 }; // Bomb
   }
-  return null; // Invalid combination (straights are omitted for simplicity)
+
+  // Check for Straight (3 or more consecutive cards)
+  if (cards.length >= 3) {
+    let isStraight = true;
+    for (let i = 0; i < sorted.length - 1; i++) {
+      if (sorted[i].valueRank + 1 !== sorted[i + 1].valueRank) {
+        isStraight = false;
+        break;
+      }
+    }
+    // Check if it's a Straight Flush (all same suit)
+    const isFlush = sorted.every(c => c.suit === sorted[0].suit);
+    if (isStraight) {
+      return { 
+        type: isFlush ? 'straight_flush' : 'straight', 
+        highestCard, 
+        count: cards.length 
+      };
+    }
+  }
+
+  return null; // Invalid combination
 };
 
-const validatePlay = (selectedCards, table) => {
+const validatePlay = (selectedCards, table, settings) => {
   const play = analyzePlay(selectedCards);
   if (!play) return false;
+
+  // Enforce straight setting
+  if (!settings.allowStraight && (play.type === 'straight' || play.type === 'straight_flush')) {
+    return false;
+  }
 
   // If table is empty, any valid combination is allowed
   if (!table || table.cards.length === 0) return true;
 
-  // Must match the number of cards (except if bombing a single/pair, but let's stick to standard matching first)
-  if (play.count !== table.type.count) {
-    // Optional: Quad (Bomb) beats any single/pair/triple. Uncomment to add bomb rule.
-    // if (play.count === 4) return true; 
+  // Bomb rules (Quad or Straight Flush)
+  const isBomb = play.type === 'quad' || play.type === 'straight_flush';
+  const tableIsBomb = table.type.type === 'quad' || table.type.type === 'straight_flush';
+
+  if (settings.enableBomb && isBomb) {
+    // A bomb can beat any normal play (single, pair, triple, straight)
+    if (!tableIsBomb) return true;
+    
+    // Bomb vs Bomb
+    if (play.type === 'straight_flush' && table.type.type === 'quad') return true; // Straight flush beats quad
+    if (play.type === 'quad' && table.type.type === 'straight_flush') return false; // Quad loses to straight flush
+    
+    // Same bomb type, compare count and high card
+    if (play.type === table.type.type) {
+        if (play.count > table.type.count) return true;
+        if (play.count < table.type.count) return false;
+        
+        if (play.highestCard.valueRank > table.highestCard.valueRank) return true;
+        if (play.highestCard.valueRank === table.highestCard.valueRank) {
+          return play.highestCard.suitRank > table.highestCard.suitRank;
+        }
+    }
     return false;
   }
 
-  // Compare highest card
+  // Normal matching rule (must match type count)
+  if (play.count !== table.type.count || play.type !== table.type.type) {
+    return false;
+  }
+
+  // Compare highest card for normal plays
   if (play.highestCard.valueRank > table.highestCard.valueRank) return true;
   if (play.highestCard.valueRank === table.highestCard.valueRank) {
     return play.highestCard.suitRank > table.highestCard.suitRank;
@@ -160,13 +209,15 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
 
     const play = analyzePlay(selectedCards);
     if (!play) {
-      setErrorMsg('รูปแบบไพ่ไม่ถูกต้อง (ลงได้แค่ เดี่ยว, คู่, ตอง, โฟร์)');
+      setErrorMsg('รูปแบบไพ่ไม่ถูกต้อง (ลงได้แค่ เดี่ยว, คู่, ตอง, โฟร์, เรียง)');
       setTimeout(() => setErrorMsg(''), 2000);
       return;
     }
 
-    if (!validatePlay(selectedCards, table)) {
-      setErrorMsg('ไพ่เล็กกว่าบนโต๊ะ หรือจำนวนไม่ตรงกัน');
+    const currentSettings = gameData.settings || { enableBomb: true, allowStraight: true };
+
+    if (!validatePlay(selectedCards, table, currentSettings)) {
+      setErrorMsg('ไพ่เล็กกว่าบนโต๊ะ หรือรูปแบบ/จำนวนไม่ตรงกัน');
       setTimeout(() => setErrorMsg(''), 2000);
       return;
     }
@@ -253,9 +304,6 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(updates);
   };
 
-  // Apply settings to logic (mock example)
-  const isBombEnabled = gameData.settings?.enableBomb ?? true;
-  const isStraightEnabled = gameData.settings?.allowStraight ?? true;
 
   if (phase === 'waiting') {
     return (
