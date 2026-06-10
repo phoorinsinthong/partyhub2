@@ -128,8 +128,8 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     for (let i = 0; i < names.length; i++) {
       idx = (idx + 1) % names.length;
       const nextPlayer = names[idx];
-      // Skip players who have finished (hand empty)
-      if (currentPlayers[nextPlayer].hand && currentPlayers[nextPlayer].hand.length > 0) {
+      // Skip players who have finished (hand empty) or passed
+      if (currentPlayers[nextPlayer].hand && currentPlayers[nextPlayer].hand.length > 0 && !currentPlayers[nextPlayer].isPass) {
         return nextPlayer;
       }
     }
@@ -183,8 +183,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
         highestCard: play.highestCard
       },
       [`players/${userNickname}/hand`]: newHand,
-      [`players/${userNickname}/isPass`]: false,
-      passCount: 0 // Reset pass count
+      [`players/${userNickname}/isPass`]: false
     };
 
     let nextRanks = [...ranks];
@@ -204,9 +203,8 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       updates.ranks = nextRanks;
       updates.roundCount = roundCount + 1;
     } else {
-      // Clear pass status for everyone
-      Object.keys(playersData).forEach(n => { updates[`players/${n}/isPass`] = false; });
-      updates.currentTurn = getNextTurn(userNickname, { ...playersData, [userNickname]: { hand: newHand } });
+      // Only update my isPass. DO NOT clear for everyone.
+      updates.currentTurn = getNextTurn(userNickname, { ...playersData, [userNickname]: { ...playersData[userNickname], hand: newHand, isPass: false } });
     }
 
     setSelectedCards([]);
@@ -221,29 +219,34 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       return;
     }
 
-    const newPassCount = passCount + 1;
-    const activePlayersCount = Object.keys(playersData).filter(name => playersData[name].hand?.length > 0).length;
+    const nextPlayersData = { ...playersData, [userNickname]: { ...playersData[userNickname], isPass: true } };
+    const activePlayers = Object.keys(nextPlayersData).filter(name => nextPlayersData[name].hand?.length > 0);
+    const passedPlayers = activePlayers.filter(name => nextPlayersData[name].isPass);
     
     const updates = {
       [`players/${userNickname}/isPass`]: true,
-      passCount: newPassCount,
     };
 
-    if (newPassCount >= activePlayersCount - 1) {
+    if (passedPlayers.length >= activePlayers.length - 1) {
       // Everyone else passed, table is cleared
       updates.table = { cards: [] };
-      updates.passCount = 0;
-      Object.keys(playersData).forEach(n => { updates[`players/${n}/isPass`] = false; });
+      
+      // Create a temporary state to calculate next turn since everyone's pass is cleared
+      const nextClearedPlayersData = {};
+      Object.keys(playersData).forEach(n => { 
+         updates[`players/${n}/isPass`] = false; 
+         nextClearedPlayersData[n] = { ...playersData[n], isPass: false };
+      });
       
       // The person who played the last cards gets the turn
       // If that person has finished their hand, next available player gets the turn
       let nextTurn = table.playedBy;
-      if (playersData[nextTurn].hand?.length === 0) {
-         nextTurn = getNextTurn(nextTurn, playersData);
+      if (nextClearedPlayersData[nextTurn]?.hand?.length === 0) {
+         nextTurn = getNextTurn(nextTurn, nextClearedPlayersData);
       }
       updates.currentTurn = nextTurn;
     } else {
-      updates.currentTurn = getNextTurn(userNickname, playersData);
+      updates.currentTurn = getNextTurn(userNickname, nextPlayersData);
     }
 
     setSelectedCards([]);

@@ -300,7 +300,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         ) : phase === 'dealer_action' && isHost ? (
           <div className="flex gap-sm">
             <button className="btn btn-primary flex-1 py-3 font-bold shadow-md" onClick={finishPhase}>
-              วัดแต้มเลย (ไม่จั่ว)
+              {dealer?.hand?.length < 3 ? 'วัดแต้มเลย (ไม่จั่ว)' : 'เปิดไพ่ตัดสิน!'}
             </button>
             {dealer?.hand?.length < 3 && (
               <button className="btn btn-outline flex-1 py-3 font-bold border-stone-300" onClick={() => drawCard(roomData.host)}>

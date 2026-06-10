@@ -54,6 +54,7 @@ const Poker = ({ roomId, roomData, userNickname }) => {
         folded: false,
         currentRoundBet: 0,
         totalBet: 0,
+        hasActed: false,
       };
     });
 
@@ -94,8 +95,11 @@ const Poker = ({ roomId, roomData, userNickname }) => {
     const active = Object.values(currentPlayers).filter(p => !p.folded);
     if (active.length <= 1) return true; // Everyone else folded
     
-    // Round is complete if all non-folded players who have chips have matched the currentBet
-    return active.every(p => p.chips === 0 || p.currentRoundBet === currentBet);
+    const activeNonAllIn = active.filter(p => p.chips > 0);
+    if (activeNonAllIn.length === 0) return true; // Everyone is all-in
+
+    // Round is complete if all non-folded, non-all-in players have acted and matched the currentBet
+    return activeNonAllIn.every(p => p.hasActed && p.currentRoundBet === currentBet);
   };
 
   const advancePhase = async (updates, currentPlayers) => {
@@ -107,9 +111,13 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       return updates;
     }
 
-    // Reset currentRoundBet for all players
+    // Reset currentRoundBet and hasActed for all players
     Object.keys(currentPlayers).forEach(n => {
       updates[`players/${n}/currentRoundBet`] = 0;
+      updates[`players/${n}/hasActed`] = false;
+      // Also update in our local object so getNextTurn works properly if called later
+      currentPlayers[n].currentRoundBet = 0;
+      currentPlayers[n].hasActed = false;
     });
     updates.currentBet = 0;
 
@@ -161,12 +169,20 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       newPot += actualBet;
       if (newRoundBet > newCurrentBet) {
         newCurrentBet = newRoundBet;
+        // If someone raises, everyone else's hasActed needs to be re-evaluated
+        // Actually, just checking if their currentRoundBet == newCurrentBet works,
+        // but to ensure they get another turn to call the raise, we must set their hasActed to false
+        Object.keys(playersData).forEach(n => {
+           if (n !== userNickname && !playersData[n].folded && playersData[n].chips > 0) {
+             playersData[n].hasActed = false; // mutated safely because we spread next
+           }
+        });
       }
     }
 
     const nextPlayers = {
       ...playersData,
-      [userNickname]: { ...myData, chips: newChips, currentRoundBet: newRoundBet, totalBet: newTotalBet, folded }
+      [userNickname]: { ...myData, chips: newChips, currentRoundBet: newRoundBet, totalBet: newTotalBet, folded, hasActed: true }
     };
 
     let updates = {
@@ -174,9 +190,19 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       [`players/${userNickname}/currentRoundBet`]: newRoundBet,
       [`players/${userNickname}/totalBet`]: newTotalBet,
       [`players/${userNickname}/folded`]: folded,
+      [`players/${userNickname}/hasActed`]: true,
       pot: newPot,
       currentBet: newCurrentBet,
     };
+    
+    // Propagate hasActed = false for others if there was a raise
+    if (action === 'raise') {
+        Object.keys(nextPlayers).forEach(n => {
+            if (n !== userNickname) {
+                updates[`players/${n}/hasActed`] = nextPlayers[n].hasActed;
+            }
+        });
+    }
 
     if (checkRoundComplete(nextPlayers)) {
       updates = await advancePhase(updates, nextPlayers);
