@@ -74,7 +74,9 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
 
     if (score > 21) {
       nextStatus = 'bust';
-      // Pass turn to next player
+      nextTurn = getNextTurn(currentTurn);
+    } else if (score === 21) {
+      nextStatus = 'stand';
       nextTurn = getNextTurn(currentTurn);
     }
 
@@ -128,6 +130,14 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
         currentHand.push(currentDeck.pop());
         score = calculateBlackjackScore(currentHand);
       }
+      
+      // Calculate winners and record on leaderboard
+      Object.entries(playersData).forEach(([name, p]) => {
+        const s = calculateBlackjackScore(p.hand || []);
+        if (s <= 21 && (score > 21 || s > score)) {
+          recordWin(roomId, name, 'blackjack');
+        }
+      });
       
       await safeUpdate({
         phase: 'result',
