@@ -41,6 +41,7 @@ const gameCategories = [
   {
     label: 'เกมไพ่',
     games: [
+      { id: 'pokdeng', name: 'ป๊อกเด้ง', icon: '💰', bg: 'from-rose-50 to-red-50', border: 'border-rose-200', minPlayers: 2 },
       { id: 'poker', name: 'โป๊กเกอร์', icon: '💵', bg: 'from-emerald-50 to-teal-50', border: 'border-emerald-200', minPlayers: 2 },
       { id: 'blackjack', name: 'แบล็คแจ็ค', icon: '🃏', bg: 'from-green-50 to-emerald-50', border: 'border-green-200', minPlayers: 1 },
       { id: 'slaves', name: 'สลาฟ', icon: '👑', bg: 'from-indigo-50 to-purple-50', border: 'border-indigo-200', minPlayers: 4 },

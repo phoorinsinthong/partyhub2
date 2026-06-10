@@ -32,6 +32,7 @@ const FakeArtist = lazy(() => import('../games/FakeArtist'));
 const Blackjack = lazy(() => import('../games/Blackjack'));
 const Slaves = lazy(() => import('../games/Slaves'));
 const Poker = lazy(() => import('../games/Poker'));
+const PokDeng = lazy(() => import('../games/PokDeng'));
 
 
 const GameLoadingFallback = () => (
@@ -199,6 +200,7 @@ const GameRoom = () => {
       case 'blackjack': return <Blackjack {...props} />;
       case 'slaves': return <Slaves {...props} />;
       case 'poker': return <Poker {...props} />;
+      case 'pokdeng': return <PokDeng {...props} />;
       default: return (
         <div className="card flex-center flex-col p-8 text-center flex-1 gap-3">
           <span className="text-4xl">🔨</span>

@@ -17,6 +17,7 @@ export const GAME_NAMES = {
   blackjack: 'แบล็คแจ็ค',
   slaves: 'สลาฟ',
   poker: 'โป๊กเกอร์',
+  pokdeng: 'ป๊อกเด้ง',
 };
 
 export const GAME_ICONS = {
@@ -38,4 +39,5 @@ export const GAME_ICONS = {
   blackjack: '🃏',
   slaves: '👑',
   poker: '💵',
+  pokdeng: '💰',
 };
