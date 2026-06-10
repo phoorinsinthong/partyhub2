@@ -16,6 +16,7 @@ export const GAME_NAMES = {
   fakeartist: 'ศิลปินปลอม',
   blackjack: 'แบล็คแจ็ค',
   slaves: 'สลาฟ',
+  poker: 'โป๊กเกอร์',
 };
 
 export const GAME_ICONS = {
@@ -36,4 +37,5 @@ export const GAME_ICONS = {
   fakeartist: '🎭',
   blackjack: '🃏',
   slaves: '👑',
+  poker: '💵',
 };
