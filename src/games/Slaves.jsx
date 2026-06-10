@@ -6,6 +6,7 @@ import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck, sortCardsSlaves } from '../utils/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordWin } from '../components/Scoreboard';
 
 // Helper to determine combination type and highest card
 const analyzePlay = (cards) => {
@@ -60,7 +61,9 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
   const ranks = gameData.ranks || []; // Ordered list of nicknames who finished
   
   const [errorMsg, setErrorMsg] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const [selectedCards, setSelectedCards] = useState([]);
+  const [localSettings, setLocalSettings] = useState({ enableBomb: true, allowStraight: true });
   
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
@@ -111,6 +114,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     await safeUpdate({
       phase: 'playing',
       players: playersInit,
+      settings: localSettings,
       currentTurn: firstTurn,
       table: { cards: [] },
       passCount: 0,
@@ -246,18 +250,43 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(updates);
   };
 
+  // Apply settings to logic (mock example)
+  const isBombEnabled = gameData.settings?.enableBomb ?? true;
+  const isStraightEnabled = gameData.settings?.allowStraight ?? true;
+
   if (phase === 'waiting') {
     return (
       <div className="flex-center flex-col gap-lg flex-1 text-center p-md animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        {showSettings && isHost && (
+          <div className="fixed inset-0 z-50 flex-center p-6 bg-stone-900/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+            <div className="card p-6 w-full max-w-[320px] bg-white flex flex-col gap-4 text-left" onClick={e => e.stopPropagation()}>
+              <h3 className="font-bold text-lg text-stone-800">⚙️ ตั้งค่ากติกา (House Rules)</h3>
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={localSettings.enableBomb} onChange={(e) => setLocalSettings({...localSettings, enableBomb: e.target.checked})} className="w-5 h-5 accent-primary" />
+                <span className="font-bold text-sm">ทิ้งตอง 4 (บอมบ์) ล้างโต๊ะได้</span>
+              </label>
+              <label className="flex items-center gap-3">
+                <input type="checkbox" checked={localSettings.allowStraight} onChange={(e) => setLocalSettings({...localSettings, allowStraight: e.target.checked})} className="w-5 h-5 accent-primary" />
+                <span className="font-bold text-sm">อนุญาตให้ลงไพ่เรียง (Straight)</span>
+              </label>
+              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>บันทึกการตั้งค่า</button>
+            </div>
+          </div>
+        )}
         <div className="text-6xl drop-shadow-xl animate-bounce-slow">👑</div>
-        <h2 className="text-3xl font-black text-olive-800 tracking-tight">สลาฟ (SLAVES)</h2>
-        <p className="text-olive-600 font-medium">ใครหมดมือคนแรกเป็นพระราชา คนสุดท้ายเป็นสลาฟ!</p>
+        <h2 className="text-3xl font-black text-indigo-800 tracking-tight">สลาฟ (Slaves)</h2>
+        <p className="text-indigo-600 font-medium">เกมชิงตำแหน่งราชาแห่งไพ่!</p>
         
         {isHost ? (
-          <button className="btn btn-primary w-full max-w-[280px] py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
-            เริ่มเกม
-          </button>
+          <div className="flex gap-2 w-full max-w-[280px]">
+            <button className="btn btn-primary flex-1 py-4 text-lg font-bold shadow-xl" onClick={startGame}>
+              เริ่มเกมเลย!
+            </button>
+            <button className="btn bg-stone-100 border border-stone-300 px-4 shadow-sm" onClick={() => setShowSettings(true)}>
+              ⚙️
+            </button>
+          </div>
         ) : (
           <div className="card w-full max-w-[280px] p-xl bg-olive-50/50 border-2 border-olive-100 flex-center">
             <span className="font-bold text-olive-500 animate-pulse">รอ Host เริ่มเกม...</span>

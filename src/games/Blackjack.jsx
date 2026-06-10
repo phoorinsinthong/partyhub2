@@ -6,6 +6,7 @@ import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck, calculateBlackjackScore } from '../utils/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordWin } from '../components/Scoreboard';
 
 const Blackjack = ({ roomId, roomData, userNickname }) => {
   const isHost = userNickname === roomData.host;

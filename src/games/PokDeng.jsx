@@ -6,6 +6,7 @@ import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck } from '../utils/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordWin } from '../components/Scoreboard';
 
 // --- PokDeng Logic ---
 const calculatePokDeng = (cards) => {
@@ -60,6 +61,8 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
   const deck = gameData.deck || [];
   const playersData = gameData.players || {};
   const [errorMsg, setErrorMsg] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
   
   const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
@@ -77,6 +80,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
     if (!isHost) return;
     const newDeck = shuffleDeck(createDeck());
     const playersInit = {};
+    const startChips = gameData.settings?.startingChips || localSettings.startingChips || 1000;
     
     playerNames.forEach(name => {
       const c1 = newDeck.pop();
@@ -84,7 +88,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
       playersInit[name] = {
         hand: [c1, c2],
         status: 'playing', // playing, stand, draw
-        chips: playersData[name]?.chips || 1000,
+        chips: playersData[name]?.chips || startChips,
         bet: name === roomData.host ? 0 : 50, // Dealer doesn't bet against himself
         isPok: false,
       };
@@ -100,6 +104,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
       phase: 'playing',
       deck: newDeck,
       players: playersInit,
+      settings: localSettings,
     });
   };
 
@@ -140,15 +145,19 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         const pStats = calculatePokDeng(p.hand);
         let winAmount = 0;
         
+        let hostWinCount = 0;
+        
         // Dealer wins if score is higher, or if score is same but Dealer is Host (usually dealer wins ties in simple rules, but let's do push for ties unless Deng differs)
         if (pStats.score > dStats.score) {
           winAmount = p.bet * pStats.deng;
+          recordWin(roomId, name, 'pokdeng');
         } else if (pStats.score < dStats.score) {
           winAmount = -(p.bet * dStats.deng);
+          hostWinCount++;
         } else {
           // Tie score, check deng
-          if (pStats.deng > dStats.deng) winAmount = p.bet * pStats.deng;
-          else if (pStats.deng < dStats.deng) winAmount = -(p.bet * dStats.deng);
+          if (pStats.deng > dStats.deng) { winAmount = p.bet * pStats.deng; recordWin(roomId, name, 'pokdeng'); }
+          else if (pStats.deng < dStats.deng) { winAmount = -(p.bet * dStats.deng); hostWinCount++; }
           else winAmount = 0; // Push
         }
         
@@ -158,6 +167,8 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         // Host balance tracking (Host plays against everyone)
         const hostCurrent = updates[`players/${roomData.host}/chips`] !== undefined ? updates[`players/${roomData.host}/chips`] : (dealer.chips || 1000);
         updates[`players/${roomData.host}/chips`] = hostCurrent - winAmount;
+        
+        if (hostWinCount > 0) recordWin(roomId, roomData.host, 'pokdeng');
       });
       
       await safeUpdate(updates);
@@ -168,14 +179,31 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex-center flex-col gap-lg flex-1 text-center p-md animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        {showSettings && isHost && (
+          <div className="fixed inset-0 z-50 flex-center p-6 bg-stone-900/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+            <div className="card p-6 w-full max-w-[320px] bg-white flex flex-col gap-4 text-left" onClick={e => e.stopPropagation()}>
+              <h3 className="font-bold text-lg text-stone-800">⚙️ ตั้งค่ากติกา (House Rules)</h3>
+              <label className="flex flex-col gap-1">
+                <span className="font-bold text-sm">ชิปเริ่มต้น</span>
+                <input type="number" value={localSettings.startingChips} onChange={(e) => setLocalSettings({...localSettings, startingChips: Number(e.target.value)})} className="input py-2 px-3 border border-stone-300 rounded-lg font-bold" />
+              </label>
+              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>บันทึกการตั้งค่า</button>
+            </div>
+          </div>
+        )}
         <div className="text-6xl drop-shadow-xl animate-bounce-slow">💰</div>
         <h2 className="text-3xl font-black text-rose-800 tracking-tight">ป๊อกเด้ง (Pok Deng)</h2>
         <p className="text-rose-600 font-medium">เจ้ามือ 1 คน ปะทะ ผู้เล่นทุกคน! ป๊อก 8 ป๊อก 9 ได้เลย!</p>
         
         {isHost ? (
-          <button className="btn btn-primary w-full max-w-[280px] py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
-            แจกไพ่! (คุณเป็นเจ้ามือ)
-          </button>
+          <div className="flex gap-2 w-full max-w-[280px]">
+            <button className="btn btn-primary flex-1 py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
+              แจกไพ่! (คุณเป็นเจ้ามือ)
+            </button>
+            <button className="btn bg-stone-100 border border-stone-300 px-4 shadow-sm" onClick={() => setShowSettings(true)}>
+              ⚙️
+            </button>
+          </div>
         ) : (
           <div className="card w-full max-w-[280px] p-xl bg-rose-50/50 border-2 border-rose-100 flex-center">
             <span className="font-bold text-rose-500 animate-pulse">รอเจ้ามือแจกไพ่...</span>

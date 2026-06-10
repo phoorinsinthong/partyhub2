@@ -7,6 +7,7 @@ import { createDeck, shuffleDeck } from '../utils/cards';
 import { evaluatePokerHand } from '../utils/pokerEvaluator';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { recordWin } from '../components/Scoreboard';
 
 const STARTING_CHIPS = 1000;
 
@@ -24,6 +25,8 @@ const Poker = ({ roomId, roomData, userNickname }) => {
   
   const [errorMsg, setErrorMsg] = useState('');
   const [raiseAmount, setRaiseAmount] = useState(10);
+  const [showSettings, setShowSettings] = useState(false);
+  const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
   
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
@@ -42,9 +45,11 @@ const Poker = ({ roomId, roomData, userNickname }) => {
     
     // First time init chips
     const playersInit = {};
+    const startChips = gameData.settings?.startingChips || localSettings.startingChips || STARTING_CHIPS;
+
     playerNames.forEach(name => {
       playersInit[name] = {
-        chips: playersData[name]?.chips || STARTING_CHIPS, // Keep existing chips if playing next round
+        chips: playersData[name]?.chips || startChips, // Keep existing chips if playing next round
         hand: [],
         folded: false,
         currentRoundBet: 0,
@@ -66,6 +71,7 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       pot: 0,
       currentBet: 0,
       players: playersInit,
+      settings: localSettings,
       currentTurn: playerNames[0], // simplified: host starts
     });
   };
@@ -212,6 +218,7 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       let chips = playersData[n].chips;
       if (winners.includes(n)) {
         chips += winAmount;
+        recordWin(roomId, n, 'poker'); // Record win for each winner
       }
       updates[`players/${n}/chips`] = chips;
     });
@@ -224,14 +231,31 @@ const Poker = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex-center flex-col gap-lg flex-1 text-center p-md animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        {showSettings && isHost && (
+          <div className="fixed inset-0 z-50 flex-center p-6 bg-stone-900/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+            <div className="card p-6 w-full max-w-[320px] bg-white flex flex-col gap-4 text-left" onClick={e => e.stopPropagation()}>
+              <h3 className="font-bold text-lg text-stone-800">⚙️ ตั้งค่ากติกา (House Rules)</h3>
+              <label className="flex flex-col gap-1">
+                <span className="font-bold text-sm">ชิปเริ่มต้น</span>
+                <input type="number" value={localSettings.startingChips} onChange={(e) => setLocalSettings({...localSettings, startingChips: Number(e.target.value)})} className="input py-2 px-3 border border-stone-300 rounded-lg font-bold" />
+              </label>
+              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>บันทึกการตั้งค่า</button>
+            </div>
+          </div>
+        )}
         <div className="text-6xl drop-shadow-xl animate-bounce-slow">💵</div>
         <h2 className="text-3xl font-black text-emerald-800 tracking-tight">โป๊กเกอร์ (Texas Hold'em)</h2>
         <p className="text-emerald-600 font-medium">เดิมพันด้วยชิป ชิงไหวชิงพริบ ลักไก่ให้สุด!</p>
         
         {isHost ? (
-          <button className="btn btn-primary w-full max-w-[280px] py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
-            แจกไพ่ เริ่มตาใหม่!
-          </button>
+          <div className="flex gap-2 w-full max-w-[280px]">
+            <button className="btn btn-primary flex-1 py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
+              แจกไพ่ เริ่มตาใหม่!
+            </button>
+            <button className="btn bg-stone-100 border border-stone-300 px-4 shadow-sm" onClick={() => setShowSettings(true)}>
+              ⚙️
+            </button>
+          </div>
         ) : (
           <div className="card w-full max-w-[280px] p-xl bg-emerald-50/50 border-2 border-emerald-100 flex-center">
             <span className="font-bold text-emerald-500 animate-pulse">รอ Host เริ่มตาใหม่...</span>
