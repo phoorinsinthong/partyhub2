@@ -2,7 +2,8 @@ export const GAME_NAMES = {
   drinking: 'วงเหล้า',
   spyfall: 'สปายฟอล',
   target: 'เลขเป้า',
-  werewolf: 'หมาป่า',
+  werewolf: 'หมาป่า (ดิจิทัล)',
+  werewolf_physical: 'หมาป่า (ไพ่จริง)',
   truthordare: 'จริงหรือกล้า',
   quiz: 'ควิซ',
   drawing: 'วาดรูปทายคำ',
@@ -13,6 +14,8 @@ export const GAME_NAMES = {
   mathrace: 'คำนวณเร็ว',
   twentyquestions: 'Insider',
   fakeartist: 'ศิลปินปลอม',
+  blackjack: 'แบล็คแจ็ค',
+  slaves: 'สลาฟ',
 };
 
 export const GAME_ICONS = {
@@ -20,6 +23,7 @@ export const GAME_ICONS = {
   spyfall: '🕵️‍♂️',
   target: '🎯',
   werewolf: '🐺',
+  werewolf_physical: '🎴',
   truthordare: '🎭',
   quiz: '🧠',
   drawing: '🎨',
@@ -30,4 +34,6 @@ export const GAME_ICONS = {
   mathrace: '🔢',
   twentyquestions: '🕵️',
   fakeartist: '🎭',
+  blackjack: '🃏',
+  slaves: '👑',
 };

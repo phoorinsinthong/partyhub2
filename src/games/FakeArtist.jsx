@@ -158,6 +158,42 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const isMyTurn = currentPlayer === userNickname;
   const iAmFakeArtist = fakeArtist === userNickname;
 
+  const countSyllables = (text) => {
+    if (!text) return 0;
+    const words = text.split(/[\s\-]+/).filter(Boolean);
+    let total = 0;
+    for (const w of words) {
+      // Handle English words
+      if (/^[a-zA-Z]+$/.test(w)) {
+        const engVowels = w.match(/[aeiouyAEIOUY]+/g);
+        total += engVowels ? engVowels.length : 1;
+        continue;
+      }
+
+      let temp = w;
+      // 1. Group Thai vowel clusters that count as 1 syllable
+      temp = temp.replace(/เ[ก-ฮ]{1,2}ีย/g, 'A'); // เ-ีย
+      temp = temp.replace(/เ[ก-ฮ]{1,2}ือ/g, 'A'); // เ-ือ
+      temp = temp.replace(/เ[ก-ฮ]{1,2}า/g, 'A');  // เ-า
+      temp = temp.replace(/[ก-ฮ]{1,2}ัว/g, 'A');   // -ัว (เช่น กลัว)
+      
+      // 2. Count visible Thai vowels + ฤ
+      const vowels = temp.match(/[ะาิีึืุูเแโใไำๅั็ํฤ]/g) || [];
+      let count = vowels.length;
+
+      // 3. Handle implicit vowels (no visible vowels)
+      if (count === 0 && w.length > 0) {
+        // Remove characters with garan (e.g. ์) as they don't add syllables
+        const clean = w.replace(/[ก-ฮ]์/g, '').replace(/[ก-ฮ][ะ-ูเ-ไั็ํ]์/g, '');
+        // Heuristic: 2 consonants (นก) = 1, 3 consonants (กนก) = 2
+        count = Math.max(1, clean.length - 1);
+      }
+      total += count;
+    }
+    return total;
+  };
+  const secretSyllables = countSyllables(secretWord);
+
   useTurnNotification(isMyTurn, phase === 'drawing' ? 'playing' : phase);
 
   useEffect(() => {
@@ -665,6 +701,9 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
               <div className="text-4xl mb-2">🎭</div>
               <p className="font-bold text-red-600 text-lg">คุณคือศิลปินปลอม!</p>
               <p className="text-red-400 text-sm mt-1">คุณไม่รู้คำ — วาดตามคนอื่นไป อย่าให้ใครจับได้!</p>
+              <p className="text-[12px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-full mt-3">
+                💡 ใบ้: {secretSyllables} พยางค์
+              </p>
             </div>
           ) : (
             <div className="bg-sage-50 border-2 border-sage-200 rounded-2xl p-5 mb-4">
@@ -731,7 +770,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
               <span className="text-[12px] font-bold text-olive-600">คำ: <span className="text-sage-600">{secretWord}</span></span>
             )}
             {iAmFakeArtist && (
-              <span className="text-[12px] font-bold text-red-400">คำ: ???</span>
+              <span className="text-[12px] font-bold text-red-400">คำ: ??? <span className="text-amber-600">({secretSyllables} พยางค์)</span></span>
             )}
           </div>
           {/* Timer bar */}
@@ -853,20 +892,6 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
 
   // ─── FAKE GUESS PHASE ───
   if (phase === 'fake_guess') {
-    const countSyllables = (text) => {
-      const words = text.split(/[\s\-]+/).filter(Boolean);
-      let total = 0;
-      for (const w of words) {
-        const thaiVowels = w.match(/[ะาิีึืุูเแโใไำๅ]/g);
-        const count = thaiVowels ? thaiVowels.length : 0;
-        const englishVowels = w.match(/[aeiouAEIOU]+/g);
-        const engCount = englishVowels ? englishVowels.length : 0;
-        const syllables = count + engCount;
-        total += syllables || 1;
-      }
-      return total;
-    };
-    const syllableCount = countSyllables(secretWord);
     return (
       <div className="flex flex-col gap-4 animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
@@ -879,7 +904,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             แต่ถ้าเดาคำถูก ก็ยังชนะได้...
           </p>
           <p className="text-[13px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1.5 rounded-full mb-4">
-            💡 ใบ้: {syllableCount} พยางค์
+            💡 ใบ้: {secretSyllables} พยางค์
           </p>
 
           {iAmFakeArtist ? (

@@ -92,6 +92,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
   const wwData = gameData.wwData || {};
   const phase = wwData.phase || 'waiting';
+  // If currentGame is werewolf_physical, force physical mode. Otherwise use digital.
+  const gameMode = roomData.currentGame === 'werewolf_physical' ? 'physical' : 'digital';
   const dayCount = wwData.dayCount || 0;
 
   const myPlayerData = wwData.players?.[userNickname];
@@ -110,6 +112,9 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   const [showDeckSetup, setShowDeckSetup] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [activeScriptIndex, setActiveScriptIndex] = useState(0);
+  const [guestName, setGuestName] = useState('');
+
   const safeUpdate = async (refPath, data) => {
     try {
       await update(ref(db, refPath), data);
@@ -118,6 +123,28 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       setTimeout(() => setErrorMsg(''), 3000);
       throw e;
     }
+  };
+
+  const addGuest = async () => {
+    if (!isHost || !guestName.trim()) return;
+    const name = guestName.trim();
+    if (playerNames.includes(name) || (wwData.guests && Object.keys(wwData.guests).includes(name))) {
+      setErrorMsg('ชื่อนี้มีอยู่แล้ว');
+      setTimeout(() => setErrorMsg(''), 3000);
+      return;
+    }
+    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests/${name}`, { joinedAt: Date.now() });
+    setGuestName('');
+  };
+
+  const removeGuest = async (name) => {
+    if (!isHost) return;
+    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests`, { [name]: null });
+  };
+
+  const toggleGameMode = async (mode) => {
+    if (!isHost) return;
+    await safeUpdate(`rooms/${roomId}/gameData/wwData`, { gameMode: mode });
   };
 
   // Reset vote guard when phase changes away from voting
@@ -159,17 +186,23 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
   // Show role reveal when game starts
   useEffect(() => {
-    if (phase === 'night' && dayCount === 1 && !isGM && myRole) {
+    if (phase === 'night' && dayCount === 1 && !isGM && myRole && gameMode === 'digital') {
       setShowRoleReveal(true);
     }
-  }, [phase, dayCount, isGM, myRole]);
+  }, [phase, dayCount, isGM, myRole, gameMode]);
 
   // ─── Game Actions ────────────────────────────────────────────────────────────
 
   const startGame = async () => {
     if (!isHost) return;
-    const nonGMPlayers = playerNames.filter(n => n !== roomData.host);
-    if (nonGMPlayers.length < 4) return;
+    const connectedPlayers = playerNames.filter(n => n !== roomData.host);
+    const guestNames = wwData.guests ? Object.keys(wwData.guests) : [];
+    const allGamePlayers = [...connectedPlayers, ...guestNames];
+    
+    // Digital mode is limited to 4-10, physical mode has no limit
+    if (gameMode === 'digital' && (allGamePlayers.length < 4 || allGamePlayers.length > 10)) return;
+    // For physical mode, we just need at least one player to act as GM's subject
+    if (gameMode === 'physical' && allGamePlayers.length < 1) return;
 
     const deckCounts = wwData.deckCounts || {};
     let deck = [];
@@ -178,7 +211,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     }
 
     if (deck.length === 0) {
-      const count = nonGMPlayers.length;
+      const count = allGamePlayers.length;
       const wolfCount = count >= 7 ? 2 : 1;
       for (let i = 0; i < wolfCount; i++) deck.push('werewolf');
       if (count >= 4) deck.push('seer');
@@ -186,24 +219,34 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       while (deck.length < count) deck.push('villager');
     }
 
-    if (deck.length !== nonGMPlayers.length) {
+    if (deck.length !== allGamePlayers.length) {
       return;
     }
 
+    // Physical mode doesn't necessarily need to assign roles to players, 
+    // but we'll do it if they want to track stats.
     // Shuffle deck
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
 
-    const shuffledPlayers = [...nonGMPlayers];
+    const shuffledPlayers = [...allGamePlayers];
     for (let i = shuffledPlayers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
     }
     const wwPlayers = {};
     shuffledPlayers.forEach((name, idx) => {
-      wwPlayers[name] = { role: deck[idx], isAlive: true, vote: '', status: {} };
+      // In physical mode, we assign 'villager' by default unless the host manual entry is added later.
+      // For simplicity, we assign the deck here too so stats work if they follow the app.
+      wwPlayers[name] = { 
+        role: deck[idx], 
+        isAlive: true, 
+        vote: '', 
+        status: {},
+        isGuest: guestNames.includes(name)
+      };
     });
     wwPlayers[roomData.host] = { role: 'gm', isAlive: true, vote: '', status: {} };
 
@@ -222,6 +265,11 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         timerEnd: Date.now() + 120000,
       }
     });
+  };
+
+  const updatePlayerRole = async (playerName, newRole) => {
+    if (!isHost) return;
+    await safeUpdate(`rooms/${roomId}/gameData/wwData/players/${playerName}`, { role: newRole });
   };
 
   const updateDeckCount = async (role, change) => {
@@ -502,9 +550,14 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   // ─── Render: Waiting / Lobby ──────────────────────────────────────────────────
 
   if (phase === 'waiting' || !wwData.players) {
-    const nonGMPlayers = playerNames.filter(n => n !== roomData.host);
+    const connectedPlayers = playerNames.filter(n => n !== roomData.host);
+    const guestNames = wwData.guests ? Object.keys(wwData.guests) : [];
+    const allGamePlayers = [...connectedPlayers, ...guestNames];
+    
     const deckCounts = wwData.deckCounts || {};
     const totalDeck = Object.values(deckCounts).reduce((a, b) => a + b, 0);
+    // No limit for physical, 10 for digital
+    const limit = gameMode === 'digital' ? 10 : 999;
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
@@ -516,11 +569,56 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
           </div>
           <h2 className="text-3xl font-black mb-sm">WEREWOLF</h2>
           <p className="text-secondary leading-relaxed">
-            หมาป่ากำลังแฝงตัวอยู่ในหมู่ชาวบ้าน! ผู้ดำเนินเกม (GM) จะควบคุมทุกเฟส
+            {gameMode === 'digital' 
+              ? 'หมาป่ากำลังแฝงตัวอยู่ในหมู่ชาวบ้าน! ทุกอย่างรันบนแอป 100%' 
+              : 'โหมด GM Dashboard: แอปจะช่วย Host คุมเกมแบบใช้ไพ่จริง'}
           </p>
           {isHost && (
             <p className="text-primary font-bold mt-sm text-sm">🎭 คุณเป็นผู้ดำเนินเกม (GM)</p>
           )}
+        </div>
+
+        {/* Guest Management (Physical only) */}
+        {isHost && gameMode === 'physical' && (
+          <div className="glass-panel p-lg space-y-md">
+            <h4 className="text-xs font-black text-secondary uppercase tracking-widest">➕ เพิ่มผู้เล่น (Guest)</h4>
+            <div className="flex gap-sm">
+              <input
+                type="text"
+                placeholder="ชื่อผู้เล่น..."
+                className="input-field flex-1"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addGuest()}
+              />
+              <button className="btn btn-primary px-lg" onClick={addGuest}>เพิ่ม</button>
+            </div>
+            {guestNames.length > 0 && (
+              <div className="flex flex-wrap gap-xs">
+                {guestNames.map(name => (
+                  <span key={name} className="px-sm py-xs rounded-lg text-[11px] font-bold bg-glass flex items-center gap-xs">
+                    {name}
+                    <button onClick={() => removeGuest(name)} className="text-danger">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Player List Summary */}
+        <div className="glass-panel p-lg">
+          <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-md">👥 รายชื่อผู้เล่น ({allGamePlayers.length} คน)</h4>
+          <div className="flex flex-wrap gap-xs">
+            {allGamePlayers.map(name => {
+              const isGuest = guestNames.includes(name);
+              return (
+                <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${isGuest ? 'border-dashed border-secondary/40 text-secondary' : 'border-glass text-white'}`}>
+                  {name} {isGuest && '(Guest)'}
+                </span>
+              );
+            })}
+          </div>
         </div>
 
         {/* Deck Setup (GM only) */}
@@ -529,8 +627,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
             <div className="flex-between mb-md">
               <h4 className="font-black flex items-center gap-sm text-sm">
                 🎴 จัดเตรียมการ์ด
-                <span className={`px-sm py-xs rounded-lg text-xs font-bold ${totalDeck === nonGMPlayers.length ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
-                  {totalDeck}/{nonGMPlayers.length}
+                <span className={`px-sm py-xs rounded-lg text-xs font-bold ${totalDeck === allGamePlayers.length ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                  {totalDeck}/{allGamePlayers.length}
                 </span>
               </h4>
               <button className="btn btn-glass p-xs text-xs" onClick={() => setShowDeckSetup(!showDeckSetup)}>
@@ -585,13 +683,19 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
           <button
             className="btn btn-primary w-full py-xl text-xl font-black shadow-xl shadow-primary/20"
             onClick={startGame}
-            disabled={nonGMPlayers.length < 4 || (totalDeck > 0 && totalDeck !== nonGMPlayers.length)}
+            disabled={
+              (gameMode === 'digital' && (allGamePlayers.length < 4 || allGamePlayers.length > 10)) ||
+              (gameMode === 'physical' && allGamePlayers.length < 1) ||
+              (totalDeck > 0 && totalDeck !== allGamePlayers.length)
+            }
           >
-            {nonGMPlayers.length < 4
-              ? `รอผู้เล่น (ต้องการอีก ${4 - nonGMPlayers.length} คน)`
-              : totalDeck > 0 && totalDeck !== nonGMPlayers.length
-                ? `จัดไพ่ไม่พอดี (${totalDeck}/${nonGMPlayers.length})`
-                : '🎭 เริ่มเกม!'}
+            {gameMode === 'digital' && allGamePlayers.length < 4
+              ? `รอผู้เล่น (ต้องการอีก ${4 - allGamePlayers.length} คน)`
+              : (gameMode === 'digital' && allGamePlayers.length > 10)
+                ? `ผู้เล่นเกินกำหนด (ดิจิทัลสูงสุด 10 คน)`
+                : totalDeck > 0 && totalDeck !== allGamePlayers.length
+                  ? `จัดไพ่ไม่พอดี (${totalDeck}/${allGamePlayers.length})`
+                  : '🎭 เริ่มเกม!'}
           </button>
         ) : (
           <div className="glass-panel p-md text-center border-primary/30">
@@ -708,6 +812,218 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   const phaseLabel = phase === 'night' ? `🌙 คืนที่ ${dayCount}` : phase === 'day' ? `☀️ กลางวันที่ ${dayCount}` : phase === 'voting' ? '🗳️ ถึงเวลาโหวต!' : '🎭 รอเริ่มรอบ';
   const phaseBg = phase === 'night' ? 'border-indigo-500/30' : phase === 'day' ? 'border-orange-400/30' : phase === 'voting' ? 'border-red-400/30' : 'border-glass';
 
+  if (gameMode === 'physical') {
+    return (
+      <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
+        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        <div className={`glass-panel p-md flex justify-between items-center ${phaseBg}`}>
+          <div className="flex items-center gap-md">
+            {phase === 'night' ? <Moon className="text-indigo-400" size={20} /> : <Sun className="text-orange-400" size={20} />}
+            <p className="font-black text-white">{phaseLabel}</p>
+          </div>
+          <div className="text-right">
+            {isGM ? <span className="text-xs font-bold text-warning">🎭 GM Dashboard</span> : (
+              <span className={`text-xs font-bold ${myIsAlive ? 'text-success' : 'text-danger'}`}>
+                {myIsAlive ? '🟢 ยังมีชีวิต' : '💀 ตายแล้ว'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {isGM ? (
+          <div className="glass-panel p-lg space-y-lg border-warning/20">
+            <h3 className="font-black flex items-center gap-sm text-warning">🕹️ ควบคุมเกม (ไพ่จริง)</h3>
+
+            {/* Manual Life/Death Grid (Top level view) */}
+            <div className="grid grid-cols-2 gap-sm mb-md">
+              {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
+                <button
+                  key={name}
+                  onClick={() => togglePlayerAlive(name, !p.isAlive)}
+                  className={`flex items-center gap-md p-md rounded-xl border-2 transition-all ${
+                    p.isAlive ? 'bg-glass border-glass text-white hover:border-white/20' : 'bg-danger/10 border-danger/30 text-danger opacity-70'
+                  }`}
+                >
+                  <span className="text-sm font-bold truncate flex-1 text-left">{name}</span>
+                  {p.isAlive ? <CheckCircle2 size={18} className="text-success" /> : <Skull size={18} />}
+                </button>
+              ))}
+            </div>
+
+            {/* Phase Logic */}
+            {phase === 'night' && (
+              <div className="space-y-md border-t border-glass pt-md">
+                <p className="text-sm font-bold text-indigo-300 flex items-center gap-sm"><Moon size={16} /> ขั้นตอนการเรียกบทบาท (Physical):</p>
+                <div className="bg-glass-dark/40 rounded-xl p-md border border-indigo-500/20 space-y-md">
+                  {(() => {
+                    const deckRoles = Object.entries(wwData.deckCounts || {}).filter(([, c]) => c > 0).map(([r]) => r);
+                    // Order roles for calling
+                    const callOrder = ['werewolf', 'seer', 'bodyguard', 'cupid', 'witch', 'serial_killer'];
+                    const activeRoles = callOrder.filter(r => deckRoles.includes(r));
+                    
+                    return (
+                      <div className="space-y-lg">
+                        <div className="p-sm bg-indigo-500/10 rounded-lg text-center">
+                          <p className="text-[11px] font-bold text-indigo-300 uppercase">1. ทุกคนหลับตาลง</p>
+                        </div>
+
+                        {activeRoles.map((roleKey, idx) => {
+                          const role = ROLES[roleKey];
+                          const rolePlayers = Object.entries(wwPlayers).filter(([, p]) => p.role === roleKey && p.role !== 'gm');
+                          const deckCount = (wwData.deckCounts || {})[roleKey] || 0;
+                          
+                          return (
+                            <div key={roleKey} className="space-y-sm border-l-2 border-indigo-500/50 pl-md py-sm">
+                              <p className="text-sm font-bold flex items-center gap-xs" style={{ color: role.color }}>
+                                {idx + 2}. {role.icon} {role.name} ลืมตาขึ้นมา... <span className="text-xs opacity-70">({rolePlayers.length}/{deckCount} คน)</span>
+                              </p>
+                              
+                              <div className="flex flex-wrap gap-sm">
+                                {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
+                                  const isThisRole = p.role === roleKey;
+                                  return (
+                                    <button
+                                      key={name}
+                                      onClick={() => updatePlayerRole(name, isThisRole ? 'villager' : roleKey)}
+                                      className={`px-md py-sm rounded-xl text-xs font-bold border-2 transition-all shadow-sm active:scale-95 ${
+                                        isThisRole ? 'bg-indigo-500 border-indigo-400 text-white shadow-indigo-500/20' : 'bg-glass border-glass/50 text-secondary hover:text-white hover:border-glass'
+                                      }`}
+                                    >
+                                      {name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <div className="p-sm bg-orange-400/10 rounded-lg text-center mt-md border border-orange-400/20">
+                          <p className="text-xs font-bold text-orange-300 uppercase">{activeRoles.length + 2}. ทุกคนลืมตาขึ้น... เข้าสู่ตอนเช้า</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Night Kill Section */}
+                <div className="bg-danger/10 rounded-xl p-md border border-danger/20 space-y-md">
+                  <p className="text-sm font-bold text-danger flex items-center gap-xs"><Skull size={16} /> บันทึกผู้เสียชีวิตในคืนนี้:</p>
+                  <p className="text-[11px] text-danger/80 leading-tight mb-sm">แตะที่ชื่อผู้เล่นเพื่อทำการยืนยันการตาย (สามารถกดซ้ำที่กริดด้านบนเพื่อยกเลิกได้)</p>
+                  <div className="grid grid-cols-2 gap-sm">
+                    {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name, p]) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          if(confirm(`ยืนยันการสังหาร ${name} ในคืนนี้ใช่หรือไม่?`)) {
+                             togglePlayerAlive(name, false);
+                          }
+                        }}
+                        className="flex justify-between items-center p-md bg-glass border border-danger/30 rounded-xl hover:bg-danger/20 active:scale-95 transition-all text-white group"
+                      >
+                         <span className="font-bold text-sm truncate">{name}</span>
+                         <span className="text-lg opacity-50 group-hover:opacity-100 group-hover:text-danger drop-shadow-md">🔪</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="btn btn-primary w-full py-lg font-black text-lg shadow-lg shadow-primary/20" onClick={resolveNightToDay}>☀️ ประกาศผลตอนเช้า</button>
+              </div>
+            )}
+
+            {phase === 'day' && (
+              <div className="space-y-md border-t border-glass pt-md">
+                <div className="text-center p-lg bg-orange-400/10 rounded-xl border border-orange-400/30 shadow-inner">
+                  <p className="text-lg font-black text-orange-400 mb-xs flex-center gap-sm"><Sun size={20} /> โหวตแขวนคอ</p>
+                  <p className="text-xs text-secondary mb-lg leading-relaxed">ให้ทุกคนอภิปรายและโหวตแขวนคอ 1 คน <br/> <strong className="text-white">แตะที่ชื่อด้านล่างเพื่อประหารผู้เล่นที่ถูกโหวต</strong></p>
+                  
+                  <div className="grid grid-cols-2 gap-sm text-left">
+                    {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name, p]) => (
+                      <button
+                        key={name}
+                        onClick={() => {
+                          if(confirm(`ยืนยันการแขวนคอ ${name} ใช่หรือไม่?`)) {
+                             togglePlayerAlive(name, false);
+                          }
+                        }}
+                        className="flex justify-between items-center p-md bg-glass-dark/50 border border-orange-500/30 rounded-xl hover:border-danger hover:bg-danger/20 active:scale-95 transition-all text-white group"
+                      >
+                         <span className="font-bold text-sm truncate">{name}</span>
+                         <span className="text-xl opacity-40 group-hover:opacity-100 group-hover:text-danger drop-shadow-md">🪢</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button className="btn btn-primary w-full py-lg font-black text-lg shadow-lg shadow-primary/20" onClick={startNextNight}>🌙 ข้ามโหวต / เริ่มคืนถัดไป</button>
+              </div>
+            )}
+
+            {/* Manual Winner Buttons */}
+            <div className="border-t border-glass pt-md">
+              <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">ประกาศผลผู้ชนะ / สรุปเกม</p>
+              <div className="flex gap-xs">
+                <button className="flex-1 btn btn-glass py-sm text-[10px] text-success border-success/20" onClick={() => announceWinner('villager')}>🏘️ ชาวบ้านชนะ</button>
+                <button className="flex-1 btn btn-glass py-sm text-[10px] text-danger border-danger/20" onClick={() => announceWinner('werewolf')}>🐺 หมาป่าชนะ</button>
+                <button className="flex-1 btn btn-glass py-sm text-[10px] text-purple-400 border-purple-400/20" onClick={() => announceWinner('independent')}>🎭 อิสระชนะ</button>
+              </div>
+            </div>
+
+            <div className="border-t border-warning/30 pt-md mt-md">
+              <button 
+                className="btn btn-outline w-full py-md font-bold text-danger border-danger/30 hover:bg-danger/10" 
+                onClick={async () => {
+                  if(confirm('ต้องการจบเกมและกลับสู่ล็อบบี้ใช่หรือไม่?')) {
+                    await resetToLobby();
+                  }
+                }}
+              >
+                <LogOut size={16} className="inline mr-2" /> จบเกม (กลับสู่ล็อบบี้)
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="glass-panel p-xl text-center space-y-md">
+            <div className="text-5xl animate-pulse">
+              {phase === 'night' ? '🌙' : '☀️'}
+            </div>
+            <h3 className="text-xl font-black">
+              {phase === 'night' ? 'ถึงเวลากลางคืน' : 'ถึงเวลากลางวัน'}
+            </h3>
+            <p className="text-secondary text-sm">
+              {phase === 'night' ? 'หลับตาลงและทำตามที่ GM บอก...' : 'ลืมตาขึ้นและพูดคุยหาตัวหมาป่า!'}
+            </p>
+            <div className={`p-md rounded-2xl border-2 ${myIsAlive ? 'bg-success/5 border-success/20 text-success' : 'bg-danger/5 border-danger/20 text-danger'}`}>
+              <p className="font-bold">{myIsAlive ? 'คุณยังมีชีวิตอยู่' : 'คุณเสียชีวิตแล้ว'}</p>
+            </div>
+            
+            <div className="pt-md mt-md border-t border-glass">
+              <button 
+                className="btn btn-outline w-full py-md font-bold text-danger border-danger/30 hover:bg-danger/10"
+                onClick={requestLeave}
+              >
+                <LogOut size={16} className="inline mr-2" /> ออกจากห้อง
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Player List Sidebar */}
+        <div className="glass-panel p-md">
+          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่นทั้งหมด ({Object.values(wwPlayers).filter(p => p.role !== 'gm').length} คน)</p>
+          <div className="flex flex-wrap gap-xs">
+            {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
+              <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${!p.isAlive ? 'opacity-40 line-through border-glass text-secondary' : 'border-glass text-white'}`}>
+                {!p.isAlive && '💀 '}{name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Digital Mode UI (Original) ───
   return (
     <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
       <RoleRevealOverlay />

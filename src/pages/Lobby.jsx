@@ -17,7 +17,8 @@ const gameCategories = [
     label: 'บอร์ดเกม',
     games: [
       { id: 'spyfall', name: 'สปายฟอล', icon: '🕵️‍♂️', bg: 'from-sage-50 to-emerald-50', border: 'border-sage-200', minPlayers: 4 },
-      { id: 'werewolf', name: 'หมาป่า', icon: '🐺', bg: 'from-stone-50 to-zinc-50', border: 'border-stone-200', minPlayers: 5 },
+      { id: 'werewolf', name: 'หมาป่า (ดิจิทัล)', icon: '🐺', bg: 'from-stone-50 to-zinc-50', border: 'border-stone-200', minPlayers: 4 },
+      { id: 'werewolf_physical', name: 'หมาป่า (ไพ่จริง)', icon: '🎴', bg: 'from-orange-50 to-red-50', border: 'border-orange-200', minPlayers: 1 },
       { id: 'twentyquestions', name: 'Insider', icon: '🕵️', bg: 'from-purple-50 to-fuchsia-50', border: 'border-purple-200', minPlayers: 4 },
       { id: 'quiz', name: 'ควิซ', icon: '🧠', bg: 'from-blue-50 to-indigo-50', border: 'border-blue-200', minPlayers: 2 },
       { id: 'drawing', name: 'วาดรูปทายคำ', icon: '🎨', bg: 'from-purple-50 to-fuchsia-50', border: 'border-purple-200', minPlayers: 2 },
@@ -35,6 +36,13 @@ const gameCategories = [
       { id: 'wouldyourather', name: 'เลือกข้าง', icon: '⚖️', bg: 'from-rose-50 to-pink-50', border: 'border-rose-200', minPlayers: 2 },
       { id: 'wordbomb', name: 'บอมบ์คำ', icon: '💣', bg: 'from-amber-50 to-yellow-50', border: 'border-amber-200', minPlayers: 2 },
       { id: 'mathrace', name: 'คำนวณเร็ว', icon: '🔢', bg: 'from-cyan-50 to-blue-50', border: 'border-cyan-200', minPlayers: 2 },
+    ],
+  },
+  {
+    label: 'เกมไพ่',
+    games: [
+      { id: 'blackjack', name: 'แบล็คแจ็ค', icon: '🃏', bg: 'from-green-50 to-emerald-50', border: 'border-green-200', minPlayers: 1 },
+      { id: 'slaves', name: 'สลาฟ', icon: '👑', bg: 'from-indigo-50 to-purple-50', border: 'border-indigo-200', minPlayers: 4 },
     ],
   },
 ];

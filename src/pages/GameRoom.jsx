@@ -29,6 +29,8 @@ const Taboo = lazy(() => import('../games/Taboo'));
 const MathRace = lazy(() => import('../games/MathRace'));
 const TwentyQuestions = lazy(() => import('../games/TwentyQuestions'));
 const FakeArtist = lazy(() => import('../games/FakeArtist'));
+const Blackjack = lazy(() => import('../games/Blackjack'));
+const Slaves = lazy(() => import('../games/Slaves'));
 
 
 const GameLoadingFallback = () => (
@@ -181,7 +183,8 @@ const GameRoom = () => {
       case 'drinking': return <DrinkingGame {...props} />;
       case 'spyfall': return <Spyfall {...props} />;
       case 'target': return <TargetNumber {...props} />;
-      case 'werewolf': return <Werewolf {...props} />;
+      case 'werewolf':
+      case 'werewolf_physical': return <Werewolf {...props} />;
       case 'truthordare': return <TruthOrDare {...props} />;
       case 'quiz': return <Quiz {...props} />;
       case 'drawing': return <Drawing {...props} />;
@@ -192,6 +195,8 @@ const GameRoom = () => {
       case 'mathrace': return <MathRace {...props} />;
       case 'twentyquestions': return <TwentyQuestions {...props} />;
       case 'fakeartist': return <FakeArtist {...props} />;
+      case 'blackjack': return <Blackjack {...props} />;
+      case 'slaves': return <Slaves {...props} />;
       default: return (
         <div className="card flex-center flex-col p-8 text-center flex-1 gap-3">
           <span className="text-4xl">🔨</span>

@@ -163,7 +163,8 @@ const Home = () => {
       if (!snap.exists()) { setError('ห้องนี้ไม่อยู่แล้ว'); return; }
       if (snap.val().status !== 'waiting') { setError('ห้องนี้เริ่มเล่นไปแล้ว'); return; }
       const currentPlayers = snap.val().players ? Object.keys(snap.val().players).length : 0;
-      if (currentPlayers >= 20) { setError('ห้องเต็มแล้ว (สูงสุด 20 คน)'); return; }
+      const maxLimit = snap.val().currentGame === 'werewolf_physical' ? 100 : 50;
+      if (currentPlayers >= maxLimit) { setError(`ห้องเต็มแล้ว (สูงสุด ${maxLimit} คน)`); return; }
       if (snap.val().players?.[nickname.trim()]) { setError('ชื่อนี้มีคนใช้แล้วในห้องนี้'); return; }
       await set(ref(db, `rooms/${roomCode}/players/${nickname.trim()}`), {
         name: nickname.trim(), isHost: false, joinedAt: Date.now(),
