@@ -355,17 +355,28 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         updates[`players/${pts[1]}/status/lover`] = pts[0];
       }
     }
+    
+    // Support finding Seer role among real players or guests
     if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(actionKey) && targetId && targetId !== 'skip') {
-      const seerEntry = Object.entries(wwData.players || {}).find(([, p]) => p.role === actionKey);
+      const allPlayersMap = { ...(wwData.players || {}), ...(wwData.guests || {}) };
+      const seerEntry = Object.entries(allPlayersMap).find(([, p]) => p.role === actionKey);
+      
       if (seerEntry) {
         const [seerName] = seerEntry;
-        const targetRole = wwData.players?.[targetId]?.role;
+        const targetRole = allPlayersMap[targetId]?.role;
         const isWolf = (WOLF_ROLES.includes(targetRole) && targetRole !== 'wolf_man') || targetRole === 'lycan';
         updates[`privateData/${seerName}/seerResult`] = { targetName: targetId, isWolf, timestamp: Date.now() };
+        // For physical mode, also store in a common GM viewable area
+        updates[`lastSeerResult`] = { seerName, targetName: targetId, isWolf };
       }
     }
 
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
+  };
+
+  const clearSeerResults = async () => {
+    if (!isHost) return;
+    await safeUpdate(`rooms/${roomId}/gameData/wwData`, { lastSeerResult: null });
   };
 
   const resolveNightToDay = async () => {
@@ -485,15 +496,23 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     if (!isHost || startNextNightRef.current) return;
     startNextNightRef.current = true;
     try {
-      await safeUpdate(`rooms/${roomId}/gameData/wwData`, { nightActions: null });
-      await safeUpdate(`rooms/${roomId}/gameData/wwData`, {
+      const wwPlayers = wwData.players || {};
+      const updates = { 
+        nightActions: {},
         phase: 'night',
         dayCount: dayCount + 1,
-        nightActions: {},
         nightTurn: null,
         lastElimination: null,
         timerEnd: Date.now() + 120000,
+      };
+      
+      // Clear nightly status effects
+      Object.keys(wwPlayers).forEach(name => {
+        if (wwPlayers[name]?.status?.silenced) updates[`players/${name}/status/silenced`] = null;
+        if (wwPlayers[name]?.status?.banned) updates[`players/${name}/status/banned`] = null;
       });
+
+      await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
     } finally {
       startNextNightRef.current = false;
     }
@@ -745,43 +764,70 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     </div>
   );
 
-  const RoleRevealOverlay = () => (
-    <AnimatePresence>
-      {showRoleReveal && roleInfo && !isGM && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.1 }}
-          className="fixed inset-0 z-50 flex-center p-xl bg-black/90 backdrop-blur-xl"
-          onClick={() => setShowRoleReveal(false)}
-        >
-          <div className="flex flex-col items-center gap-xl text-center">
-            <p className="text-secondary font-bold tracking-[8px] uppercase">บทบาทของคุณ</p>
-            <div className="w-40 h-40 bg-glass rounded-full flex-center text-7xl shadow-2xl border-4 border-white/20 relative">
-              {roleInfo.icon}
-              <div className="absolute -bottom-4 bg-white text-dark px-lg py-sm rounded-full font-black text-lg shadow-xl">
-                {roleInfo.name}
-              </div>
-            </div>
-            <p className="text-lg font-bold leading-relaxed max-w-xs mt-lg">{roleInfo.description}</p>
-            {/* Wolf allies */}
-            {WOLF_ROLES.includes(myRole) && (
-              <div className="bg-danger/10 border border-danger/30 p-md rounded-xl">
-                <p className="text-danger font-bold text-sm">🐺 เพื่อนหมาป่า:</p>
-                <p className="text-white font-bold">
-                  {Object.entries(wwData.players || {}).filter(([n, p]) => WOLF_ROLES.includes(p.role) && n !== userNickname).map(([n]) => n).join(', ') || 'คุณอยู่คนเดียว'}
-                </p>
-              </div>
-            )}
-            <button className="btn btn-glass px-xl py-md mt-md font-bold">แตะเพื่อเข้าสู่เกม</button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+  const AmbientMist = () => (
+    <div className={`ambient-mist transition-all duration-1000 ${phase === 'night' ? 'opacity-60' : 'opacity-20'}`} 
+         style={{ background: phase === 'night' ? 'radial-gradient(circle, rgba(76, 29, 149, 0.2) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)' }} 
+    />
   );
 
+  const RoleRevealOverlay = () => {
+    const [isFlipped, setIsFlipped] = useState(false);
+    return (
+      <AnimatePresence>
+        {showRoleReveal && roleInfo && !isGM && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex-center p-xl bg-black/90 backdrop-blur-2xl"
+          >
+            <div className="flex flex-col items-center gap-xl text-center perspective-1000">
+              <p className="text-secondary font-bold tracking-[8px] uppercase mb-lg">แตะการ์ดเพื่อเปิดดูบทบาท</p>
+              
+              <motion.div 
+                onClick={() => setIsFlipped(!isFlipped)}
+                className={`relative w-64 h-96 preserve-3d transition-transform duration-700 cursor-pointer ${isFlipped ? 'rotate-y-180' : ''}`}
+              >
+                {/* Front (Back of card design) */}
+                <div className="absolute inset-0 backface-hidden glass-panel-werewolf border-4 border-white/20 flex-center rounded-3xl bg-gradient-to-br from-indigo-900 to-black">
+                  <div className="text-6xl animate-pulse">🐺</div>
+                </div>
+                
+                {/* Back (Role detail) */}
+                <div className="absolute inset-0 backface-hidden rotate-y-180 glass-panel-werewolf border-4 border-indigo-500/50 flex flex-col items-center justify-between p-xl rounded-3xl bg-slate-900">
+                  <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex-center text-6xl shadow-inner">
+                    {roleInfo.icon}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-black mb-sm" style={{ color: roleInfo.color }}>{roleInfo.name}</h3>
+                    <p className="text-sm text-secondary leading-relaxed">{roleInfo.description}</p>
+                  </div>
+                  {WOLF_ROLES.includes(myRole) && (
+                    <div className="w-full p-md bg-danger/10 border border-danger/30 rounded-xl">
+                      <p className="text-[10px] text-danger font-black uppercase mb-1">Wolf Allies</p>
+                      <p className="text-xs text-white font-bold truncate">
+                        {Object.entries(wwData.players || {}).filter(([n, p]) => WOLF_ROLES.includes(p.role) && n !== userNickname).map(([n]) => n).join(', ') || 'Lone Wolf'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+
+              <button 
+                onClick={() => { setShowRoleReveal(false); setIsFlipped(false); }}
+                className="btn btn-glass px-xl py-md mt-xl font-bold border-white/10 hover:border-white/30"
+              >
+                เข้าสู่หมู่บ้าน
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  };
+
   const VFXOverlay = () => (
-    <div className={`werewolf-vfx-overlay ${vfx.show ? '' : 'hidden'} ${vfx.type}`}>
+    <div className={`werewolf-vfx-overlay ${vfx.show ? 'animate-shake' : 'hidden'} ${vfx.type}`}>
       <div className="vfx-blood" />
       <div className="vfx-text">{vfx.text}</div>
     </div>
@@ -860,6 +906,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
         <StarsBackground />
+        <AmbientMist />
         <VFXOverlay />
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>
@@ -898,110 +945,141 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
             {/* Phase Logic */}
             {phase === 'night' && (
-              <div className="space-y-md border-t border-glass pt-md">
-                <p className="text-sm font-bold text-indigo-300 flex items-center gap-sm"><Moon size={16} /> ขั้นตอนการเรียกบทบาท (Physical):</p>
-                <div className="bg-glass-dark/40 rounded-xl p-md border border-indigo-500/20 space-y-md">
-                  {(() => {
-                    const deckRoles = Object.entries(wwData.deckCounts || {}).filter(([, c]) => c > 0).map(([r]) => r);
-                    // Filter roles that have a night action
-                    const actionRoles = Object.keys(ROLES).filter(r => 
-                      deckRoles.includes(r) && 
-                      (ROLES[r].actionPhase === 'nightly' || (ROLES[r].actionPhase === 'firstNight' && dayCount === 1))
-                    );
-                    
-                    // Sort by team and name for consistent calling
-                    const activeRoles = actionRoles.sort((a, b) => {
-                      if (ROLES[a].team !== ROLES[b].team) return ROLES[a].team === 'werewolf' ? -1 : 1;
-                      return a.localeCompare(b);
-                    });
-                    
-                    return (
-                      <div className="space-y-lg">
-                        <div className="p-sm bg-indigo-500/10 rounded-lg text-center">
-                          <p className="text-[11px] font-bold text-indigo-300 uppercase">1. ทุกคนหลับตาลง</p>
-                        </div>
+              <div className="space-y-md border-t border-glass pt-md animate-fade-in">
+                <div className="p-md bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-center mb-md">
+                   <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Night Step Manager</p>
+                   <p className="text-[10px] text-secondary">เรียกบทบาทตามลำดับด้านล่าง และบันทึกผลการกระทำ</p>
+                </div>
 
-                        {activeRoles.map((roleKey, idx) => {
-                          const role = ROLES[roleKey];
-                          const rolePlayers = Object.entries(wwPlayers).filter(([, p]) => p.role === roleKey && p.role !== 'gm');
-                          const deckCount = (wwData.deckCounts || {})[roleKey] || 0;
-                          
-                          return (
-                            <div key={roleKey} className="space-y-sm border-l-2 border-indigo-500/50 pl-md py-sm">
-                              <div className="flex justify-between items-start">
-                                <p className="text-sm font-bold flex items-center gap-xs" style={{ color: role.color }}>
-                                  {idx + 2}. {role.icon} {role.name} ลืมตาขึ้นมา... <span className="text-xs opacity-70">({rolePlayers.length}/{deckCount} คน)</span>
-                                </p>
-                                <span className="text-[10px] text-secondary max-w-[150px] text-right italic">{role.description}</span>
-                              </div>
-                              
-                              {VOICE_SCRIPTS[roleKey] && (
-                                <div className="p-xs bg-white/5 rounded border border-white/10 text-[11px] text-warning italic px-sm">
-                                  🎤 "{VOICE_SCRIPTS[roleKey]}"
+                {/* Seer Quick View for GM */}
+                {wwData.lastSeerResult && (
+                  <div className="p-sm bg-purple-500/10 rounded-lg border border-purple-500/30 flex justify-between items-center mb-md">
+                    <div className="flex items-center gap-xs">
+                       <Eye size={14} className="text-purple-400" />
+                       <span className="text-[11px] text-white">ผลการส่องล่าสุด: <strong>{wwData.lastSeerResult.targetName}</strong> คือ <strong>{wwData.lastSeerResult.isWolf ? '🐺 หมาป่า!' : '🏘️ ชาวบ้าน'}</strong></span>
+                    </div>
+                    <button onClick={clearSeerResults} className="text-[10px] text-secondary hover:text-white underline">ล้าง</button>
+                  </div>
+                )}
+
+                <div className="space-y-md border-t border-glass pt-md">
+                  <p className="text-sm font-bold text-indigo-300 flex items-center gap-sm"><Moon size={16} /> ขั้นตอนการเรียกบทบาท (Physical):</p>
+                  <div className="bg-glass-dark/40 rounded-xl p-md border border-indigo-500/20 space-y-md">
+                    {(() => {
+                      const deckRoles = Object.entries(wwData.deckCounts || {}).filter(([, c]) => c > 0).map(([r]) => r);
+                      const actionRoles = Object.keys(ROLES).filter(r => 
+                        deckRoles.includes(r) && 
+                        (ROLES[r].actionPhase === 'nightly' || (ROLES[r].actionPhase === 'firstNight' && dayCount === 1))
+                      );
+                      
+                      const activeRoles = actionRoles.sort((a, b) => {
+                        if (ROLES[a].team !== ROLES[b].team) return ROLES[a].team === 'werewolf' ? -1 : 1;
+                        return a.localeCompare(b);
+                      });
+
+                      return (
+                        <div className="space-y-lg">
+                          <div className="p-sm bg-indigo-500/10 rounded-lg text-center">
+                            <p className="text-[11px] font-bold text-indigo-300 uppercase">1. ทุกคนหลับตาลง</p>
+                          </div>
+
+                          {activeRoles.map((roleKey, idx) => {
+                            const role = ROLES[roleKey];
+                            const rolePlayers = Object.entries(wwPlayers).filter(([, p]) => p.role === roleKey && p.role !== 'gm');
+                            const deckCount = (wwData.deckCounts || {})[roleKey] || 0;
+                            const isCurrentStep = activeScriptIndex === idx;
+                            
+                            return (
+                              <div 
+                                key={roleKey} 
+                                onClick={() => setActiveScriptIndex(idx)}
+                                className={`space-y-sm border-l-4 pl-md py-sm transition-all cursor-pointer ${
+                                  isCurrentStep ? 'border-indigo-500 bg-indigo-500/10 shadow-lg' : 'border-indigo-500/20 opacity-60'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <p className="text-sm font-bold flex items-center gap-xs" style={{ color: role.color }}>
+                                    {idx + 2}. {role.icon} {role.name} ลืมตาขึ้นมา... <span className="text-xs opacity-70">({rolePlayers.length}/{deckCount} คน)</span>
+                                  </p>
+                                  {isCurrentStep && <span className="px-xs py-0.5 bg-indigo-500 text-[8px] font-black text-white rounded uppercase">Active</span>}
                                 </div>
-                              )}
-                              
-                              <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุเป้าหมาย (หากต้องการให้ระบบช่วยจำ):</p>
-                              <div className="flex flex-wrap gap-xs mb-sm">
-                                {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name]) => {
-                                  const isSelected = roleKey === 'cupid' 
-                                    ? nightActions['cupidTarget']?.split(',').includes(name)
-                                    : nightActions[`${roleKey}Target`] === name;
-                                    
-                                  return (
-                                    <button
-                                      key={name}
-                                      onClick={() => {
-                                        if (roleKey === 'cupid') {
-                                          const current = nightActions['cupidTarget'] ? nightActions['cupidTarget'].split(',') : [];
-                                          let next;
-                                          if (current.includes(name)) {
-                                            next = current.filter(t => t !== name);
-                                          } else {
-                                            next = [...current, name].slice(-2);
-                                          }
-                                          gmSubmitForRole('cupid', next.join(','));
-                                        } else {
-                                          gmSubmitForRole(roleKey, nightActions[`${roleKey}Target`] === name ? 'skip' : name);
-                                        }
-                                      }}
-                                      className={`px-sm py-xs rounded-lg text-[10px] font-bold border transition-all ${
-                                        isSelected ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-glass border-glass text-secondary'
-                                      }`}
-                                    >
-                                      {name}
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                                
+                                {VOICE_SCRIPTS[roleKey] && isCurrentStep && (
+                                  <div className="p-xs bg-white/5 rounded border border-white/10 text-[11px] text-warning italic px-sm animate-pulse">
+                                    🎤 "{VOICE_SCRIPTS[roleKey]}"
+                                  </div>
+                                )}
+                                
+                                {isCurrentStep && (
+                                  <>
+                                    <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุเป้าหมาย (หากต้องการให้ระบบช่วยจำ):</p>
+                                    <div className="flex flex-wrap gap-xs mb-sm">
+                                      {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name]) => {
+                                        const isSelected = roleKey === 'cupid' 
+                                          ? nightActions['cupidTarget']?.split(',').includes(name)
+                                          : nightActions[`${roleKey}Target`] === name;
+                                          
+                                        return (
+                                          <button
+                                            key={name}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (roleKey === 'cupid') {
+                                                const current = nightActions['cupidTarget'] ? nightActions['cupidTarget'].split(',') : [];
+                                                let next;
+                                                if (current.includes(name)) {
+                                                  next = current.filter(t => t !== name);
+                                                } else {
+                                                  next = [...current, name].slice(-2);
+                                                }
+                                                gmSubmitForRole('cupid', next.join(','));
+                                              } else {
+                                                gmSubmitForRole(roleKey, nightActions[`${roleKey}Target`] === name ? 'skip' : name);
+                                              }
+                                            }}
+                                            className={`px-sm py-xs rounded-lg text-[10px] font-bold border transition-all ${
+                                              isSelected ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-glass border-glass text-secondary'
+                                            }`}
+                                          >
+                                            {name}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
 
-                              <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุผู้ถือบทบาทนี้ (ถ้ายังไม่ได้ระบุ):</p>
-                              <div className="flex flex-wrap gap-sm">
-                                {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
-                                  const isThisRole = p.role === roleKey;
-                                  return (
-                                    <button
-                                      key={name}
-                                      onClick={() => updatePlayerRole(name, isThisRole ? 'villager' : roleKey)}
-                                      className={`px-md py-sm rounded-xl text-xs font-bold border-2 transition-all shadow-sm active:scale-95 ${
-                                        isThisRole ? 'bg-indigo-500 border-indigo-400 text-white shadow-indigo-500/20' : 'bg-glass border-glass/50 text-secondary hover:text-white hover:border-glass'
-                                      }`}
-                                    >
-                                      {name}
-                                    </button>
-                                  );
-                                })}
+                                    <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุผู้ถือบทบาทนี้ (ถ้ายังไม่ได้ระบุ):</p>
+                                    <div className="flex flex-wrap gap-sm">
+                                      {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
+                                        const isThisRole = p.role === roleKey;
+                                        return (
+                                          <button
+                                            key={name}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updatePlayerRole(name, isThisRole ? 'villager' : roleKey);
+                                            }}
+                                            className={`px-md py-sm rounded-xl text-xs font-bold border-2 transition-all shadow-sm active:scale-95 ${
+                                              isThisRole ? 'bg-indigo-500 border-indigo-400 text-white shadow-indigo-500/20' : 'bg-glass border-glass/50 text-secondary hover:text-white hover:border-glass'
+                                            }`}
+                                          >
+                                            {name}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
 
-                        <div className="p-sm bg-orange-400/10 rounded-lg text-center mt-md border border-orange-400/20">
-                          <p className="text-xs font-bold text-orange-300 uppercase">{activeRoles.length + 2}. ทุกคนลืมตาขึ้น... เข้าสู่ตอนเช้า</p>
+                          <div className="p-sm bg-orange-400/10 rounded-lg text-center mt-md border border-orange-400/20">
+                            <p className="text-xs font-bold text-orange-300 uppercase">{activeRoles.length + 2}. ทุกคนลืมตาขึ้น... เข้าสู่ตอนเช้า</p>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Night Kill Section */}
@@ -1152,6 +1230,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   return (
     <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
       <StarsBackground />
+      <AmbientMist />
       <VFXOverlay />
       <RoleRevealOverlay />
 

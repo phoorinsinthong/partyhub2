@@ -77,8 +77,9 @@ export function resolveNightActions(nightActions, gameState) {
   const witchHeal = nightActions.witchHealTarget;
   const witchPoison = nightActions.witchPoisonTarget;
   const spellcasterTarget = nightActions.spellcasterTarget;
+  const oldHagTarget = nightActions.old_hagTarget;
 
-  let killedTonight = [];
+  let killedTonight = new Set();
 
   // 1. Werewolf Kill vs Protections
   if (killedByWolf && killedByWolf !== 'skip') {
@@ -86,32 +87,38 @@ export function resolveNightActions(nightActions, gameState) {
     const isSavedByWitch = killedByWolf === witchHeal;
     
     if (!isSavedByBodyguard && !isSavedByWitch) {
-      killedTonight.push(killedByWolf);
+      killedTonight.add(killedByWolf);
     }
   }
 
   // 2. Witch Poison
   if (witchPoison && witchPoison !== 'skip') {
-    killedTonight.push(witchPoison);
+    killedTonight.add(witchPoison);
   }
 
   // Apply deaths and side effects
-  killedTonight.forEach(name => {
+  const killedList = Array.from(killedTonight);
+  killedList.forEach(name => {
     const result = handleDeathSideEffects(name, { players, lovers: gameState.lovers, hunterPending });
     players = result.players;
     hunterPending = result.hunterPending;
   });
 
-  // 3. Status Effects (Spellcaster)
+  // 3. Status Effects
   if (spellcasterTarget && spellcasterTarget !== 'skip') {
     if (players[spellcasterTarget]) {
       players[spellcasterTarget].status = { ...players[spellcasterTarget].status, silenced: true };
     }
   }
+  if (oldHagTarget && oldHagTarget !== 'skip') {
+    if (players[oldHagTarget]) {
+      players[oldHagTarget].status = { ...players[oldHagTarget].status, banned: true };
+    }
+  }
 
   return { 
     players, 
-    finalEliminated: killedTonight.length > 0 ? killedTonight : null,
+    finalEliminated: killedList.length > 0 ? killedList : null,
     hunterPending 
   };
 }
