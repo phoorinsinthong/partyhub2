@@ -13,8 +13,20 @@ import {
   resolveNightActions, 
   WOLF_ROLES 
 } from '../utils/werewolfLogic';
+import './Werewolf.css';
 
 // ─── Role Configuration (30+ roles) ──────────────────────────────────────────
+
+const VOICE_SCRIPTS = {
+  werewolf: "หมาป่า ลืมตาขึ้นมา... เลือกเหยื่อของคุณ",
+  seer: "เทพพยากรณ์ ลืมตาขึ้นมา... เลือกตรวจสอบผู้เล่น 1 คน",
+  bodyguard: "บอดี้การ์ด ลืมตาขึ้นมา... เลือกผู้เล่นที่คุณต้องการปกป้อง",
+  cupid: "กามเทพ ลืมตาขึ้นมา... เลือกผู้เล่น 2 คนให้เป็นคู่รักกัน (เฉพาะคืนแรก)",
+  witch: "แม่มด ลืมตาขึ้นมา... คุณต้องการใช้ยาชุบชีวิตหรือยาพิษหรือไม่?",
+  spellcaster: "ผู้ร่ายเวทย์ ลืมตาขึ้นมา... เลือกผู้เล่น 1 คนที่คุณต้องการปิดปาก",
+  old_hag: "หญิงชรา ลืมตาขึ้นมา... เลือกผู้เล่น 1 คนที่คุณต้องการแบนจากการโหวต",
+  serial_killer: "ฆาตกรต่อเนื่อง ลืมตาขึ้นมา... เลือกเหยื่อที่คุณต้องการสังหาร",
+};
 
 const ROLES = {
   // VILLAGER TEAM
@@ -27,14 +39,24 @@ const ROLES = {
   cupid: { name: "กามเทพ", icon: "💘", team: "villager", color: "#f43f5e", actionPhase: "firstNight", actionType: "target2", description: "คืนแรกเลือก 2 คนให้เป็นคู่รัก หากตาย 1 คน อีกคนจะตายตาม" },
   diseased: { name: "ผู้ป่วย", icon: "🤒", team: "villager", color: "#84cc16", actionPhase: "none", description: "หากถูกหมาป่ากัด หมาป่าจะติดเชื้อและล่าใครไม่ได้ในคืนถัดไป" },
   drunk: { name: "คนเมา", icon: "🍺", team: "villager", color: "#fde047", actionPhase: "none", description: "ไม่รู้บทบาทที่แท้จริงจนกว่าจะถึงคืนที่ 3" },
+  ghost: { name: "ผี", icon: "👻", team: "villager", color: "#d1d5db", actionPhase: "none", description: "จะถูกฆ่าตายในคืนแรก แต่สามารถส่งข้อความใบ้ 1 ตัวอักษร/วันได้" },
   hunter: { name: "พรานป่า", icon: "🔫", team: "villager", color: "#ea580c", actionPhase: "none", description: "เมื่อตายสามารถลากผู้เล่นคนอื่นให้ตายตามไปด้วย 1 คน" },
+  idiot: { name: "คนโง่", icon: "🤪", team: "villager", color: "#fb923c", actionPhase: "none", description: "รู้ว่าใครเป็นหมาป่าในคืนแรก แต่ห้ามออกเสียงโหวตเด็ดขาด" },
+  insomniac: { name: "คนนอนไม่หลับ", icon: " Owls", team: "villager", color: "#6b7280", actionPhase: "nightly", actionType: "none", description: "ตื่นกลางคืนเพื่อดูว่าใครลุกจากเตียงบ้าง (ทำ Activity กลางคืน)" },
   lycan: { name: "ลูกครึ่งหมาป่า", icon: "🐺", team: "villager", color: "#991b1b", actionPhase: "none", description: "เป็นชาวบ้าน แต่ถ้าหมอดูส่องจะเห็นเป็นหมาป่า" },
+  magician: { name: "นักมายากล", icon: "🎩", team: "villager", color: "#d946ef", actionPhase: "nightly", actionType: "target", description: "สลับการ์ดของผู้เล่นอื่น 1 ครั้งต่อเกม" },
+  martyr: { name: "ผู้พลีชีพ", icon: "🙏", team: "villager", color: "#b91c1c", actionPhase: "none", description: "รับผลโหวตประหารและตายแทนคนอื่นในตอนเช้าได้" },
   mason: { name: "ช่างก่อสร้าง", icon: "🧱", team: "villager", color: "#9ca3af", actionPhase: "none", description: "ลืมตาคืนแรกเพื่อมองหาเพื่อน Mason ด้วยกัน" },
   mayor: { name: "นายกเทศมนตรี", icon: "🏵️", team: "villager", color: "#fcd34d", actionPhase: "none", description: "เสียงโหวตแขวนคอของคุณนับเป็น 2 เสียง" },
   old_hag: { name: "หญิงชรา", icon: "👵", team: "villager", color: "#4b5563", actionPhase: "nightly", actionType: "target", description: "แบนไม่ให้ผู้เล่น 1 คนมีสิทธิ์โหวตในวันถัดไป" },
+  old_man: { name: "ชายชรา", icon: "👴", team: "villager", color: "#6b7280", actionPhase: "none", description: "ตายโดยธรรมชาติในคืนที่ จำนวนหมาป่า + 1" },
+  pacifist: { name: "ผู้รักสงบ", icon: "🕊️", team: "villager", color: "#34d399", actionPhase: "none", description: "ต้องโหวต 'ให้รอด' เสมอ ห้ามโหวตแขวนคอเด็ดขาด" },
+  pi: { name: "นักสืบเอกชน", icon: "🕵️", team: "villager", color: "#6366f1", actionPhase: "nightly", actionType: "target", description: "ใช้ 1 ครั้งต่อเกม ตรวจสอบเป้าหมายและคนข้างเคียงว่ามีหมาป่าหรือไม่" },
+  priest: { name: "นักบวช", icon: "📿", team: "villager", color: "#fcd34d", actionPhase: "nightly", actionType: "target", description: "ใช้ 1 ครั้งต่อเกม สาดน้ำมนต์ ใครเป็นหมาป่าโดนเข้าไปจะตายทันที" },
   prince: { name: "เจ้าชาย", icon: "👑", team: "villager", color: "#fbbf24", actionPhase: "none", description: "หากถูกโหวตตาย จะรอดชีวิตจากการถูกแขวนคอ 1 ครั้ง" },
   spellcaster: { name: "ผู้ร่ายเวทย์", icon: "🤐", team: "villager", color: "#8b5cf6", actionPhase: "nightly", actionType: "target", description: "ปิดปากผู้เล่น 1 คนกลางคืน ทำให้ตอนเช้าห้ามพูดและห้ามออกเสียง" },
   tough_guy: { name: "จอมอึด", icon: "💪", team: "villager", color: "#b45309", actionPhase: "none", description: "ทนทานการกัดของหมาป่าได้ 1 วัน ค่อยไปขาดใจตายเอาในคืนถัดไป" },
+  troublemaker: { name: "ตัวป่วน", icon: "🤪", team: "villager", color: "#f43f5e", actionPhase: "firstNight", actionType: "target2", description: "สลับบทบาทของผู้เล่น 2 คนในคืนแรก" },
   witch: { name: "แม่มด", icon: "🧹", team: "villager", color: "#d946ef", actionPhase: "nightly", actionType: "extra", description: "มียาชุบชีวิต 1 ขวด และยาพิษ 1 ขวด (ใช้อย่างละ 1 ครั้ง)" },
 
   // WEREWOLF TEAM
@@ -50,10 +72,16 @@ const ROLES = {
 
   // INDEPENDENT TEAM
   cursed: { name: "ผู้ต้องสาป", icon: "🧟", team: "independent", color: "#6b7280", actionPhase: "none", description: "เมื่อโดนหมาป่ากัดจะไม่ตาย แต่กลับกลายเป็น 1 ในฝูงหมาป่าแทน" },
+  doppelganger: { name: "ดอปเปลแกงเกอร์", icon: "👥", team: "independent", color: "#10b981", actionPhase: "firstNight", actionType: "target", description: "คืนแรกลึงตาเลือกเป้าหมาย เมื่อเป้าหมายตาย คุณจะสวมบทบาทแทน" },
+  chupacabra: { name: "ชูปาคาบรา", icon: "🦇", team: "independent", color: "#065f46", actionPhase: "nightly", actionType: "target", description: "ฆ่าคืนละคน ถ้าฆ่าโดนหมาป่า หมาป่าจะตาย (ฆ่าคนธรรมดาไม่ตาย)" },
+  cult_leader: { name: "เจ้าลัทธิ", icon: "🛐", team: "independent", color: "#8b5cf6", actionPhase: "nightly", actionType: "target", description: "ดึงคนเข้าลัทธิคืนละ 1 คน ชนะทันทีเมื่อมีเพื่อนร่วมลัทธิทุกคน" },
+  hoodlum: { name: "นักเลง", icon: "🚬", team: "independent", color: "#475569", actionPhase: "firstNight", actionType: "target2", description: "เลือก 2 คนในคืนแรก ชนะถ้า 2 คนนั้นตายก่อนกติกาจบ" },
   serial_killer: { name: "ฆาตกรต่อเนื่อง", icon: "🔪", team: "independent", color: "#dc2626", actionPhase: "nightly", actionType: "target", description: "ในแต่ละคืนตื่นมาลอบฆ่าใครก็ได้ ชนะเมื่อรอดเป็นคนสุดท้าย" },
   tanner: { name: "ยาจก", icon: "😤", team: "independent", color: "#ca8a04", actionPhase: "none", description: "ชนะเพียงคนเดียวเมื่อยุยงให้ทุกคนโหวตประหารตัวเองเอาไว้ได้" },
   vampire: { name: "แวมไพร์", icon: "🧛", team: "independent", color: "#9f1239", actionPhase: "nightly", actionType: "target", description: "กัดคืนละคน เหยื่อจะเป็นแวมไพร์ ชนะเมื่อมีจำนวนแวมไพร์เยอะที่สุด" },
-  cult_leader: { name: "เจ้าลัทธิ", icon: "🛐", team: "independent", color: "#8b5cf6", actionPhase: "nightly", actionType: "target", description: "ดึงคนเข้าลัทธิคืนละ 1 คน ชนะทันทีเมื่อมีเพื่อนร่วมลัทธิทุกคน" },
+
+  // Game Master
+  gm: { name: "ผู้ดำเนินเกม", icon: "🎭", team: "none", color: "#8b5cf6", actionPhase: "none", description: "คุณคือผู้ดำเนินเกม ควบคุมทุกเฟส" },
 };
 
 const ROLE_CATEGORIES = {
@@ -76,6 +104,21 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   // If currentGame is werewolf_physical, force physical mode. Otherwise use digital.
   const gameMode = roomData.currentGame === 'werewolf_physical' ? 'physical' : 'digital';
   const dayCount = wwData.dayCount || 0;
+
+  const [vfx, setVfx] = useState({ show: false, type: '', text: '' });
+  
+  // Trigger VFX when lastElimination changes
+  useEffect(() => {
+    if (wwData.lastElimination?.playerName) {
+      const elim = wwData.lastElimination;
+      let type = 'vfx-overlay-active-vote';
+      if (elim.reason === 'werewolf') type = 'vfx-overlay-active-werewolf';
+      
+      setVfx({ show: true, type, text: `${elim.playerName} ตาย!` });
+      const timer = setTimeout(() => setVfx({ show: false, type: '', text: '' }), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [wwData.lastElimination]);
 
   const myPlayerData = wwData.players?.[userNickname];
   const myRole = myPlayerData?.role || '';
@@ -683,6 +726,25 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
   // ─── Render: Role Reveal Overlay ──────────────────────────────────────────────
 
+  const StarsBackground = () => (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {[...Array(20)].map((_, i) => (
+        <div 
+          key={i}
+          className="star-twinkle absolute rounded-full bg-white"
+          style={{
+            width: Math.random() * 3 + 'px',
+            height: Math.random() * 3 + 'px',
+            top: Math.random() * 100 + '%',
+            left: Math.random() * 100 + '%',
+            opacity: Math.random(),
+            animationDelay: Math.random() * 5 + 's'
+          }}
+        />
+      ))}
+    </div>
+  );
+
   const RoleRevealOverlay = () => (
     <AnimatePresence>
       {showRoleReveal && roleInfo && !isGM && (
@@ -716,6 +778,13 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+
+  const VFXOverlay = () => (
+    <div className={`werewolf-vfx-overlay ${vfx.show ? '' : 'hidden'} ${vfx.type}`}>
+      <div className="vfx-blood" />
+      <div className="vfx-text">{vfx.text}</div>
+    </div>
   );
 
   // ─── Render: Game Result ──────────────────────────────────────────────────────
@@ -790,6 +859,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   if (gameMode === 'physical') {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
+        <StarsBackground />
+        <VFXOverlay />
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className={`glass-panel p-md flex justify-between items-center ${phaseBg}`}>
           <div className="flex items-center gap-md">
@@ -863,6 +934,12 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                                 </p>
                                 <span className="text-[10px] text-secondary max-w-[150px] text-right italic">{role.description}</span>
                               </div>
+                              
+                              {VOICE_SCRIPTS[roleKey] && (
+                                <div className="p-xs bg-white/5 rounded border border-white/10 text-[11px] text-warning italic px-sm">
+                                  🎤 "{VOICE_SCRIPTS[roleKey]}"
+                                </div>
+                              )}
                               
                               <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุเป้าหมาย (หากต้องการให้ระบบช่วยจำ):</p>
                               <div className="flex flex-wrap gap-xs mb-sm">
@@ -1074,6 +1151,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   // ─── Digital Mode UI (Original) ───
   return (
     <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
+      <StarsBackground />
+      <VFXOverlay />
       <RoleRevealOverlay />
 
       {/* Phase Banner */}

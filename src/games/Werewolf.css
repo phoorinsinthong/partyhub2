@@ -1,0 +1,84 @@
+/* Werewolf Rockman-Style CSS */
+
+.werewolf-vfx-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+
+.werewolf-vfx-overlay.hidden {
+  opacity: 0;
+}
+
+.vfx-blood {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, transparent 30%, rgba(220, 38, 38, 0.4) 80%, rgba(153, 27, 27, 0.9) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.vfx-overlay-active-werewolf .vfx-blood {
+  opacity: 1;
+  animation: pulse-blood 1.5s infinite;
+}
+
+@keyframes pulse-blood {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+.vfx-overlay-active-vote .vfx-blood {
+  background: radial-gradient(circle, transparent 30%, rgba(55, 65, 81, 0.6) 80%, rgba(17, 24, 39, 0.95) 100%);
+  opacity: 1;
+}
+
+.vfx-text {
+  position: relative;
+  font-family: 'Kanit', sans-serif;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 900;
+  color: #fff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(239, 68, 68, 0.8);
+  transform: scale(0.8);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.werewolf-vfx-overlay:not(.hidden) .vfx-text {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Glassmorphism Enhancements */
+.glass-panel-werewolf {
+  background: rgba(15, 15, 35, 0.75) !important;
+  backdrop-filter: blur(24px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.04) inset !important;
+}
+
+/* Star twinkle */
+.star-twinkle {
+  animation: star-twinkle 3s ease-in-out infinite alternate;
+}
+
+@keyframes star-twinkle {
+  from { opacity: 0.2; transform: scale(0.8); }
+  to   { opacity: 0.8; transform: scale(1); }
+}
+
+/* Role colors */
+.text-wolf { color: #ef4444; }
+.text-seer { color: #a78bfa; }
+.text-villager { color: #f59e0b; }
+.text-independent { color: #8b5cf6; }
