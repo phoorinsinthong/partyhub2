@@ -22,17 +22,16 @@ export const evaluatePokerHand = (holeCards, communityCards) => {
   const getStraightHigh = (cards) => {
     let uniqueValues = [...new Set(cards.map(c => values[c.value]))].sort((a, b) => b - a);
     if (uniqueValues.includes(14)) uniqueValues.push(1); // Ace can be 1
-    
-    let consecutive = 1;
-    let high = uniqueValues[0];
-    for (let i = 0; i < uniqueValues.length - 1; i++) {
-      if (uniqueValues[i] - 1 === uniqueValues[i + 1]) {
-        consecutive++;
-        if (consecutive === 5) return high;
-      } else {
-        consecutive = 1;
-        high = uniqueValues[i + 1];
+
+    for (let i = 0; i <= uniqueValues.length - 5; i++) {
+      let isStraight = true;
+      for (let j = 0; j < 4; j++) {
+        if (uniqueValues[i + j] - 1 !== uniqueValues[i + j + 1]) {
+          isStraight = false;
+          break;
+        }
       }
+      if (isStraight) return uniqueValues[i];
     }
     return null;
   };

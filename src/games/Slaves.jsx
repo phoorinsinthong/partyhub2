@@ -241,10 +241,13 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     if (newHand.length === 0) {
       nextRanks.push(userNickname);
       updates.ranks = nextRanks;
+      if (nextRanks.length === 1) {
+        recordWin(roomId, userNickname, 'slaves');
+      }
     }
 
     // Check game end condition (only 1 player has cards left)
-    const activePlayers = Object.keys(playersData).filter(name => 
+    const activePlayers = Object.keys(playersData).filter(name =>
       (name === userNickname ? newHand.length : playersData[name].hand?.length) > 0
     );
 
@@ -254,8 +257,21 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       updates.ranks = nextRanks;
       updates.roundCount = roundCount + 1;
     } else {
-      // Only update my isPass. DO NOT clear for everyone.
-      updates.currentTurn = getNextTurn(userNickname, { ...playersData, [userNickname]: { ...playersData[userNickname], hand: newHand, isPass: false } });
+      const nextPlayersForTurn = { ...playersData, [userNickname]: { ...playersData[userNickname], hand: newHand, isPass: false } };
+      let nextTurn = getNextTurn(userNickname, nextPlayersForTurn);
+
+      // If all remaining players have passed, clear the table and reset passes
+      if (!nextTurn) {
+        updates.table = { cards: [] };
+        Object.keys(nextPlayersForTurn).forEach(n => {
+          updates[`players/${n}/isPass`] = false;
+          nextPlayersForTurn[n] = { ...nextPlayersForTurn[n], isPass: false };
+        });
+        // The player who just played won the round; if they finished, find next with cards
+        nextTurn = newHand.length > 0 ? userNickname : getNextTurn(userNickname, nextPlayersForTurn);
+      }
+
+      updates.currentTurn = nextTurn;
     }
 
     setSelectedCards([]);

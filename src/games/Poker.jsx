@@ -329,6 +329,10 @@ const Poker = ({ roomId, roomData, userNickname }) => {
   const isMyTurn = currentTurn === userNickname;
   const toCall = currentBet - (myData.currentRoundBet || 0);
 
+  useEffect(() => {
+    setRaiseAmount(toCall + 10);
+  }, [toCall]);
+
   return (
     <div className="flex flex-col flex-1 pb-24 relative max-w-2xl mx-auto w-full animate-fade-in bg-stone-50">
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}

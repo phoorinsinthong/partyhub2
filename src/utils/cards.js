@@ -84,10 +84,10 @@ export function calculateBlackjackScore(hand) {
 // Get display symbol and color for suit
 export function getSuitInfo(suit) {
   switch (suit) {
-    case 'spades': return { symbol: '♠', color: 'text-stone-800' };
-    case 'hearts': return { symbol: '♥', color: 'text-red-500' };
-    case 'diamonds': return { symbol: '♦', color: 'text-red-500' };
-    case 'clubs': return { symbol: '♣', color: 'text-stone-800' };
-    default: return { symbol: '?', color: 'text-stone-500' };
+    case 'spades': return { symbol: '♠', color: 'text-stone-800', rawColor: '#292524' };
+    case 'hearts': return { symbol: '♥', color: 'text-red-500', rawColor: '#ef4444' };
+    case 'diamonds': return { symbol: '♦', color: 'text-red-500', rawColor: '#ef4444' };
+    case 'clubs': return { symbol: '♣', color: 'text-stone-800', rawColor: '#292524' };
+    default: return { symbol: '?', color: 'text-stone-500', rawColor: '#78716c' };
   }
 }

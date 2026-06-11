@@ -42,8 +42,28 @@ const calculatePokDeng = (cards) => {
     const isTong = cards[0].value === cards[1].value && cards[1].value === cards[2].value;
     const isFace = ['J','Q','K'].includes(cards[0].value) && ['J','Q','K'].includes(cards[1].value) && ['J','Q','K'].includes(cards[2].value);
     
+    // Straight detection
+    const valueOrder = {'A':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13};
+    const sortedValues = cards.map(c => valueOrder[c.value]).sort((a,b) => a - b);
+    
+    let isStraight = false;
+    // Check normal straight
+    if (sortedValues[0] + 1 === sortedValues[1] && sortedValues[1] + 1 === sortedValues[2]) {
+        isStraight = true;
+    }
+    // Check Q,K,A straight (12, 13, 1)
+    if (sortedValues[0] === 1 && sortedValues[1] === 12 && sortedValues[2] === 13) {
+        isStraight = true;
+    }
+
     if (isTong) {
       return { score, deng: 5, type: 'Tong (ตอง)', weight: 17 };
+    }
+    if (isStraight && isSameSuit) {
+      return { score, deng: 5, type: 'Straight Flush (เรียงสี)', weight: 16 };
+    }
+    if (isStraight) {
+      return { score, deng: 3, type: 'Straight (เรียง)', weight: 15 };
     }
     if (isFace) {
       return { score, deng: 3, type: 'Sam Lueng (เซียน)', weight: 14 };
@@ -140,38 +160,34 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
       const dStats = calculatePokDeng(dealer.hand);
       
       const updates = { phase: 'result' };
-      
+      let hostWonAny = false;
+
       Object.entries(playersData).forEach(([name, p]) => {
         if (name === roomData.host) return; // Skip dealer
-        
+
         const pStats = calculatePokDeng(p.hand);
         let winAmount = 0;
-        
-        let hostWinCount = 0;
-        
-        // Dealer wins if score is higher, or if score is same but Dealer is Host (usually dealer wins ties in simple rules, but let's do push for ties unless Deng differs)
+
         if (pStats.weight > dStats.weight) {
           winAmount = p.bet * pStats.deng;
           recordWin(roomId, name, 'pokdeng');
         } else if (pStats.weight < dStats.weight) {
           winAmount = -(p.bet * dStats.deng);
-          hostWinCount++;
+          hostWonAny = true;
         } else {
-          // Tie score, check deng
-          if (pStats.deng > dStats.deng) { winAmount = p.bet * pStats.deng; recordWin(roomId, name, 'pokdeng'); }
-          else if (pStats.deng < dStats.deng) { winAmount = -(p.bet * dStats.deng); hostWinCount++; }
-          else winAmount = 0; // Push
+          // Tie score, check deng (Traditional Thai rule: Tie is Push)
+          winAmount = 0; // Push
         }
-        
+
         updates[`players/${name}/chips`] = (p.chips || 1000) + winAmount;
         updates[`players/${name}/lastResult`] = winAmount;
-        
+
         // Host balance tracking (Host plays against everyone)
         const hostCurrent = updates[`players/${roomData.host}/chips`] !== undefined ? updates[`players/${roomData.host}/chips`] : (dealer.chips || 1000);
         updates[`players/${roomData.host}/chips`] = hostCurrent - winAmount;
-        
-        if (hostWinCount > 0) recordWin(roomId, roomData.host, 'pokdeng');
       });
+
+      if (hostWonAny) recordWin(roomId, roomData.host, 'pokdeng');
       
       await safeUpdate(updates);
     }

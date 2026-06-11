@@ -113,8 +113,10 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
   const getNextTurn = (current) => {
     const names = Object.keys(playersData);
     const idx = names.indexOf(current);
-    if (idx === -1 || idx === names.length - 1) return null; // No more players
-    return names[idx + 1];
+    for (let i = idx + 1; i < names.length; i++) {
+      if (playersData[names[i]]?.status === 'playing') return names[i];
+    }
+    return null;
   };
 
   // Dealer Auto Play
@@ -262,7 +264,7 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
             <div className="flex-center -space-x-4">
               {(p.hand || []).map((card, idx) => (
                 <div key={idx} style={{ transform: 'scale(0.5)', margin: '-16px' }}>
-                  <PlayingCard card={card} animated={false} />
+                  <PlayingCard card={card} hidden={phase !== 'result'} animated={false} />
                 </div>
               ))}
             </div>
