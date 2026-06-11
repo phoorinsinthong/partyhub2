@@ -39,9 +39,11 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
 
     const activePlayers = playerNames.filter(name => name !== roomData.host);
     activePlayers.forEach(name => {
+      const hand = [newDeck.pop(), newDeck.pop()];
+      const score = calculateBlackjackScore(hand);
       playersInit[name] = {
-        hand: [newDeck.pop(), newDeck.pop()],
-        status: 'playing', // playing, stand, bust
+        hand,
+        status: score === 21 ? 'stand' : 'playing', // playing, stand, bust
       };
     });
 
@@ -50,12 +52,26 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
       return;
     }
 
+    // Determine the first playing turn
+    let startingTurn = null;
+    let initialPhase = 'playing';
+    for (const name of activePlayers) {
+        if (playersInit[name].status === 'playing') {
+            startingTurn = name;
+            break;
+        }
+    }
+    
+    if (!startingTurn) {
+        initialPhase = 'dealerTurn';
+    }
+
     await safeUpdate({
-      phase: 'playing',
+      phase: initialPhase,
       deck: newDeck,
       dealer: dealerInit,
       players: playersInit,
-      currentTurn: activePlayers[0],
+      currentTurn: startingTurn,
     });
   };
 

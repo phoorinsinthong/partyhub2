@@ -7,6 +7,12 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import { 
+  checkWinCondition, 
+  handleDeathSideEffects, 
+  resolveNightActions, 
+  WOLF_ROLES 
+} from '../utils/werewolfLogic';
 
 // ─── Role Configuration (30+ roles) ──────────────────────────────────────────
 
@@ -50,36 +56,11 @@ const ROLES = {
   cult_leader: { name: "เจ้าลัทธิ", icon: "🛐", team: "independent", color: "#8b5cf6", actionPhase: "nightly", actionType: "target", description: "ดึงคนเข้าลัทธิคืนละ 1 คน ชนะทันทีเมื่อมีเพื่อนร่วมลัทธิทุกคน" },
 };
 
-const WOLF_ROLES = ["werewolf", "alpha_wolf", "dire_wolf", "lone_wolf", "mystic_wolf", "wolf_cub", "wolf_man"];
-
 const ROLE_CATEGORIES = {
   villager: { name: "ฝ่ายชาวบ้าน", color: "#f59e0b" },
   werewolf: { name: "ฝ่ายหมาป่า", color: "#ef4444" },
   independent: { name: "อิสระ/อื่นๆ", color: "#8b5cf6" },
 };
-
-function checkWinCondition(playersData) {
-  const alive = Object.entries(playersData).filter(([, p]) => p.isAlive && p.role !== 'gm');
-  const wolves = alive.filter(([, p]) => WOLF_ROLES.includes(p.role));
-  const nonWolves = alive.filter(([, p]) => !WOLF_ROLES.includes(p.role));
-
-  // Serial killer wins alone when only they remain
-  const serialKillers = alive.filter(([, p]) => p.role === 'serial_killer');
-  if (serialKillers.length > 0 && alive.length === serialKillers.length) return 'independent';
-
-  // Tanner win is event-driven (triggered on vote), not checked here
-
-  // Vampire wins when they outnumber all others
-  const vampires = alive.filter(([, p]) => p.role === 'vampire');
-  if (vampires.length > 0 && vampires.length >= alive.length - vampires.length) return 'independent';
-
-  // Cult leader wins when all alive are cult members — cult_leader converts via nightAction,
-  // so GM must manually announce; skip auto-check here to avoid false positives
-
-  if (wolves.length === 0) return 'villager';
-  if (wolves.length >= nonWolves.length) return 'werewolf';
-  return null;
-}
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -478,35 +459,29 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   const togglePlayerAlive = async (name, currentlyDead) => {
     if (!isHost) return;
     const toLive = currentlyDead;
-    await safeUpdate(`rooms/${roomId}/gameData/wwData/players/${name}`, { isAlive: toLive });
+    
+    let updatedPlayers = { ...wwData.players };
+    let hunterPending = wwData.hunterPending || null;
 
     if (!toLive) {
-      const p = wwData.players?.[name];
-      if (p?.role === 'hunter') {
-        await safeUpdate(`rooms/${roomId}/gameData/wwData`, { hunterPending: name });
-      }
-      if (wwData.lovers) {
-        const { player1, player2 } = wwData.lovers;
-        if (name === player1 && wwData.players?.[player2]?.isAlive) {
-          await safeUpdate(`rooms/${roomId}/gameData/wwData/players/${player2}`, { isAlive: false });
-        } else if (name === player2 && wwData.players?.[player1]?.isAlive) {
-          await safeUpdate(`rooms/${roomId}/gameData/wwData/players/${player1}`, { isAlive: false });
-        }
-      }
+      const result = handleDeathSideEffects(name, { 
+        players: updatedPlayers, 
+        lovers: wwData.lovers, 
+        hunterPending 
+      });
+      updatedPlayers = result.players;
+      hunterPending = result.hunterPending;
+    } else {
+      updatedPlayers[name].isAlive = true;
     }
 
-    // Check win
-    try {
-      const snap = await get(ref(db, `rooms/${roomId}/gameData/wwData/players`));
-      const updatedPlayers = snap.val() || {};
-      const winner = checkWinCondition(updatedPlayers);
-      if (winner) {
-        await safeUpdate(`rooms/${roomId}/gameData/wwData`, { phase: 'result', winnerTeam: winner });
-      }
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
+    const updates = { players: updatedPlayers, hunterPending };
+    
+    // Check win condition
+    const winner = checkWinCondition(updatedPlayers);
+    if (winner) updates.phase = 'result', updates.winnerTeam = winner;
+
+    await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
   };
 
   const announceWinner = async (team) => {
@@ -857,9 +832,17 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                 <div className="bg-glass-dark/40 rounded-xl p-md border border-indigo-500/20 space-y-md">
                   {(() => {
                     const deckRoles = Object.entries(wwData.deckCounts || {}).filter(([, c]) => c > 0).map(([r]) => r);
-                    // Order roles for calling
-                    const callOrder = ['werewolf', 'seer', 'bodyguard', 'cupid', 'witch', 'serial_killer'];
-                    const activeRoles = callOrder.filter(r => deckRoles.includes(r));
+                    // Filter roles that have a night action
+                    const actionRoles = Object.keys(ROLES).filter(r => 
+                      deckRoles.includes(r) && 
+                      (ROLES[r].actionPhase === 'nightly' || (ROLES[r].actionPhase === 'firstNight' && dayCount === 1))
+                    );
+                    
+                    // Sort by team and name for consistent calling
+                    const activeRoles = actionRoles.sort((a, b) => {
+                      if (ROLES[a].team !== ROLES[b].team) return ROLES[a].team === 'werewolf' ? -1 : 1;
+                      return a.localeCompare(b);
+                    });
                     
                     return (
                       <div className="space-y-lg">
@@ -874,10 +857,48 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                           
                           return (
                             <div key={roleKey} className="space-y-sm border-l-2 border-indigo-500/50 pl-md py-sm">
-                              <p className="text-sm font-bold flex items-center gap-xs" style={{ color: role.color }}>
-                                {idx + 2}. {role.icon} {role.name} ลืมตาขึ้นมา... <span className="text-xs opacity-70">({rolePlayers.length}/{deckCount} คน)</span>
-                              </p>
+                              <div className="flex justify-between items-start">
+                                <p className="text-sm font-bold flex items-center gap-xs" style={{ color: role.color }}>
+                                  {idx + 2}. {role.icon} {role.name} ลืมตาขึ้นมา... <span className="text-xs opacity-70">({rolePlayers.length}/{deckCount} คน)</span>
+                                </p>
+                                <span className="text-[10px] text-secondary max-w-[150px] text-right italic">{role.description}</span>
+                              </div>
                               
+                              <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุเป้าหมาย (หากต้องการให้ระบบช่วยจำ):</p>
+                              <div className="flex flex-wrap gap-xs mb-sm">
+                                {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name]) => {
+                                  const isSelected = roleKey === 'cupid' 
+                                    ? nightActions['cupidTarget']?.split(',').includes(name)
+                                    : nightActions[`${roleKey}Target`] === name;
+                                    
+                                  return (
+                                    <button
+                                      key={name}
+                                      onClick={() => {
+                                        if (roleKey === 'cupid') {
+                                          const current = nightActions['cupidTarget'] ? nightActions['cupidTarget'].split(',') : [];
+                                          let next;
+                                          if (current.includes(name)) {
+                                            next = current.filter(t => t !== name);
+                                          } else {
+                                            next = [...current, name].slice(-2);
+                                          }
+                                          gmSubmitForRole('cupid', next.join(','));
+                                        } else {
+                                          gmSubmitForRole(roleKey, nightActions[`${roleKey}Target`] === name ? 'skip' : name);
+                                        }
+                                      }}
+                                      className={`px-sm py-xs rounded-lg text-[10px] font-bold border transition-all ${
+                                        isSelected ? 'bg-indigo-500 border-indigo-400 text-white' : 'bg-glass border-glass text-secondary'
+                                      }`}
+                                    >
+                                      {name}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              <p className="text-[10px] text-indigo-300/80 mb-xs">ระบุผู้ถือบทบาทนี้ (ถ้ายังไม่ได้ระบุ):</p>
                               <div className="flex flex-wrap gap-sm">
                                 {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
                                   const isThisRole = p.role === roleKey;
@@ -909,6 +930,33 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                 {/* Night Kill Section */}
                 <div className="bg-danger/10 rounded-xl p-md border border-danger/20 space-y-md">
                   <p className="text-sm font-bold text-danger flex items-center gap-xs"><Skull size={16} /> บันทึกผู้เสียชีวิตในคืนนี้:</p>
+                  
+                  {/* Suggested Results based on nightActions */}
+                  {(() => {
+                    const result = resolveNightActions(nightActions, { 
+                      players: wwPlayers, 
+                      lovers: wwData.lovers, 
+                      hunterPending: wwData.hunterPending 
+                    });
+                    if (!result.finalEliminated) return null;
+                    return (
+                      <div className="p-sm bg-danger/20 rounded-lg border border-danger/40 mb-sm">
+                        <p className="text-[11px] font-black text-danger uppercase mb-xs">💡 ระบบวิเคราะห์ผู้ตาย:</p>
+                        {result.finalEliminated.map(name => (
+                          <div key={name} className="flex justify-between items-center">
+                             <span className="text-xs font-bold text-white">{name}</span>
+                             <button 
+                               onClick={() => togglePlayerAlive(name, false)}
+                               className="btn btn-danger py-xs px-sm text-[10px]"
+                             >
+                               ยืนยันการตาย
+                             </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   <p className="text-[11px] text-danger/80 leading-tight mb-sm">แตะที่ชื่อผู้เล่นเพื่อทำการยืนยันการตาย (สามารถกดซ้ำที่กริดด้านบนเพื่อยกเลิกได้)</p>
                   <div className="grid grid-cols-2 gap-sm">
                     {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name, p]) => (

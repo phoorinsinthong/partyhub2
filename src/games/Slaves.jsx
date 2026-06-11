@@ -3,100 +3,10 @@ import { ref, get, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import PlayingCard from '../components/PlayingCard';
-import { createDeck, shuffleDeck, sortCardsSlaves } from '../utils/cards';
+import { createDeck, shuffleDeck, sortCardsSlaves, analyzePlay, validatePlay } from '../utils/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
-
-// Helper to determine combination type and highest card
-const analyzePlay = (cards) => {
-  if (!cards || cards.length === 0) return null;
-  const sorted = sortCardsSlaves(cards);
-  const highestCard = sorted[sorted.length - 1];
-
-  // All cards must have the same value rank for single, pair, triple, quad
-  const isSameValue = sorted.every(c => c.valueRank === sorted[0].valueRank);
-  
-  if (isSameValue) {
-    if (cards.length === 1) return { type: 'single', highestCard, count: 1 };
-    if (cards.length === 2) return { type: 'pair', highestCard, count: 2 };
-    if (cards.length === 3) return { type: 'triple', highestCard, count: 3 };
-    if (cards.length === 4) return { type: 'quad', highestCard, count: 4 }; // Bomb
-  }
-
-  // Check for Straight (3 or more consecutive cards)
-  if (cards.length >= 3) {
-    let isStraight = true;
-    for (let i = 0; i < sorted.length - 1; i++) {
-      if (sorted[i].valueRank + 1 !== sorted[i + 1].valueRank) {
-        isStraight = false;
-        break;
-      }
-    }
-    // Check if it's a Straight Flush (all same suit)
-    const isFlush = sorted.every(c => c.suit === sorted[0].suit);
-    if (isStraight) {
-      return { 
-        type: isFlush ? 'straight_flush' : 'straight', 
-        highestCard, 
-        count: cards.length 
-      };
-    }
-  }
-
-  return null; // Invalid combination
-};
-
-const validatePlay = (selectedCards, table, settings) => {
-  const play = analyzePlay(selectedCards);
-  if (!play) return false;
-
-  // Enforce straight setting
-  if (!settings.allowStraight && (play.type === 'straight' || play.type === 'straight_flush')) {
-    return false;
-  }
-
-  // If table is empty, any valid combination is allowed
-  if (!table || table.cards.length === 0) return true;
-
-  // Bomb rules (Quad or Straight Flush)
-  const isBomb = play.type === 'quad' || play.type === 'straight_flush';
-  const tableIsBomb = table.type.type === 'quad' || table.type.type === 'straight_flush';
-
-  if (settings.enableBomb && isBomb) {
-    // A bomb can beat any normal play (single, pair, triple, straight)
-    if (!tableIsBomb) return true;
-    
-    // Bomb vs Bomb
-    if (play.type === 'straight_flush' && table.type.type === 'quad') return true; // Straight flush beats quad
-    if (play.type === 'quad' && table.type.type === 'straight_flush') return false; // Quad loses to straight flush
-    
-    // Same bomb type, compare count and high card
-    if (play.type === table.type.type) {
-        if (play.count > table.type.count) return true;
-        if (play.count < table.type.count) return false;
-        
-        if (play.highestCard.valueRank > table.highestCard.valueRank) return true;
-        if (play.highestCard.valueRank === table.highestCard.valueRank) {
-          return play.highestCard.suitRank > table.highestCard.suitRank;
-        }
-    }
-    return false;
-  }
-
-  // Normal matching rule (must match type count)
-  if (play.count !== table.type.count || play.type !== table.type.type) {
-    return false;
-  }
-
-  // Compare highest card for normal plays
-  if (play.highestCard.valueRank > table.highestCard.valueRank) return true;
-  if (play.highestCard.valueRank === table.highestCard.valueRank) {
-    return play.highestCard.suitRank > table.highestCard.suitRank;
-  }
-
-  return false;
-};
 
 const Slaves = ({ roomId, roomData, userNickname }) => {
   const isHost = userNickname === roomData.host;

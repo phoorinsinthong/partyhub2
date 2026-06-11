@@ -3,78 +3,10 @@ import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import PlayingCard from '../components/PlayingCard';
-import { createDeck, shuffleDeck } from '../utils/cards';
+import { createDeck, shuffleDeck, calculatePokDeng } from '../utils/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
-
-// --- PokDeng Logic ---
-const calculatePokDeng = (cards) => {
-  if (!cards || cards.length === 0) return { score: 0, deng: 1, type: 'Normal' };
-  
-  const getVal = (c) => {
-    if (['10', 'J', 'Q', 'K'].includes(c.value)) return 0;
-    if (c.value === 'A') return 1;
-    return parseInt(c.value);
-  };
-  
-  const total = cards.reduce((sum, c) => sum + getVal(c), 0);
-  const score = total % 10;
-  
-  let deng = 1;
-  let type = 'Normal';
-  let weight = score;
-
-  // 2 Cards
-  if (cards.length === 2) {
-    const isSameSuit = cards[0].suit === cards[1].suit;
-    const isSameVal = cards[0].value === cards[1].value;
-    if (isSameSuit || isSameVal) deng = 2;
-    
-    if (score >= 8) {
-      type = `Pok ${score}`;
-      weight = score === 9 ? 19 : 18; // Pok 9 = 19, Pok 8 = 18
-    }
-  } 
-  // 3 Cards
-  else if (cards.length === 3) {
-    const isSameSuit = cards[0].suit === cards[1].suit && cards[1].suit === cards[2].suit;
-    const isTong = cards[0].value === cards[1].value && cards[1].value === cards[2].value;
-    const isFace = ['J','Q','K'].includes(cards[0].value) && ['J','Q','K'].includes(cards[1].value) && ['J','Q','K'].includes(cards[2].value);
-    
-    // Straight detection
-    const valueOrder = {'A':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13};
-    const sortedValues = cards.map(c => valueOrder[c.value]).sort((a,b) => a - b);
-    
-    let isStraight = false;
-    // Check normal straight
-    if (sortedValues[0] + 1 === sortedValues[1] && sortedValues[1] + 1 === sortedValues[2]) {
-        isStraight = true;
-    }
-    // Check Q,K,A straight (12, 13, 1)
-    if (sortedValues[0] === 1 && sortedValues[1] === 12 && sortedValues[2] === 13) {
-        isStraight = true;
-    }
-
-    if (isTong) {
-      return { score, deng: 5, type: 'Tong (ตอง)', weight: 17 };
-    }
-    if (isStraight && isSameSuit) {
-      return { score, deng: 5, type: 'Straight Flush (เรียงสี)', weight: 16 };
-    }
-    if (isStraight) {
-      return { score, deng: 3, type: 'Straight (เรียง)', weight: 15 };
-    }
-    if (isFace) {
-      return { score, deng: 3, type: 'Sam Lueng (เซียน)', weight: 14 };
-    }
-    if (isSameSuit) {
-      deng = 3;
-    }
-  }
-  
-  return { score, deng, type, weight };
-};
 
 const PokDeng = ({ roomId, roomData, userNickname }) => {
   const isHost = userNickname === roomData.host;

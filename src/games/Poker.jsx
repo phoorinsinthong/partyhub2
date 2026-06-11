@@ -195,21 +195,20 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       newPot += actualBet;
       if (newRoundBet > newCurrentBet) {
         newCurrentBet = newRoundBet;
-        // If someone raises, everyone else's hasActed needs to be re-evaluated
-        // Actually, just checking if their currentRoundBet == newCurrentBet works,
-        // but to ensure they get another turn to call the raise, we must set their hasActed to false
-        Object.keys(playersData).forEach(n => {
-           if (n !== userNickname && !playersData[n].folded && playersData[n].chips > 0) {
-             playersData[n].hasActed = false; // mutated safely because we spread next
-           }
-        });
       }
     }
 
-    const nextPlayers = {
-      ...playersData,
-      [userNickname]: { ...myData, chips: newChips, currentRoundBet: newRoundBet, totalBet: newTotalBet, folded, hasActed: true }
-    };
+    const nextPlayers = JSON.parse(JSON.stringify(playersData));
+    nextPlayers[userNickname] = { ...myData, chips: newChips, currentRoundBet: newRoundBet, totalBet: newTotalBet, folded, hasActed: true };
+
+    // If someone raises, everyone else's hasActed needs to be re-evaluated
+    if (action === 'raise') {
+        Object.keys(nextPlayers).forEach(n => {
+            if (n !== userNickname && !nextPlayers[n].folded && nextPlayers[n].chips > 0) {
+                nextPlayers[n].hasActed = false;
+            }
+        });
+    }
 
     let updates = {
       [`players/${userNickname}/chips`]: newChips,
