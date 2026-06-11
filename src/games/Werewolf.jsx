@@ -579,7 +579,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
-        <div className="glass-panel p-xl text-center">
+        <div className="glass-panel-werewolf p-xl text-center">
           <div className="flex-center mb-md">
             <div className="p-lg bg-danger/20 rounded-full text-danger shadow-lg shadow-danger/10">
               <Skull size={48} />
@@ -598,7 +598,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
         {/* Guest Management (Physical only) */}
         {isHost && gameMode === 'physical' && (
-          <div className="glass-panel p-lg space-y-md">
+          <div className="glass-panel-werewolf p-lg space-y-md">
             <h4 className="text-xs font-black text-secondary uppercase tracking-widest">➕ เพิ่มผู้เล่น (Guest)</h4>
             <div className="flex gap-sm">
               <input
@@ -625,7 +625,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         )}
 
         {/* Player List Summary */}
-        <div className="glass-panel p-lg">
+        <div className="glass-panel-werewolf p-lg">
           <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-md">👥 รายชื่อผู้เล่น ({allGamePlayers.length} คน)</h4>
           <div className="flex flex-wrap gap-xs">
             {allGamePlayers.map(name => {
@@ -641,7 +641,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
         {/* Deck Setup (GM only) */}
         {isHost && (
-          <div className="glass-panel p-lg">
+          <div className="glass-panel-werewolf p-lg">
             <div className="flex-between mb-md">
               <h4 className="font-black flex items-center gap-sm text-sm">
                 🎴 จัดเตรียมการ์ด
@@ -682,7 +682,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
         {/* Public deck display */}
         {totalDeck > 0 && (
-          <div className="glass-panel p-lg">
+          <div className="glass-panel-werewolf p-lg">
             <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-md">การ์ดที่จะใช้ในเกม</h4>
             <div className="flex flex-wrap gap-xs">
               {Object.entries(deckCounts).filter(([, c]) => c > 0).map(([roleKey, count]) => {
@@ -716,7 +716,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                   : '🎭 เริ่มเกม!'}
           </button>
         ) : (
-          <div className="glass-panel p-md text-center border-primary/30">
+          <div className="glass-panel-werewolf p-md text-center border-primary/30">
             <p className="animate-pulse text-primary font-bold">รอ GM เริ่มเกม...</p>
           </div>
         )}
@@ -796,7 +796,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-panel p-xl text-center">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-panel-werewolf p-xl text-center">
           <div className="flex-center mb-md">
             <div className={`p-xl rounded-full ${winner === 'werewolf' ? 'bg-danger/20 text-danger' : winner === 'villager' ? 'bg-success/20 text-success' : 'bg-purple-500/20 text-purple-400'}`}>
               {winner === 'werewolf' ? <Skull size={60} /> : winner === 'villager' ? <CheckCircle2 size={60} /> : <Eye size={60} />}
@@ -810,7 +810,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
           </p>
         </motion.div>
 
-        <div className="glass-panel p-lg space-y-sm">
+        <div className="glass-panel-werewolf p-lg space-y-sm">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">เปิดเผยบทบาท</p>
           {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
             const cfg = ROLES[p.role] || ROLES.villager;
@@ -862,7 +862,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         <StarsBackground />
         <VFXOverlay />
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className={`glass-panel p-md flex justify-between items-center ${phaseBg}`}>
+        <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>
           <div className="flex items-center gap-md">
             {phase === 'night' ? <Moon className="text-indigo-400" size={20} /> : <Sun className="text-orange-400" size={20} />}
             <p className="font-black text-white">{phaseLabel}</p>
@@ -877,7 +877,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         </div>
 
         {isGM ? (
-          <div className="glass-panel p-lg space-y-lg border-warning/20">
+          <div className="glass-panel-werewolf p-lg space-y-lg border-warning/20">
             <h3 className="font-black flex items-center gap-sm text-warning">🕹️ ควบคุมเกม (ไพ่จริง)</h3>
 
             {/* Manual Life/Death Grid (Top level view) */}
@@ -1108,7 +1108,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
             </div>
           </div>
         ) : (
-          <div className="glass-panel p-xl text-center space-y-md">
+          <div className="glass-panel-werewolf p-xl text-center space-y-md">
             <div className="text-5xl animate-pulse">
               {phase === 'night' ? '🌙' : '☀️'}
             </div>
@@ -1134,7 +1134,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
         )}
 
         {/* Player List Sidebar */}
-        <div className="glass-panel p-md">
+        <div className="glass-panel-werewolf p-md">
           <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่นทั้งหมด ({Object.values(wwPlayers).filter(p => p.role !== 'gm').length} คน)</p>
           <div className="flex flex-wrap gap-xs">
             {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
@@ -1156,7 +1156,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       <RoleRevealOverlay />
 
       {/* Phase Banner */}
-      <div className={`glass-panel p-md flex justify-between items-center ${phaseBg}`}>
+      <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>
         <div className="flex items-center gap-md">
           {phase === 'night' ? <Moon className="text-indigo-400" size={20} /> : phase === 'day' ? <Sun className="text-orange-400" size={20} /> : <Users className="text-red-400" size={20} />}
           <div>
@@ -1178,7 +1178,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
       {/* Last Elimination Banner */}
       {wwData.lastElimination && wwData.lastElimination.playerName && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel p-md text-center border-danger/30 bg-danger/5">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel-werewolf p-md text-center border-danger/30 bg-danger/5">
           <p className="text-danger font-bold text-sm">
             {wwData.lastElimination.reason === 'vote' && `🗳️ ${wwData.lastElimination.playerName} ถูกโหวตไล่ออก!`}
             {wwData.lastElimination.reason === 'prince_saved' && `👑 ${wwData.lastElimination.playerName} ถูกโหวต แต่เจ้าชายรอดชีวิต!`}
@@ -1190,7 +1190,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
       {/* GM Panel */}
       {isGM && (
-        <div className="glass-panel p-lg space-y-lg border-warning/20">
+        <div className="glass-panel-werewolf p-lg space-y-lg border-warning/20">
           <h3 className="font-black flex items-center gap-sm text-warning">🎭 แผงควบคุม GM</h3>
 
           {/* Player Status Table */}
@@ -1379,7 +1379,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       {!isGM && (
         <>
           {/* Role Card */}
-          <div className="glass-panel p-lg flex items-center gap-md cursor-pointer" onClick={() => setShowRoleReveal(true)} style={{ borderLeft: `4px solid ${roleInfo?.color || '#666'}` }}>
+          <div className="glass-panel-werewolf p-lg flex items-center gap-md cursor-pointer" onClick={() => setShowRoleReveal(true)} style={{ borderLeft: `4px solid ${roleInfo?.color || '#666'}` }}>
             <span className="text-3xl">{roleInfo?.icon || '❓'}</span>
             <div className="flex-1">
               <p className="font-black" style={{ color: roleInfo?.color }}>{roleInfo?.name || 'ไม่ทราบ'}</p>
@@ -1390,14 +1390,14 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
           {/* Wolf allies */}
           {WOLF_ROLES.includes(myRole) && (
-            <div className="glass-panel p-md border-danger/30 bg-danger/5">
+            <div className="glass-panel-werewolf p-md border-danger/30 bg-danger/5">
               <p className="text-xs text-danger font-bold">🐺 เพื่อนหมาป่า: {Object.entries(wwPlayers).filter(([n, p]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</p>
             </div>
           )}
 
           {/* Seer Result */}
           {['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(myRole) && wwData.privateData?.[userNickname]?.seerResult && (
-            <div className={`glass-panel p-md text-center ${wwData.privateData[userNickname].seerResult.isWolf ? 'border-danger/30 bg-danger/5' : 'border-success/30 bg-success/5'}`}>
+            <div className={`glass-panel-werewolf p-md text-center ${wwData.privateData[userNickname].seerResult.isWolf ? 'border-danger/30 bg-danger/5' : 'border-success/30 bg-success/5'}`}>
               <p className="text-xs font-bold text-secondary mb-xs">🔮 ผลการส่อง</p>
               <p className="font-bold">
                 {wwData.privateData[userNickname].seerResult.targetName} คือ{' '}
@@ -1410,7 +1410,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
           {/* Night: Action Panel */}
           {phase === 'night' && myIsAlive && (
-            <div className="glass-panel p-lg">
+            <div className="glass-panel-werewolf p-lg">
               {(() => {
                 const cfg = ROLES[myRole];
                 if (!cfg || cfg.actionPhase === 'none' || (cfg.actionPhase === 'firstNight' && dayCount > 1)) {
@@ -1479,14 +1479,14 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
           {/* Night: Dead */}
           {phase === 'night' && !myIsAlive && (
-            <div className="glass-panel p-lg text-center opacity-60">
+            <div className="glass-panel-werewolf p-lg text-center opacity-60">
               <p className="text-danger font-bold">💀 คุณเสียชีวิตแล้ว — รอชมเกมต่อ</p>
             </div>
           )}
 
           {/* Day Panel */}
           {phase === 'day' && (
-            <div className="glass-panel p-lg text-center">
+            <div className="glass-panel-werewolf p-lg text-center">
               {myIsAlive ? (
                 myPlayerData?.status?.silenced ? (
                   <div>
@@ -1513,7 +1513,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
           {/* Voting Panel */}
           {phase === 'voting' && (
-            <div className="glass-panel p-lg space-y-md">
+            <div className="glass-panel-werewolf p-lg space-y-md">
               <p className="text-xs font-bold text-red-300 uppercase tracking-widest">🗳️ เลือกคนที่จะแขวนคอ</p>
               {myIsAlive && !myPlayerData?.status?.silenced && !myPlayerData?.status?.banned ? (
                 <div className="grid grid-cols-2 gap-sm">
@@ -1547,7 +1547,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
 
           {/* Standby */}
           {phase === 'standby' && (
-            <div className="glass-panel p-lg text-center">
+            <div className="glass-panel-werewolf p-lg text-center">
               <div className="text-3xl mb-md">🎭</div>
               <p className="text-secondary font-bold">รอ GM เริ่มรอบต่อไป...</p>
             </div>
@@ -1556,7 +1556,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       )}
 
       {/* Player List Sidebar */}
-      <div className="glass-panel p-md">
+      <div className="glass-panel-werewolf p-md">
         <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่น</p>
         <div className="flex flex-wrap gap-xs">
           {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
