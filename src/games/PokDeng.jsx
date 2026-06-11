@@ -181,7 +181,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         <div className="flex-center gap-xs min-h-[100px]">
           {dealer?.hand?.map((c, i) => (
             <div key={i} className="-ml-4 first:ml-0">
-               <PlayingCard card={c} hidden={!isHost && phase === 'playing' && !dealer.isPok && i > 0} />
+               <PlayingCard card={c} hidden={!isHost && phase === 'playing' && !dealer.isPok} />
             </div>
           ))}
         </div>
