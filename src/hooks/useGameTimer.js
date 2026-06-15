@@ -9,7 +9,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * @returns {{ timeLeft, formatTime, isUrgent, progress }}
  */
 export function useGameTimer(timerEnd, onExpire = null) {
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (!timerEnd) return 0;
+    return Math.max(0, Math.floor((timerEnd - Date.now()) / 1000));
+  });
   const expiredRef = useRef(false);
   const onExpireRef = useRef(onExpire);
 
@@ -17,12 +20,17 @@ export function useGameTimer(timerEnd, onExpire = null) {
 
   useEffect(() => {
     if (!timerEnd) {
-      setTimeLeft(0);
+      if (timeLeft !== 0) setTimeLeft(0);
       expiredRef.current = false;
       return;
     }
 
     expiredRef.current = false;
+
+    // Set initial time correctly when timerEnd changes
+    const now = Date.now();
+    const initialDiff = Math.max(0, Math.floor((timerEnd - now) / 1000));
+    setTimeLeft(initialDiff);
 
     const interval = setInterval(() => {
       const now = Date.now();

@@ -78,11 +78,11 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
     if (phase !== 'finished' || personalRecordedRef.current) return;
     personalRecordedRef.current = true;
     recordPersonalGame('drawing');
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
+    const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
       recordPersonalWin('drawing');
     }
-  }, [phase]);
+  }, [phase, scores, userNickname]);
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(BRUSH_SIZES[1]);
   const [guess, setGuess] = useState('');

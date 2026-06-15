@@ -5,9 +5,10 @@ import { db } from '../firebase';
 export function useConnectionQuality() {
   const [quality, setQuality] = useState('good'); // 'good' | 'slow' | 'disconnected'
   const [latency, setLatency] = useState(null);
-  const lastConnectedRef = useRef(Date.now());
+  const lastConnectedRef = useRef(0);
 
   useEffect(() => {
+    lastConnectedRef.current = Date.now();
     const connectedRef = ref(db, '.info/connected');
     const offsetRef = ref(db, '.info/serverTimeOffset');
 

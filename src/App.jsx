@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import OfflineIndicator from './components/OfflineIndicator';
 import InstallPrompt from './components/InstallPrompt';
 import { ThemeProvider } from './hooks/useTheme';
+import { GameProvider } from './contexts/GameContext';
 import { useKeyboardResize } from './hooks/useKeyboardResize';
 import './index.css';
 
@@ -16,8 +17,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <Router>
-          <OfflineIndicator />
+        <GameProvider>
+          <Router>
+            <OfflineIndicator />
           <div className="app-container">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -27,6 +29,7 @@ function App() {
           </div>
           <InstallPrompt />
         </Router>
+        </GameProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
