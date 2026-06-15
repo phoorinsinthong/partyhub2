@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
@@ -7,19 +7,26 @@ import { getRandomWord, ALL_CATEGORIES } from './logic/insiderData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
+import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
 
-const DISCUSSION_TIME_OPTIONS = [
-  { label: '5 นาที', seconds: 300 },
-  { label: '8 นาที', seconds: 480 },
-  { label: '10 นาที', seconds: 600 },
+const DISCUSSION_TIME_OPTIONS = (t) => [
+  { label: t('insider.discussionTime') + ' 5 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 300 },
+  { label: t('insider.discussionTime') + ' 8 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 480 },
+  { label: t('insider.discussionTime') + ' 10 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 600 },
 ];
 const VOTE_TIME = 180;
 
-const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
+const TwentyQuestions = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = userNickname === roomData.host;
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const players = Object.keys(roomData.players || {});
   const nonHostPlayers = players.filter(p => p !== roomData.host);
@@ -36,9 +43,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   const wordGuessed = gameData.wordGuessed || false;
   const guesser = gameData.guesser || '';
   const votes = gameData.votes || {};
-  const timerEnd = gameData.timerEnd || 0;
 
-  const [timeLeft, setTimeLeft] = useState(0);
   const [votedFor, setVotedFor] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [selectedTime, setSelectedTime] = useState(300);
@@ -54,7 +59,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     try {
       await update(ref(db, refPath), data);
     } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setErrorMsg(t('common.error'));
       setTimeout(() => setErrorMsg(''), 3000);
       throw e;
     }
@@ -75,35 +80,16 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     advancingRef.current = false;
   }, [phase]);
 
-  // Timer
-  useEffect(() => {
-    if (!timerEnd || (phase !== 'discussion' && phase !== 'voting')) {
-      setTimeLeft(0);
-      return;
+  const handleTimeUpLocal = useCallback(async () => {
+    if (!isHost) return;
+    if (phase === 'discussion') {
+      await handleTimeUp();
+    } else if (phase === 'voting') {
+      await handleVoteEnd();
     }
-    const tick = () => {
-      const remaining = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
-      setTimeLeft(remaining);
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [timerEnd, phase]);
+  }, [isHost, phase]);
 
-  // Host auto-advance when timer expires
-  const timerFiredRef = useRef(false);
-  useEffect(() => { timerFiredRef.current = false; }, [phase, timerEnd]);
-  useEffect(() => {
-    if (!isHost || timeLeft > 0 || timerFiredRef.current) return;
-    if (phase === 'discussion' && timerEnd && Date.now() >= timerEnd) {
-      timerFiredRef.current = true;
-      handleTimeUp();
-    }
-    if (phase === 'voting' && timerEnd && Date.now() >= timerEnd) {
-      timerFiredRef.current = true;
-      handleVoteEnd();
-    }
-  }, [timeLeft, phase, timerEnd, isHost]);
+  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUpLocal : null);
 
   useEffect(() => {
     if (phase !== 'finished' || personalRecordedRef.current) return;
@@ -113,7 +99,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
       recordPersonalWin('twentyquestions');
     }
-  }, [phase]);
+  }, [phase, scores, userNickname]);
 
   // ─── Host: Start Game ───
   const handleStartGame = async () => {
@@ -190,6 +176,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         wordGuessed: false,
         caughtInsider: false,
         topVoted: null,
+        timerEnd: null
       });
     } finally {
       advancingRef.current = false;
@@ -245,6 +232,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         phase: 'result',
         caughtInsider,
         topVoted,
+        timerEnd: null
       });
     } finally {
       advancingRef.current = false;
@@ -259,7 +247,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
     if (totalVoted >= nonHostPlayers.length && totalVoted > 0) {
       handleVoteEnd();
     }
-  }, [gameData.votes, phase]);
+  }, [gameData.votes, phase, isHost]);
 
   // ─── Host: Next round ───
   const handleNextRound = async () => {
@@ -271,7 +259,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
 
     try {
       if (roundNumber >= nonHostPlayers.length) {
-        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished', usedWords: newUsedWords });
+        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished', usedWords: newUsedWords, timerEnd: null });
         feedback('victory');
         const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
         if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
@@ -364,38 +352,32 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         </motion.div>
 
         <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">Insider</h2>
+          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('insider.title')}</h2>
           <p className="text-olive-400 text-[13px] leading-relaxed px-4">
-            มีคนในกลุ่มรู้คำตอบ...จะจับได้ไหม?
+            {t('insider.description')}
           </p>
         </div>
 
         <div className="card p-4 w-full max-w-xs">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>👑</span><span>Host เป็นกรรมการ รู้คำตอบ ตอบใช่/ไม่ใช่</span>
+              <span>👑</span><span>{t('insider.roleMaster')} {t('insider.roleMasterDesc')}</span>
             </div>
             <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>🕵️</span><span>1 คนเป็น Insider แอบรู้คำตอบ</span>
+              <span>🕵️</span><span>{t('insider.roleInsider')} {t('insider.roleInsiderDesc')}</span>
             </div>
             <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>❓</span><span>ผู้เล่นถามคำถาม + ทายคำภายในเวลา</span>
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>🗳️</span><span>ทายถูกแล้ว → โหวตหา Insider</span>
-            </div>
-            <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>🏆</span><span>จับ Insider ได้ = ชาวบ้านชนะ!</span>
+              <span>❓</span><span>{t('insider.roleCommon')} {t('insider.roleCommonDesc')}</span>
             </div>
           </div>
         </div>
 
         <div className="card p-3 w-full max-w-xs">
-          <p className="text-[11px] font-bold text-olive-500 mb-2">ผู้เล่น {players.length} คน</p>
+          <p className="text-[11px] font-bold text-olive-500 mb-2">{t('taboo.players')} {players.length} {t('spyfall.startGame').split(' ')[1]}</p>
           <div className="flex flex-wrap gap-1.5">
             {players.map(p => (
               <span key={p} className={`text-[12px] font-bold px-2.5 py-1 rounded-full ${p === roomData.host ? 'bg-amber-100 text-amber-700' : 'bg-sage-100 text-sage-700'}`}>
-                {p === roomData.host ? `👑 ${p}` : p === userNickname ? `${p} (คุณ)` : p}
+                {p === roomData.host ? `👑 ${p}` : p === userNickname ? `${p} (${t('taboo.you')})` : p}
               </span>
             ))}
           </div>
@@ -404,7 +386,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">หมวดคำศัพท์ (เลือกได้หลายหมวด)</p>
+              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('insider.categoryTitle')}</p>
               <div className="flex flex-wrap gap-1.5 justify-center">
                 <button
                   onClick={() => setSelectedCategories([])}
@@ -414,7 +396,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
                       : 'bg-white border-olive-100 text-olive-600'
                   }`}
                 >
-                  🎲 ทุกหมวด
+                  {t('taboo.cardPackAll')}
                 </button>
                 {ALL_CATEGORIES.map(cat => (
                   <button
@@ -445,9 +427,9 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
               </div>
             </div>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">เวลาในการเล่น</p>
+              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('taboo.roundTime')}</p>
               <div className="flex gap-2">
-                {DISCUSSION_TIME_OPTIONS.map(opt => (
+                {DISCUSSION_TIME_OPTIONS(t).map(opt => (
                   <button
                     key={opt.seconds}
                     onClick={() => setSelectedTime(opt.seconds)}
@@ -463,18 +445,18 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
               </div>
             </div>
             <button onClick={handleStartGame} className="btn btn-primary py-3.5 px-8 text-[15px]" disabled={nonHostPlayers.length < 2}>
-              <Play size={18} fill="currentColor" /> เริ่มเกม!
+              <Play size={18} fill="currentColor" /> {t('insider.startGame')}
             </button>
             {nonHostPlayers.length < 2 && (
               <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl">
-                ต้องมีผู้เล่น (ไม่นับ Host) อย่างน้อย 2 คน
+                {t('taboo.minPlayers')} (ไม่นับ Host)
               </p>
             )}
           </>
         ) : (
           <div className="flex items-center gap-2 text-olive-400">
             <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[13px] font-semibold">รอ Host เริ่มเกม...</span>
+            <span className="text-[13px] font-semibold">{t('insider.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -489,21 +471,21 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
       <div className="flex-1 flex flex-col items-center justify-center gap-5 py-6 animate-fade-in">
         <ErrorToast />
         <div className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
-          รอบ {roundNumber}/{nonHostPlayers.length}
+          {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
         </div>
 
         {isModerator && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">คุณเป็นกรรมการ 👑</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
+            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">{t('insider.roleMaster')} 👑</p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
             <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
-            <p className="text-[11px] text-olive-400 mt-3">ตอบ ใช่/ไม่ใช่ ด้วยวาจา</p>
+            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleMasterDesc').split('!')[1].trim()}</p>
             <div className="flex gap-2 mt-4 w-full">
               <button onClick={handleRerollWord} className="btn btn-outline flex-1 py-3 text-[13px]">
-                <Shuffle size={14} /> สุ่มใหม่
+                <Shuffle size={14} /> {t('spyfall.actualLocation').split(' ')[0] === 'สถานที่' ? 'สุ่มใหม่' : 'Reroll'}
               </button>
               <button onClick={handleStartDiscussion} className="btn btn-primary flex-1 py-3 text-[14px]">
-                <Clock size={16} /> เริ่ม ({Math.floor(discussionTime / 60)} นาที)
+                <Clock size={16} /> {t('taboo.startNow')} ({Math.floor(discussionTime / 60)} {t('taboo.roundTime').includes('Time') ? 'min' : 'นาที'})
               </button>
             </div>
           </motion.div>
@@ -511,26 +493,26 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
 
         {isInsider && !isModerator && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-purple-50 to-fuchsia-50 border-2 border-purple-200">
-            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">คุณเป็น Insider 🕵️</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
+            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">{t('insider.roleInsider')} 🕵️</p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
             <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
-            <p className="text-[11px] text-olive-400 mt-3">นำทางให้คนอื่นทาย แต่อย่าให้ถูกจับได้!</p>
+            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleInsiderDesc')}</p>
             <div className="mt-3 flex-center gap-2 text-olive-400">
               <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-              <span className="text-[12px] font-semibold">รอกรรมการเริ่มจับเวลา...</span>
+              <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
             </div>
           </motion.div>
         )}
 
         {!isModerator && !isInsider && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center">
-            <p className="text-[10px] font-bold text-sage-600 uppercase tracking-widest mb-2">คุณเป็นชาวบ้าน 🏘️</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">หมวด: <span className="font-bold">{category}</span></p>}
+            <p className="text-[10px] font-bold text-sage-600 uppercase tracking-widest mb-2">{t('insider.roleCommon')} 🏘️</p>
+            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
             <p className="font-display font-black text-[28px] text-olive-300">???</p>
-            <p className="text-[11px] text-olive-400 mt-3">ถามคำถามเพื่อเดาคำลับ!</p>
+            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleCommonDesc')}</p>
             <div className="mt-3 flex-center gap-2 text-olive-400">
               <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-              <span className="text-[12px] font-semibold">รอกรรมการเริ่มจับเวลา...</span>
+              <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
             </div>
           </motion.div>
         )}
@@ -542,41 +524,29 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   // DISCUSSION — Ask questions + guess
   // ════════════════════════════════════════════════════════════════
   if (phase === 'discussion') {
-    const timerColor = timeLeft <= 15 ? 'text-red-600 bg-red-50' : timeLeft <= 30 ? 'text-amber-600 bg-amber-50' : 'text-sage-600 bg-sage-100';
-    const discMinutes = Math.floor(timeLeft / 60);
-    const discSeconds = timeLeft % 60;
-    const discTimerDisplay = `${discMinutes}:${discSeconds.toString().padStart(2, '0')}`;
-
     return (
       <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in">
         <ErrorToast />
         {/* Header */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
-            รอบ {roundNumber}/{nonHostPlayers.length}
+            {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
           </span>
-          <span className={`text-[13px] font-black px-4 py-2 rounded-full ${timerColor}`}>
-            <Clock size={13} className="inline mr-1" />{discTimerDisplay}
-          </span>
+          <TimerDisplay timeLeft={timeLeft} />
         </div>
 
         {/* Category + Word hints */}
         <div className="card p-3 flex items-center justify-between">
           {showCategory && (
             <div className="flex items-center gap-2">
-              <span className="text-[12px] font-bold text-olive-500">หมวด:</span>
+              <span className="text-[12px] font-bold text-olive-500">{t('insider.categoryTitle')}:</span>
               <span className="text-[14px] font-extrabold text-sage-600">{category}</span>
             </div>
           )}
           <div className="flex items-center gap-2">
-            {isModerator && (
-              <span className="text-[12px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-                คำตอบ: {secretWord}
-              </span>
-            )}
-            {isInsider && !isModerator && (
-              <span className="text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-lg">
-                🕵️ {secretWord}
+            {(isModerator || isInsider) && (
+              <span className={`text-[12px] font-bold ${isModerator ? 'text-amber-600 bg-amber-50' : 'text-purple-600 bg-purple-50'} px-2.5 py-1 rounded-lg`}>
+                {t('insider.secretWord')}: {secretWord}
               </span>
             )}
           </div>
@@ -586,13 +556,13 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         <div className="card p-4 text-center bg-olive-50/60">
           {isModerator ? (
             <div>
-              <p className="text-[13px] text-olive-700 font-bold mb-1">ตอบคำถามผู้เล่นด้วยวาจา (ใช่/ไม่ใช่)</p>
-              <p className="text-[11px] text-olive-400">ถ้าใครทายถูก กดชื่อด้านล่าง</p>
+              <p className="text-[13px] text-olive-700 font-bold mb-1">{t('insider.roleMasterDesc')}</p>
+              <p className="text-[11px] text-olive-400">{t('taboo.selectWhoCorrect')}</p>
             </div>
           ) : (
             <div>
-              <p className="text-[13px] text-olive-700 font-bold mb-1">ถามกรรมการด้วยวาจา (ใช่/ไม่ใช่)</p>
-              <p className="text-[11px] text-olive-400">พูดคำตอบที่คุณเดาออกเสียง!</p>
+              <p className="text-[13px] text-olive-700 font-bold mb-1">{t('insider.roleCommonDesc')}</p>
+              <p className="text-[11px] text-olive-400">{t('taboo.shoutAnswer')}</p>
             </div>
           )}
         </div>
@@ -605,7 +575,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           <div className="card p-4">
             {!confirmGuesser ? (
               <>
-                <p className="text-[11px] font-bold text-olive-500 mb-3">ใครทายถูก? (กดเมื่อผู้เล่นพูดคำตอบถูก)</p>
+                <p className="text-[11px] font-bold text-olive-500 mb-3">{t('taboo.whoCorrect')}</p>
                 <div className="flex flex-wrap gap-2">
                   {nonHostPlayers.map(p => (
                     <button
@@ -620,13 +590,13 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
               </>
             ) : (
               <div className="text-center">
-                <p className="text-[13px] font-bold text-olive-700 mb-3">ยืนยัน: <span className="text-sage-600">{confirmGuesser}</span> ทายถูก?</p>
+                <p className="text-[13px] font-bold text-olive-700 mb-3">{t('taboo.someoneCorrect')} <span className="text-sage-600">{confirmGuesser}</span> {t('taboo.correct')}</p>
                 <div className="flex gap-2 justify-center">
                   <button
                     onClick={() => setConfirmGuesser(null)}
                     className="btn btn-outline py-2.5 px-5 text-[13px]"
                   >
-                    ยกเลิก
+                    {t('taboo.cancel')}
                   </button>
                   <button
                     onClick={async () => {
@@ -649,7 +619,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
                     }}
                     className="btn btn-primary py-2.5 px-5 text-[13px]"
                   >
-                    ยืนยัน
+                    {t('target.confirmTarget')}
                   </button>
                 </div>
               </div>
@@ -660,7 +630,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {/* Non-host: waiting indicator */}
         {!isModerator && !wordGuessed && (
           <div className="card p-4 text-center">
-            <p className="text-[12px] text-olive-500 font-semibold">🗣️ ถามและทายด้วยวาจา — กรรมการจะกดยืนยันเมื่อทายถูก</p>
+            <p className="text-[12px] text-olive-500 font-semibold">🗣️ {t('taboo.listenAndAnswer')}</p>
           </div>
         )}
       </div>
@@ -673,37 +643,31 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   if (phase === 'voting') {
     const voteCount = Object.keys(votes).length;
     const totalVoters = nonHostPlayers.length;
-    const timerColor = timeLeft <= 10 ? 'text-red-600 bg-red-50' : 'text-sage-600 bg-sage-100';
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const timerDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     return (
       <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
         <ErrorToast />
         <div className="text-center">
           <span className="text-4xl">🗳️</span>
-          <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">โหวตหา Insider!</h3>
-          <p className="text-[12px] text-olive-400 mt-1">ใครคือคนที่แอบรู้คำตอบ?</p>
+          <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">{t('insider.votingPhase')}</h3>
+          <p className="text-[12px] text-olive-400 mt-1">{t('insider.voteInsider')}</p>
         </div>
 
         <div className="flex-center gap-3">
-          <span className={`text-[13px] font-black px-4 py-2 rounded-full ${timerColor}`}>
-            <Clock size={13} className="inline mr-1" />{timerDisplay}
-          </span>
+          <TimerDisplay timeLeft={timeLeft} />
           <span className="text-[12px] font-bold text-olive-500 bg-olive-50 px-3 py-2 rounded-full">
             🗳️ {voteCount}/{totalVoters}
           </span>
         </div>
 
         <div className="card p-3 text-center bg-green-50 border border-green-200">
-          <p className="text-[12px] text-olive-500">{guesser} ทายคำ "<span className="font-bold">{secretWord}</span>" ถูก!</p>
+          <p className="text-[12px] text-olive-500">{t('insider.wordGuessedDesc', { name: guesser })} "<span className="font-bold">{secretWord}</span>" {t('taboo.correct')}</p>
         </div>
 
         {/* Vote buttons */}
         {!isModerator && (
           <div className="card p-4">
-            <p className="text-[11px] font-bold text-olive-500 mb-3">เลือกคนที่คุณสงสัย:</p>
+            <p className="text-[11px] font-bold text-olive-500 mb-3">{t('spyfall.votePanelDesc')}:</p>
             <div className="space-y-2">
               {nonHostPlayers.filter(p => p !== userNickname).map(p => (
                 <button
@@ -722,19 +686,19 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
                 </button>
               ))}
             </div>
-            {votedFor && <p className="text-[11px] text-sage-600 font-semibold mt-2 text-center">โหวตแล้ว!</p>}
+            {votedFor && <p className="text-[11px] text-sage-600 font-semibold mt-2 text-center">{t('insider.voted')}</p>}
           </div>
         )}
 
         {isModerator && (
           <div className="card p-4 text-center">
-            <p className="text-[12px] text-olive-500 mb-3">โหวตแล้ว {voteCount}/{totalVoters} คน</p>
+            <p className="text-[12px] text-olive-500 mb-3">{t('insider.voted')} {voteCount}/{totalVoters}</p>
             <button
               onClick={handleVoteEnd}
               disabled={voteCount === 0}
               className="btn btn-primary py-3 px-6 text-[14px]"
             >
-              สรุปผลโหวต
+              {t('quiz.viewResults')}
             </button>
           </div>
         )}
@@ -755,29 +719,29 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <span className="text-5xl">{caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}</span>
           <h3 className="font-display font-bold text-[20px] text-olive-800 mt-2">
-            {!wordGuessed ? 'หมดเวลา! ไม่มีใครได้คะแนน' : caughtInsider ? 'จับ Insider ได้!' : 'Insider หลุดรอด!'}
+            {!wordGuessed ? t('taboo.timeUp') : caughtInsider ? t('insider.commonsWin') : t('insider.insiderWin')}
           </h3>
         </motion.div>
 
         <div className="card p-5 text-center">
-          <p className="text-[10px] font-bold text-olive-400 uppercase tracking-widest mb-2">Insider คือ</p>
+          <p className="text-[10px] font-bold text-olive-400 uppercase tracking-widest mb-2">{t('insider.insiderWas', { name: '' }).trim()}</p>
           <p className="font-display font-black text-[24px] text-purple-600">{insiderName}</p>
           {wordGuessed && topVoted && (
             <p className="text-[12px] text-olive-400 mt-2">
-              โดนโหวตมากสุด: <span className="font-bold">{topVoted}</span>
+              {t('spyfall.spyGuessed').split(' ')[0] === 'สายลับ' ? 'โดนโหวตมากสุด' : 'Top Voted'}: <span className="font-bold">{topVoted}</span>
               {caughtInsider ? ' ✅' : ' ❌'}
             </p>
           )}
         </div>
 
         <div className="card p-4 text-center">
-          <p className="text-[10px] font-bold text-olive-400 mb-1">คำลับ</p>
+          <p className="text-[10px] font-bold text-olive-400 mb-1">{t('insider.secretWord')}</p>
           <p className="font-display font-black text-[22px] text-olive-800">{secretWord}</p>
           <p className="text-[11px] text-olive-400">{category}</p>
         </div>
 
         <div className="card p-4">
-          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 คะแนนสะสม</h3>
+          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 {t('taboo.currentScores')}</h3>
           <div className="space-y-1.5">
             {sortedScores.map(([name, score], idx) => (
               <div key={name} className="flex items-center gap-2.5 p-2 rounded-xl bg-olive-50/60">
@@ -794,12 +758,12 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
 
         {isHost ? (
           <button onClick={handleNextRound} className="btn btn-primary w-full py-3.5 text-[15px]">
-            {roundNumber >= nonHostPlayers.length ? '🏆 ดูผลลัพธ์สุดท้าย' : '➡️ รอบถัดไป'}
+            {roundNumber >= nonHostPlayers.length ? t('taboo.viewResults') : t('taboo.nextRound')}
           </button>
         ) : (
           <div className="flex-center gap-2 text-olive-400 py-2">
             <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[12px] font-semibold">รอ Host...</span>
+            <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -819,20 +783,20 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
           <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }} className="text-5xl mb-2">
             🏆
           </motion.div>
-          <h2 className="font-display font-bold text-[22px] text-olive-800">จบเกม!</h2>
+          <h2 className="font-display font-bold text-[22px] text-olive-800">{t('quiz.finished')}</h2>
         </div>
 
         {topPlayer && (
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-center">
             <Crown size={22} className="text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-[14px] text-olive-600 mb-0.5">ผู้ชนะ</p>
+            <p className="font-bold text-[14px] text-olive-600 mb-0.5">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
             <p className="font-display font-black text-[20px] text-olive-800">{topPlayer[0]}</p>
-            <p className="text-[15px] font-bold text-amber-600 mt-1">{topPlayer[1]} คะแนน</p>
+            <p className="text-[15px] font-bold text-amber-600 mt-1">{topPlayer[1]} {t('taboo.pointsGuesser').split(' ')[1]}</p>
           </motion.div>
         )}
 
         <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">อันดับ</h3>
+          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('taboo.totalScores')}</h3>
           <div className="space-y-2">
             {sortedScores.map(([name, score], idx) => (
               <div key={name} className={`flex-between p-3 rounded-xl border-2 ${
@@ -851,15 +815,15 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <div className="space-y-2">
             <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> เล่นอีกครั้ง
+              <RotateCcw size={16} /> {t('taboo.playAgain')}
             </button>
             <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
-              <LogOut size={14} /> กลับ Lobby
+              <LogOut size={14} /> {t('quiz.backToLobby')}
             </button>
           </div>
         ) : (
           <button onClick={requestLeave} className="btn btn-outline w-full py-3.5 text-[14px]">
-            <LogOut size={15} /> ออกจากห้อง
+            <LogOut size={15} /> {t('taboo.leaveRoom')}
           </button>
         )}
       </div>
@@ -869,7 +833,7 @@ const TwentyQuestions = ({ roomId, roomData, userNickname }) => {
   return (
     <div className="flex-center flex-1 flex-col gap-3">
       <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-      <p className="text-olive-400 text-[13px] font-semibold">กำลังโหลด...</p>
+      <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
@@ -7,6 +7,10 @@ import { generateRound } from './logic/mathRaceData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
+import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
 
@@ -14,9 +18,12 @@ const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
 const AUTO_ADVANCE_DELAY = 3000;
 
-const MathRace = ({ roomId, roomData, userNickname }) => {
+const MathRace = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = userNickname === roomData.host;
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const players = Object.keys(roomData.players || {});
 
@@ -24,13 +31,11 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
   const difficulty = gameData.difficulty || 'easy';
   const questions = gameData.questions || [];
   const currentQuestion = gameData.currentQuestion || 0;
-  const questionStartedAt = gameData.questionStartedAt || 0;
   const answers = gameData.answers || {};
   const scores = gameData.scores || {};
 
   const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
   const [inputValue, setInputValue] = useState('');
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const inputRef = useRef(null);
@@ -54,7 +59,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
       recordPersonalWin('mathrace');
     }
-  }, [phase]);
+  }, [phase, scores, userNickname]);
 
   // Check if current user already answered this question
   const myAnswer = answers[currentQuestion]?.[userNickname];
@@ -66,27 +71,24 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     setHasAnswered(alreadyAnswered);
   }, [currentQuestion, alreadyAnswered]);
 
-  // Timer
-  useEffect(() => {
-    if (phase !== 'playing' || !questionStartedAt) return;
-    lastCountdownRef.current = null;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - questionStartedAt) / 1000);
-      const remaining = Math.max(0, QUESTION_TIME - elapsed);
-      setTimeLeft(remaining);
+  const handleTimeUp = useCallback(async () => {
+    if (!isHost) return;
+    feedback('timeUp');
+    await safeUpdate(`rooms/${roomId}/gameData`, { 
+      phase: 'results',
+      timerEnd: null
+    });
+  }, [isHost, roomId]);
 
-      if (remaining <= 5 && remaining > 0 && remaining !== lastCountdownRef.current) {
-        lastCountdownRef.current = remaining;
-        feedback('countdown');
-      }
-      if (remaining === 0) {
-        feedback('timeUp');
-        clearInterval(interval);
-        if (isHost) handleTimeUp();
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [phase, questionStartedAt, currentQuestion]);
+  // Timer
+  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
+
+  useEffect(() => {
+    if (timeLeft <= 5 && timeLeft > 0 && timeLeft !== lastCountdownRef.current) {
+      lastCountdownRef.current = timeLeft;
+      feedback('countdown');
+    }
+  }, [timeLeft]);
 
   // Reset guards when question/phase changes
   useEffect(() => {
@@ -101,7 +103,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
       if (isHost) advanceToNext();
     }, AUTO_ADVANCE_DELAY);
     return () => { if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current); };
-  }, [phase, currentQuestion]);
+  }, [phase, currentQuestion, isHost]);
 
   // Focus input when playing
   useEffect(() => {
@@ -114,7 +116,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     try {
       await update(ref(db, path), data);
     } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setErrorMsg(t('common.error'));
       setTimeout(() => setErrorMsg(''), 3000);
       throw e;
     }
@@ -136,17 +138,13 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         difficulty: selectedDifficulty,
         questions: roundQuestions,
         currentQuestion: 0,
-        questionStartedAt: Date.now(),
+        timerEnd: Date.now() + (QUESTION_TIME * 1000),
         answers: {},
         scores: initialScores,
       });
     } finally {
       startRef.current = false;
     }
-  };
-
-  const handleTimeUp = async () => {
-    await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'results' });
   };
 
   const advanceToNext = async () => {
@@ -159,7 +157,10 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     const nextQ = currentQuestion + 1;
     try {
       if (nextQ >= questions.length) {
-        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished' });
+        await safeUpdate(`rooms/${roomId}/gameData`, { 
+          phase: 'finished',
+          timerEnd: null
+        });
         const sortedPlayers = Object.entries(scores).sort((a, b) => b[1] - a[1]);
         const winner = sortedPlayers[0];
         if (winner && winner[1] > 0) {
@@ -171,7 +172,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         await safeUpdate(`rooms/${roomId}/gameData`, {
           phase: 'playing',
           currentQuestion: nextQ,
-          questionStartedAt: Date.now(),
+          timerEnd: Date.now() + (QUESTION_TIME * 1000),
         });
       }
     } finally {
@@ -191,7 +192,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         phase: 'playing',
         questions: roundQuestions,
         currentQuestion: 0,
-        questionStartedAt: Date.now(),
+        timerEnd: Date.now() + (QUESTION_TIME * 1000),
         answers: {},
         scores: initialScores,
       });
@@ -210,11 +211,12 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     if (isNaN(numAnswer)) return;
     answerSubmittingRef.current = true;
 
-    const elapsed = Math.floor((Date.now() - questionStartedAt) / 1000);
-    const timeTaken = Math.min(elapsed, QUESTION_TIME);
+    const timerEnd = gameData.timerEnd || 0;
+    const timeLeftLocal = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
+    const timeTaken = QUESTION_TIME - timeLeftLocal;
     const correctAnswer = questions[currentQuestion]?.answer;
     const isCorrect = numAnswer === correctAnswer;
-    const points = isCorrect ? Math.max(1, QUESTION_TIME - timeTaken) : 0;
+    const points = isCorrect ? Math.max(1, timeLeftLocal) : 0;
 
     if (isCorrect) feedback('correctGuess');
 
@@ -235,15 +237,14 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         ? existingAnswers.length
         : existingAnswers.length + 1;
       if (totalAnswered >= players.length && isHost) {
-        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'results' });
+        await safeUpdate(`rooms/${roomId}/gameData`, { 
+          phase: 'results',
+          timerEnd: null
+        });
       }
     } finally {
       answerSubmittingRef.current = false;
     }
-  };
-
-  const handleLeave = () => {
-    requestLeave();
   };
 
   const handleKeyDown = (e) => {
@@ -257,8 +258,6 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
   const currentQ = questions[currentQuestion];
   const answeredThisRound = Object.keys(answers[currentQuestion] || {});
   const answeredCount = answeredThisRound.length;
-  const timerPercent = (timeLeft / QUESTION_TIME) * 100;
-  const timerColor = timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400';
 
   // Sort scores for display
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
@@ -268,20 +267,19 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex flex-col flex-1 gap-4">
         <div className="card p-5 text-center">
-          <span className="text-4xl mb-2 block"></span>
-          <h2 className="font-display font-bold text-[17px] text-olive-800 mb-1">คำนวณเร็ว</h2>
-          <p className="text-olive-400 text-[13px]">ตอบโจทย์คณิตให้เร็วที่สุด!</p>
+          <h2 className="font-display font-bold text-[17px] text-olive-800 mb-1">{t('mathrace.title')}</h2>
+          <p className="text-olive-400 text-[13px]">{t('mathrace.description')}</p>
         </div>
 
         {/* Difficulty Selector */}
         {isHost && (
           <div className="card p-4">
-            <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">ระดับความยาก</h3>
+            <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.difficulty')}</h3>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { key: 'easy', label: 'ง่าย', emoji: '' },
-                { key: 'medium', label: 'กลาง', emoji: '' },
-                { key: 'hard', label: 'ยาก', emoji: '' },
+                { key: 'easy', label: t('mathrace.difficultyEasy') },
+                { key: 'medium', label: t('mathrace.difficultyMedium') },
+                { key: 'hard', label: t('mathrace.difficultyHard') },
               ].map(d => (
                 <button
                   key={d.key}
@@ -292,7 +290,6 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
                       : 'bg-white border-transparent'
                   }`}
                 >
-                  <span className="text-2xl">{d.emoji}</span>
                   <span className="font-bold text-[12px] text-olive-700">{d.label}</span>
                 </button>
               ))}
@@ -303,7 +300,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         {/* Player List */}
         <div className="card p-4">
           <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">
-            ผู้เล่น ({players.length} คน)
+            {t('taboo.players')} ({players.length})
           </h3>
           <div className="flex flex-wrap gap-2">
             {players.map(p => (
@@ -324,18 +321,17 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
               disabled={players.length < 2}
             >
               <Play size={18} fill="currentColor" />
-              เริ่มเกม!
+              {t('mathrace.startGame')}
             </button>
             {players.length < 2 && (
               <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl mt-2.5">
-                ต้องมีอย่างน้อย 2 คน
+                {t('taboo.minPlayers')}
               </p>
             )}
           </div>
         ) : (
           <div className="card flex-center flex-col gap-3 p-6">
-            <span className="text-3xl animate-bounce-soft"></span>
-            <p className="text-olive-400 text-[13px] font-semibold">รอ Host เริ่มเกม...</p>
+            <p className="text-olive-400 text-[13px] font-semibold">{t('mathrace.waitingHost')}</p>
           </div>
         )}
       </div>
@@ -349,9 +345,9 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         {/* Timer Bar */}
         <div className="w-full h-2 bg-olive-100 rounded-full overflow-hidden">
           <motion.div
-            className={`h-full rounded-full ${timerColor}`}
+            className={`h-full rounded-full ${timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400'}`}
             initial={{ width: '100%' }}
-            animate={{ width: `${timerPercent}%` }}
+            animate={{ width: `${(timeLeft / QUESTION_TIME) * 100}%` }}
             transition={{ duration: 0.5, ease: 'linear' }}
           />
         </div>
@@ -359,14 +355,11 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         {/* Header: Question number + timer + answered count */}
         <div className="flex-between">
           <span className="text-[12px] font-bold text-olive-500">
-            ข้อ {currentQuestion + 1}/{questions.length}
+            {t('mathrace.questionNumber', { current: currentQuestion + 1, total: questions.length })}
           </span>
-          <div className="flex items-center gap-1.5 text-[12px] font-bold text-olive-500">
-            <Clock size={13} />
-            <span className={timeLeft <= 5 ? 'text-red-500' : ''}>{timeLeft}s</span>
-          </div>
+          <TimerDisplay timeLeft={timeLeft} size="sm" />
           <span className="text-[11px] font-bold text-sage-500 bg-sage-50 px-2 py-1 rounded-lg">
-            ตอบแล้ว {answeredCount}/{players.length}
+            {t('quiz.alreadyAnswered').split('!')[0]} {answeredCount}/{players.length}
           </span>
         </div>
 
@@ -378,7 +371,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
           className="card p-6 flex-center flex-col"
         >
           <p className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">
-            {difficulty === 'easy' ? 'ง่าย' : difficulty === 'medium' ? 'กลาง' : 'ยาก'}
+            {difficulty === 'easy' ? t('mathrace.difficultyEasy') : difficulty === 'medium' ? t('mathrace.difficultyMedium') : t('mathrace.difficultyHard')}
           </p>
           <p className="font-display font-black text-[28px] text-olive-800 text-center leading-tight">
             {currentQ.question}
@@ -397,7 +390,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="พิมพ์คำตอบ..."
+                placeholder={t('mathrace.yourAnswer')}
                 className="input-field flex-1 text-center text-[22px] font-bold"
                 disabled={hasAnswered}
               />
@@ -412,9 +405,8 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
           </div>
         ) : (
           <div className="card p-4 flex-center flex-col gap-2">
-            <span className="text-2xl">{myAnswer?.correct ? '' : alreadyAnswered ? (myAnswer?.correct ? '' : '') : ''}</span>
             <p className="text-[13px] font-bold text-olive-600">
-              {alreadyAnswered ? `ตอบแล้ว: ${myAnswer?.answer}` : 'ส่งคำตอบแล้ว รอคนอื่น...'}
+              {alreadyAnswered ? `${t('quiz.alreadyAnswered')}: ${myAnswer?.answer}` : t('quiz.alreadyAnswered')}
             </p>
           </div>
         )}
@@ -437,14 +429,14 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
           animate={{ opacity: 1, y: 0 }}
           className="card p-5 text-center"
         >
-          <p className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-1">คำตอบที่ถูกต้อง</p>
+          <p className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-1">{t('taboo.secretWordWas')}</p>
           <p className="font-display font-black text-[32px] text-sage-600">{currentQ.answer}</p>
           <p className="text-[13px] text-olive-500 mt-1">{currentQ.question}</p>
         </motion.div>
 
         {/* Player Results */}
         <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">ผลลัพธ์</h3>
+          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.results')}</h3>
           <div className="space-y-2">
             {players.map(p => {
               const pAnswer = roundAnswers[p];
@@ -458,14 +450,13 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{isCorrect ? '' : pAnswer ? '' : ''}</span>
                     <span className="font-bold text-[13px] text-olive-700">{p}</span>
                     {pAnswer && (
                       <span className="text-[11px] text-olive-400">({pAnswer.answer})</span>
                     )}
                   </div>
                   <span className={`font-bold text-[13px] ${isCorrect ? 'text-green-600' : 'text-olive-400'}`}>
-                    +{pts} คะแนน
+                    +{pts} {t('taboo.pointsGuesser').split(' ')[1]}
                   </span>
                 </div>
               );
@@ -475,7 +466,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
 
         {/* Current Scores */}
         <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">คะแนนรวม</h3>
+          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">{t('taboo.currentScores')}</h3>
           <div className="flex flex-wrap gap-2">
             {sortedScores.map(([name, score], i) => (
               <span key={name} className={`px-3 py-1.5 rounded-xl text-[12px] font-bold ${
@@ -490,7 +481,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
         {/* Host advance button */}
         {isHost && (
           <button className="btn btn-outline w-full py-3" onClick={advanceToNext}>
-            {currentQuestion + 1 >= questions.length ? 'ดูผลลัพธ์สุดท้าย' : 'ข้อถัดไป →'}
+            {currentQuestion + 1 >= questions.length ? t('taboo.viewResults') : t('mathrace.nextQuestion')}
           </button>
         )}
       </div>
@@ -511,15 +502,15 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
             className="card p-6 text-center bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200"
           >
             <Trophy size={36} className="text-amber-500 mx-auto mb-2" />
-            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">ผู้ชนะ</p>
+            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
             <p className="font-display font-black text-[22px] text-olive-800">{winner[0]}</p>
-            <p className="text-[15px] font-bold text-amber-600 mt-1">{winner[1]} คะแนน</p>
+            <p className="text-[15px] font-bold text-amber-600 mt-1">{winner[1]} {t('taboo.pointsGuesser').split(' ')[1]}</p>
           </motion.div>
         )}
 
         {/* Full Scoreboard */}
         <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">อันดับ</h3>
+          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('taboo.totalScores')}</h3>
           <div className="space-y-2">
             {sortedScores.map(([name, score], i) => (
               <div
@@ -530,12 +521,12 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
               >
                 <div className="flex items-center gap-2">
                   <span className="w-7 h-7 rounded-lg flex-center text-[13px] font-black bg-white border border-olive-100">
-                    {i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : i + 1}
+                    {i + 1}
                   </span>
                   <span className="font-bold text-[14px] text-olive-700">{name}</span>
                   {name === roomData.host && <Crown size={12} className="text-amber-500" />}
                 </div>
-                <span className="font-bold text-[14px] text-sage-600">{score} คะแนน</span>
+                <span className="font-bold text-[14px] text-sage-600">{score} {t('taboo.pointsGuesser').split(' ')[1]}</span>
               </div>
             ))}
           </div>
@@ -546,12 +537,12 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
           {isHost ? (
             <button className="btn btn-primary w-full py-4 text-[16px]" onClick={handleReplay}>
               <RotateCcw size={18} />
-              เล่นอีกครั้ง
+              {t('taboo.playAgain')}
             </button>
           ) : (
-            <button className="btn btn-outline w-full py-3.5 text-[14px]" onClick={handleLeave}>
+            <button className="btn btn-outline w-full py-3.5 text-[14px]" onClick={requestLeave}>
               <LogOut size={16} />
-              ออกจากเกม
+              {t('taboo.leaveRoom')}
             </button>
           )}
         </div>
@@ -563,7 +554,7 @@ const MathRace = ({ roomId, roomData, userNickname }) => {
   return (
     <div className="flex-center flex-1 flex-col gap-3">
       <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-      <p className="text-olive-400 text-[13px] font-semibold">กำลังโหลด...</p>
+      <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
     </div>
   );
 };

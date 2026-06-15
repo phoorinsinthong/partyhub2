@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, increment } from 'firebase/database';
 import { db } from '../firebase';
+import { useTranslation } from 'react-i18next';
+import { useGame } from '../contexts/GameContext';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { Trophy, Clock, CheckCircle, XCircle, Crown, RotateCcw, LogOut } from 'lucide-react';
 import { getShuffledQuestions, CATEGORY_LABELS } from './logic/quizData';
 import { recordWin } from '../components/Scoreboard';
@@ -13,13 +17,15 @@ import { feedback } from '../utils/feedback';
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
 
-const Quiz = ({ roomId, roomData, userNickname }) => {
+const Quiz = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = userNickname === roomData.host;
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const players = Object.keys(roomData.players || {});
 
-  const [timeLeft, setTimeLeft] = useState(QUESTION_TIME);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [showResult, setShowResult] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -27,6 +33,8 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
   const autoAdvanceRef = useRef(null);
   const answerSubmittingRef = useRef(false);
   const advancingRef = useRef(false);
+
+  const { timeLeft } = useGameTimer(gameData.timerEnd);
 
   const safeUpdate = async (refPath, data) => {
     try {
@@ -58,11 +66,11 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
     if (phase !== 'finished' || personalRecordedRef.current) return;
     personalRecordedRef.current = true;
     recordPersonalGame('quiz');
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
+    const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
       recordPersonalWin('quiz');
     }
-  }, [phase]);
+  }, [phase, scores, userNickname]);
 
   const usedQuestionIds = gameData.usedQuestionIds || [];
 
@@ -83,7 +91,7 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
         currentQuestion: 0,
         scores: initScores,
         answers: {},
-        questionStartedAt: Date.now(),
+        timerEnd: Date.now() + (QUESTION_TIME * 1000),
         usedQuestionIds: newUsedIds,
       });
     } finally {
@@ -101,9 +109,8 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
     const isCorrect = choiceIdx === question.answer;
     if (isCorrect) feedback('success');
     else feedback('error');
-    const elapsed = Math.floor((Date.now() - (gameData.questionStartedAt || 0)) / 1000);
-    const timeBonus = Math.max(0, QUESTION_TIME - elapsed);
-    const points = isCorrect ? 10 + timeBonus : 0;
+    
+    const points = isCorrect ? 10 + timeLeft : 0;
 
     try {
       await safeUpdate(`rooms/${roomId}/gameData/answers/${currentQ}`, {
@@ -125,15 +132,15 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
     advancingRef.current = true;
     try {
       if (currentQ + 1 >= questions.length) {
-        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished' });
-        const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-        if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
+        await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished', timerEnd: null });
+        const sortedScores = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+        if (sortedScores.length > 0 && (sortedScores[0][1] as number) > 0) {
           await recordWin(roomId, sortedScores[0][0], 'quiz');
         }
       } else {
         await safeUpdate(`rooms/${roomId}/gameData`, {
           currentQuestion: currentQ + 1,
-          questionStartedAt: Date.now(),
+          timerEnd: Date.now() + (QUESTION_TIME * 1000),
           [`answers/${currentQ + 1}`]: null,
         });
       }
@@ -158,7 +165,7 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
         currentQuestion: 0,
         scores: initScores,
         answers: {},
-        questionStartedAt: Date.now(),
+        timerEnd: Date.now() + (QUESTION_TIME * 1000),
         usedQuestionIds: newUsedIds,
       });
     } finally {
@@ -171,45 +178,38 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  // Timer
+  // Timer side effects
   const timerFiredRef = useRef(false);
   useEffect(() => {
     timerFiredRef.current = false;
-  }, [phase, currentQ, gameData.questionStartedAt]);
+  }, [phase, currentQ, gameData.timerEnd]);
 
   useEffect(() => {
-    if (phase !== 'playing' || !gameData.questionStartedAt) return;
+    if (phase !== 'playing' || !gameData.timerEnd) return;
 
-    setSelectedAnswer(null);
-    setShowResult(false);
+    if (timeLeft <= 5 && timeLeft > 0) {
+      feedback('countdown');
+    }
 
-    let lastTick = QUESTION_TIME;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - gameData.questionStartedAt) / 1000);
-      const remaining = Math.max(0, QUESTION_TIME - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining <= 5 && remaining > 0 && remaining !== lastTick) {
-        feedback('countdown');
+    if (timeLeft === 0 && !timerFiredRef.current) {
+      timerFiredRef.current = true;
+      feedback('timeUp');
+      setShowResult(true);
+      if (isHost) {
+        autoAdvanceRef.current = setTimeout(() => handleNextQuestion(), 3000);
       }
-      lastTick = remaining;
-
-      if (remaining === 0) {
-        feedback('timeUp');
-        setShowResult(true);
-        clearInterval(interval);
-        if (isHost && !timerFiredRef.current) {
-          timerFiredRef.current = true;
-          autoAdvanceRef.current = setTimeout(() => handleNextQuestion(), 3000);
-        }
-      }
-    }, 200);
+    }
 
     return () => {
-      clearInterval(interval);
       if (autoAdvanceRef.current) { clearTimeout(autoAdvanceRef.current); autoAdvanceRef.current = null; }
     };
-  }, [phase, currentQ, gameData.questionStartedAt]);
+  }, [timeLeft, phase, currentQ, isHost]);
+
+  // Reset local state on question change
+  useEffect(() => {
+    setSelectedAnswer(null);
+    setShowResult(false);
+  }, [currentQ, phase]);
 
   // Show result when all players answered
   useEffect(() => {
@@ -343,20 +343,17 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
           </span>
         )}
         <div className="flex items-center gap-1.5">
-          <Clock size={13} className={timeLeft <= 3 ? 'text-red-500' : 'text-olive-400'} />
-          <span className={`font-black text-[15px] ${timeLeft <= 3 ? 'text-red-500' : 'text-olive-700'}`}>
-            {timeLeft}
-          </span>
+          <TimerDisplay timeLeft={timeLeft} />
         </div>
       </div>
 
       {/* Timer Bar */}
       <div className="h-1.5 rounded-full bg-olive-100 overflow-hidden">
         <motion.div
-          className={`h-full rounded-full ${timerColor}`}
+          className={`h-full rounded-full ${timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400'}`}
           initial={{ width: '100%' }}
-          animate={{ width: `${timerPercent}%` }}
-          transition={{ duration: 0.2 }}
+          animate={{ width: `${(timeLeft / QUESTION_TIME) * 100}%` }}
+          transition={{ duration: 1, ease: 'linear' }}
         />
       </div>
 
@@ -370,10 +367,11 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
       {/* Choices */}
       <div className="space-y-2.5 mt-1">
         {question.choices.map((choice, idx) => {
-          const isSelected = selectedAnswer === idx || myAnswer?.choice === idx;
+          const isSelected = selectedAnswer === idx || answers[currentQ]?.[userNickname]?.choice === idx;
           const isCorrectAnswer = idx === question.answer;
           const showCorrect = showResult && isCorrectAnswer;
           const showWrong = showResult && isSelected && !isCorrectAnswer;
+          const hasAnswered = selectedAnswer !== null || !!answers[currentQ]?.[userNickname];
 
           let bg = 'bg-white border-2 border-olive-100';
           if (showCorrect) bg = 'bg-green-50 border-2 border-green-300';
@@ -385,7 +383,7 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
               key={idx}
               whileTap={!hasAnswered && !showResult ? { scale: 0.97 } : {}}
               onClick={() => !showResult && handleAnswer(idx)}
-              disabled={!!hasAnswered || showResult}
+              disabled={hasAnswered || showResult}
               className={`w-full p-4 rounded-2xl text-left flex items-center gap-3 transition-all ${bg} ${
                 !hasAnswered && !showResult ? 'active:scale-[0.97]' : ''
               }`}
@@ -429,7 +427,7 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
                       'bg-olive-50 text-olive-400 border border-olive-100'
                     }`}>
                       {pa?.correct ? <CheckCircle size={11} /> : pa ? <XCircle size={11} /> : <Clock size={11} />}
-                      {p}
+                      {p === userNickname ? t('quiz.you') : p}
                       {pa?.points ? <span className="ml-1 text-green-500">+{pa.points}</span> : null}
                     </div>
                   );
@@ -439,17 +437,17 @@ const Quiz = ({ roomId, roomData, userNickname }) => {
 
             {isHost && (
               <button onClick={handleNextQuestion} className="btn btn-primary w-full py-3.5 text-[15px]">
-                {currentQ + 1 >= questions.length ? 'ดูผลลัพธ์' : 'ข้อถัดไป'}
+                {currentQ + 1 >= questions.length ? t('quiz.viewResults') : t('quiz.nextQuestion')}
               </button>
             )}
             {!isHost && (
-              <p className="text-center text-[12px] text-olive-400 font-semibold">รอ Host กดข้อถัดไป...</p>
+              <p className="text-center text-[12px] text-olive-400 font-semibold">{t('quiz.waitingNextQuestion')}</p>
             )}
           </div>
-        ) : hasAnswered ? (
+        ) : (selectedAnswer !== null || !!answers[currentQ]?.[userNickname]) ? (
           <div className="flex-center gap-2 py-3">
             <CheckCircle size={16} className="text-sage-500" />
-            <span className="text-[13px] font-bold text-sage-600">ตอบแล้ว! รอคนอื่น...</span>
+            <span className="text-[13px] font-bold text-sage-600">{t('quiz.alreadyAnswered')}</span>
           </div>
         ) : null}
       </div>

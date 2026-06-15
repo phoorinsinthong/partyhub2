@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ref, update, get } from 'firebase/database';
 import { db } from '../firebase';
 import { Target, User, Trophy, Play, RotateCcw, Crown, Skull, LogOut } from 'lucide-react';
@@ -6,17 +6,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
+import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import { feedback } from '../utils/feedback';
 
-const TargetNumber = ({ roomId, roomData, userNickname }) => {
+const TURN_TIME = 30;
+
+const TargetNumber = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = roomData.host === userNickname;
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const players = roomData.players || {};
   const playerNames = Object.keys(players);
 
   const [selectedTarget, setSelectedTarget] = useState('');
-  const [lastNumbers, setLastNumbers] = useState([]);
   const [errorMsg, setErrorMsg] = useState('');
   const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
@@ -25,7 +34,7 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
     try {
       await update(ref(db, refPath), data);
     } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setErrorMsg(t('common.error'));
       setTimeout(() => setErrorMsg(''), 3000);
       throw e;
     }
@@ -39,7 +48,6 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
   const isMyTurn = currentPlayer === userNickname;
 
   useEffect(() => {
-    setLastNumbers([]);
     advancingRef.current = false;
   }, [gameData.roundNumber, gameStatus]);
 
@@ -53,7 +61,80 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
     recordPersonalGame('target');
     const loser = gameData.loser;
     if (loser && loser !== userNickname) recordPersonalWin('target');
-  }, [gameStatus]);
+  }, [gameStatus, gameData.loser, userNickname]);
+
+  // ─── Host Actions ───
+
+  const handleTimeUp = useCallback(async () => {
+    if (!isHost) return;
+    feedback('timeUp');
+
+    if (gameStatus === 'choosing_target') {
+      // Auto-set target if chooser times out
+      const randomTarget = Math.floor(Math.random() * 100) + 1;
+      setSelectedTarget(randomTarget.toString());
+      // We need to trigger handleSetTarget logic but as host
+      const allPlayers = [...playerNames].sort((a, b) => {
+        const aTime = players[a]?.joinedAt || 0;
+        const bTime = players[b]?.joinedAt || 0;
+        return aTime - bTime;
+      });
+      const chooserIdx = allPlayers.indexOf(targetChooser);
+      const firstPlayerIndex = (chooserIdx + 1) % allPlayers.length;
+
+      await safeUpdate(`rooms/${roomId}/gameData`, {
+        gameStatus: 'playing',
+        targetNumber: randomTarget,
+        range: {
+          min: Math.max(1, randomTarget - 5),
+          max: Math.min(100, randomTarget + 5)
+        },
+        currentCount: 0,
+        currentPlayerIndex: firstPlayerIndex,
+        playerOrder: allPlayers,
+        loser: null,
+        lastMove: null,
+        timerEnd: Date.now() + (TURN_TIME * 1000)
+      });
+    } else if (gameStatus === 'playing') {
+      // Auto-move +1 if player times out
+      // This is a bit complex because we need the current state.
+      // For simplicity in this refactor, let's just skip/auto-move 1.
+      // But we need the current logic. I'll implement a simplified auto-move.
+      const currentCount = gameData.currentCount || 0;
+      const target = gameData.targetNumber;
+      const playerOrder = gameData.playerOrder || [];
+      const newCount = currentCount + 1;
+      const loser = newCount === target ? currentPlayer : null;
+      const nextPlayerIndex = loser ? currentPlayerIndex : (currentPlayerIndex + 1) % playerOrder.length;
+      
+      const updates = {
+        currentCount: newCount,
+        currentPlayerIndex: nextPlayerIndex,
+        lastMove: {
+          player: currentPlayer,
+          numbers: [newCount],
+          increment: 1
+        },
+        timerEnd: loser ? null : Date.now() + (TURN_TIME * 1000)
+      };
+
+      if (loser) {
+        updates.loser = loser;
+        updates.gameStatus = 'finished';
+        const currentScores = gameData.scores || {};
+        const newScores = { ...currentScores };
+        playerOrder.forEach(name => {
+          if (name !== loser) newScores[name] = (newScores[name] || 0) + 1;
+        });
+        updates.scores = newScores;
+      }
+
+      await safeUpdate(`rooms/${roomId}/gameData`, updates);
+    }
+  }, [isHost, gameStatus, roomId, targetChooser, playerNames, players, gameData, currentPlayer, currentPlayerIndex]);
+
+  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
 
   // Skip turn if current player left the room
   useEffect(() => {
@@ -62,7 +143,10 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
     const current = playerOrder[currentPlayerIndex];
     if (current && !players[current]) {
       const nextIndex = (currentPlayerIndex + 1) % playerOrder.length;
-      safeUpdate(`rooms/${roomId}/gameData`, { currentPlayerIndex: nextIndex });
+      safeUpdate(`rooms/${roomId}/gameData`, { 
+        currentPlayerIndex: nextIndex,
+        timerEnd: Date.now() + (TURN_TIME * 1000)
+      });
     }
   }, [isHost, gameStatus, currentPlayerIndex, gameData.playerOrder, players, roomId]);
 
@@ -86,7 +170,8 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         playerOrder: null,
         loser: null,
         lastMove: null,
-        roundNumber: (gameData.roundNumber || 0) + 1
+        roundNumber: (gameData.roundNumber || 0) + 1,
+        timerEnd: Date.now() + (TURN_TIME * 1000)
       });
     } finally {
       startGameRef.current = false;
@@ -120,7 +205,8 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         currentPlayerIndex: firstPlayerIndex,
         playerOrder: allPlayers,
         loser: null,
-        lastMove: null
+        lastMove: null,
+        timerEnd: Date.now() + (TURN_TIME * 1000)
       });
     } finally {
       advancingRef.current = false;
@@ -159,7 +245,8 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         player: userNickname,
         numbers: numbersSaid,
         increment
-      }
+      },
+      timerEnd: loser ? null : Date.now() + (TURN_TIME * 1000)
     };
 
     if (loser) {
@@ -209,18 +296,18 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
               <Target size={48} />
             </div>
           </div>
-          <h2 className="text-3xl font-black mb-sm">เกมนับเลขเป้า</h2>
+          <h2 className="text-3xl font-black mb-sm">{t('target.title')}</h2>
           <p className="text-secondary leading-relaxed">
-            ผู้เล่นคนหนึ่งจะตั้งตัวเลขลับ (1-100) แล้วทุกคนผลัดกันนับ +1, +2 หรือ +3 ใครนับถึงเลขเป้าคนนั้นแพ้!
+            {t('target.description')}
           </p>
 
           <div className="mt-lg p-md bg-glass-dark/30 rounded-xl border border-glass">
-            <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-sm">กติกา</h4>
+            <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-sm">{t('spyfall.timerTitle')}</h4>
             <div className="text-left text-sm text-secondary space-y-xs">
-              <p>🎯 คนหนึ่งจะถูกสุ่มให้ตั้งตัวเลขลับ 1-100</p>
-              <p>💡 ผู้เล่นอื่นจะเห็นช่วงใบ้ (±5 จากเป้า)</p>
-              <p>🔢 ผลัดกันนับ +1, +2, หรือ +3</p>
-              <p>💀 ใครนับถึงตัวเลขเป้า...แพ้!</p>
+              <p>🎯 {t('target.description').split(' ')[0] === 'ทาย' ? 'คนหนึ่งจะถูกสุ่มให้ตั้งตัวเลขลับ 1-100' : 'One player will be randomly selected to set a secret number 1-100'}</p>
+              <p>💡 {t('target.description').split(' ')[0] === 'ทาย' ? 'ผู้เล่นอื่นจะเห็นช่วงใบ้ (±5 จากเป้า)' : 'Other players will see a hint range (±5 from target)'}</p>
+              <p>🔢 {t('target.description').split(' ')[0] === 'ทาย' ? 'ผลัดกันนับ +1, +2, หรือ +3' : 'Take turns counting +1, +2, or +3'}</p>
+              <p>💀 {t('target.description').split(' ')[0] === 'ทาย' ? 'ใครนับถึงตัวเลขเป้า...แพ้!' : 'Whoever counts to the target number... loses!'}</p>
             </div>
           </div>
         </div>
@@ -228,11 +315,11 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <button className="btn btn-primary w-full py-xl text-xl font-black" onClick={startGame}>
             <Play size={24} fill="currentColor" />
-            เริ่มเกม!
+            {t('target.startGame')}
           </button>
         ) : (
           <div className="glass-panel p-md text-center border-primary/30">
-            <p className="animate-pulse text-primary font-bold">รอโฮสต์เริ่มเกม...</p>
+            <p className="animate-pulse text-primary font-bold">{t('target.waitingHost')}</p>
           </div>
         )}
       </div>
@@ -258,18 +345,19 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
               className="flex flex-col gap-lg"
             >
               <div>
-                <h2 className="text-2xl font-black mb-xs">คุณถูกเลือกให้ตั้งตัวเลขลับ!</h2>
-                <p className="text-secondary">เลือกตัวเลขระหว่าง 1 ถึง 100 ผู้เล่นอื่นจะเห็นช่วง ±5 เท่านั้น</p>
+                <h2 className="text-2xl font-black mb-xs">{t('target.setTarget')}</h2>
+                <p className="text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกตัวเลขระหว่าง 1 ถึง 100 ผู้เล่นอื่นจะเห็นช่วง ±5 เท่านั้น' : 'Choose a number between 1 and 100. Others will only see ±5 range.'}</p>
               </div>
 
               <div className="flex flex-col gap-md items-center">
+                <TimerDisplay timeLeft={timeLeft} />
                 <input
                   type="number"
                   min="1"
                   max="100"
                   value={selectedTarget}
                   onChange={(e) => setSelectedTarget(e.target.value)}
-                  placeholder="พิมพ์เลข 1-100"
+                  placeholder="1-100"
                   className="input-field py-lg text-center text-2xl font-black w-48"
                 />
                 <button
@@ -277,15 +365,16 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
                   onClick={handleSetTarget}
                   disabled={!selectedTarget || parseInt(selectedTarget) < 1 || parseInt(selectedTarget) > 100}
                 >
-                  ยืนยันตัวเลข
+                  {t('target.confirmTarget')}
                 </button>
               </div>
             </motion.div>
           ) : (
             <div className="flex flex-col items-center gap-md">
-              <h2 className="text-2xl font-black">กำลังตั้งตัวเลขลับ...</h2>
+              <h2 className="text-2xl font-black">{t('target.choosingTarget')}</h2>
+              <TimerDisplay timeLeft={timeLeft} />
               <p className="text-secondary">
-                รอ <span className="text-primary font-bold">{targetChooser}</span> เลือกตัวเลขลับ
+                {t('target.waitChooser', { name: targetChooser })}
               </p>
               <div className="text-4xl animate-bounce mt-md">🎲</div>
             </div>
@@ -312,12 +401,12 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
               <Target size={18} />
             </div>
             <div>
-              <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">ตัวเลขปัจจุบัน</p>
+              <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'ตัวเลขปัจจุบัน' : 'Current Number'}</p>
               <p className="font-black text-2xl text-white">{currentCount}</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">คะแนนของคุณ</p>
+            <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">{t('taboo.currentScores').split(' ')[0] === 'คะแนน' ? 'คะแนนของคุณ' : 'Your Score'}</p>
             <p className="font-black text-primary text-lg">{gameData.scores?.[userNickname] || 0}</p>
           </div>
         </div>
@@ -325,12 +414,12 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         {/* Hint Range */}
         {!isTargetChooser && (
           <div className="glass-panel p-lg text-center border-warning/30 bg-warning/5">
-            <p className="text-xs font-bold text-warning uppercase tracking-widest mb-sm">💡 ช่วงตัวเลขใบ้</p>
+            <p className="text-xs font-bold text-warning uppercase tracking-widest mb-sm">💡 {t('target.description').split(' ')[0] === 'ทาย' ? 'ช่วงตัวเลขใบ้' : 'Hint Range'}</p>
             <div className="flex items-center justify-center gap-md">
               <span className="bg-warning/20 text-warning font-black text-2xl px-lg py-sm rounded-xl border border-warning/30">
                 {range.min}
               </span>
-              <span className="text-secondary font-bold">ถึง</span>
+              <span className="text-secondary font-bold">{t('target.description').split(' ')[0] === 'ทาย' ? 'ถึง' : 'to'}</span>
               <span className="bg-warning/20 text-warning font-black text-2xl px-lg py-sm rounded-xl border border-warning/30">
                 {range.max}
               </span>
@@ -340,7 +429,7 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
 
         {isTargetChooser && (
           <div className="glass-panel p-lg text-center border-accent/30 bg-accent/5">
-            <p className="text-xs font-bold text-accent uppercase tracking-widest mb-xs">🤫 ตัวเลขลับของคุณ</p>
+            <p className="text-xs font-bold text-accent uppercase tracking-widest mb-xs">🤫 {t('target.targetIs', { number: '' }).trim()}</p>
             <p className="text-4xl font-black text-accent">{gameData.targetNumber}</p>
           </div>
         )}
@@ -355,9 +444,9 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
               exit={{ opacity: 0 }}
               className="glass-panel p-md text-center border-glass"
             >
-              <p className="text-xs text-secondary font-bold mb-xs">เมื่อกี้</p>
+              <p className="text-xs text-secondary font-bold mb-xs">{t('target.description').split(' ')[0] === 'ทาย' ? 'เมื่อกี้' : 'Just now'}</p>
               <p className="font-bold">
-                <span className="text-primary">{lastMove.player}</span> นับ{' '}
+                <span className="text-primary">{lastMove.player}</span> {t('target.description').split(' ')[0] === 'ทาย' ? 'นับ' : 'counted'}{' '}
                 <span className="text-white font-black">
                   {lastMove.numbers.join(', ')}
                 </span>
@@ -368,11 +457,14 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
 
         {/* Turn Indicator */}
         <div className={`glass-panel p-lg text-center ${isMyTurn ? 'border-success/40 bg-success/10' : 'border-glass'}`}>
+          <div className="flex justify-center mb-2">
+            <TimerDisplay timeLeft={timeLeft} />
+          </div>
           <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-xs">
-            {isMyTurn ? '🎯 ถึงตาคุณแล้ว!' : '⏰ ตาปัจจุบัน'}
+            {isMyTurn ? t('target.yourTurn') : t('target.waitTurn', { name: '' }).trim()}
           </p>
           <p className={`text-xl font-black ${isMyTurn ? 'text-success' : 'text-white'}`}>
-            {isMyTurn ? 'เร็วเข้า! เลือกจำนวนเลขที่จะนับ' : `รอ ${currentPlayer} เลือก...`}
+            {isMyTurn ? (t('target.description').split(' ')[0] === 'ทาย' ? 'เร็วเข้า! เลือกจำนวนเลขที่จะนับ' : 'Hurry! Select how many to count') : t('target.waitTurn', { name: currentPlayer })}
           </p>
         </div>
 
@@ -383,14 +475,14 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
             animate={{ scale: 1, opacity: 1 }}
             className="flex flex-col gap-md"
           >
-            <p className="text-center text-xs font-bold text-secondary uppercase tracking-widest">🎮 เลือกจำนวนเลขที่จะนับ</p>
+            <p className="text-center text-xs font-bold text-secondary uppercase tracking-widest">🎮 {t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกจำนวนเลขที่จะนับ' : 'Choose how many to count'}</p>
             <div className="grid grid-cols-3 gap-md">
               <button
                 className="glass-panel p-lg flex flex-col items-center gap-xs border-2 border-blue-400/40 bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 transition-all"
                 onClick={() => handleMove(1)}
               >
                 <span className="text-3xl font-black text-blue-400">+1</span>
-                <span className="text-[10px] font-bold text-secondary">นับ 1 ตัว</span>
+                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 1 ตัว' : 'Count 1'}</span>
                 <span className="text-xs text-blue-300 font-bold">{currentCount + 1}</span>
               </button>
               <button
@@ -398,7 +490,7 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
                 onClick={() => handleMove(2)}
               >
                 <span className="text-3xl font-black text-green-400">+2</span>
-                <span className="text-[10px] font-bold text-secondary">นับ 2 ตัว</span>
+                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 2 ตัว' : 'Count 2'}</span>
                 <span className="text-xs text-green-300 font-bold">{currentCount + 1}-{currentCount + 2}</span>
               </button>
               <button
@@ -406,7 +498,7 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
                 onClick={() => handleMove(3)}
               >
                 <span className="text-3xl font-black text-orange-400">+3</span>
-                <span className="text-[10px] font-bold text-secondary">นับ 3 ตัว</span>
+                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 3 ตัว' : 'Count 3'}</span>
                 <span className="text-xs text-orange-300 font-bold">{currentCount + 1}-{currentCount + 3}</span>
               </button>
             </div>
@@ -414,13 +506,13 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         ) : (
           <div className="glass-panel p-xl flex-center flex-col gap-md">
             <div className="text-4xl animate-bounce">⏳</div>
-            <p className="text-secondary font-bold">รอ {currentPlayer} เลือก...</p>
+            <p className="text-secondary font-bold">{t('target.waitTurn', { name: currentPlayer })}</p>
           </div>
         )}
 
         {/* Player Order */}
         <div className="glass-panel p-md">
-          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">ลำดับผู้เล่น</p>
+          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">{t('taboo.players')}</p>
           <div className="flex flex-wrap gap-xs">
             {playerOrder.map((name, idx) => (
               <div
@@ -458,16 +550,16 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
           className="glass-panel p-xl text-center"
         >
           <div className="text-4xl mb-md">🎊 🎉 🎊</div>
-          <h2 className="text-3xl font-black mb-lg">เกมจบแล้ว!</h2>
+          <h2 className="text-3xl font-black mb-lg">{t('target.gameOver')}</h2>
 
           {/* Loser */}
           <div className={`p-xl rounded-2xl mb-lg ${isLoser ? 'bg-danger/10 border-2 border-danger/30' : 'bg-warning/10 border border-warning/30'}`}>
             <div className="text-5xl mb-sm">{isLoser ? '😢' : '🎭'}</div>
             <h3 className="text-2xl font-black mb-sm">
-              {isLoser ? 'คุณแพ้!' : `${loser} แพ้!`}
+              {isLoser ? (t('target.description').split(' ')[0] === 'ทาย' ? 'คุณแพ้!' : 'You Lost!') : t('target.loserIs', { name: loser })}
             </h3>
             <div className="flex items-center justify-center gap-sm mt-md">
-              <span className="text-secondary">ตัวเลขลับคือ</span>
+              <span className="text-secondary">{t('taboo.secretWordWas')}</span>
               <span className="bg-primary/20 text-primary font-black text-2xl px-lg py-sm rounded-xl border border-primary/30">
                 {gameData.targetNumber}
               </span>
@@ -478,7 +570,7 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
           <div className="p-lg rounded-2xl bg-success/10 border border-success/30 mb-lg">
             <div className="flex items-center justify-center gap-sm mb-md">
               <Trophy size={20} className="text-success" />
-              <h4 className="font-black text-success">ผู้ชนะ</h4>
+              <h4 className="font-black text-success">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</h4>
             </div>
             <div className="flex flex-wrap gap-sm justify-center">
               {winners.map(name => (
@@ -491,14 +583,14 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
 
           {/* Scores */}
           <div className="space-y-sm">
-            <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">คะแนนรวม</p>
+            <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">{t('taboo.totalScores')}</p>
             {Object.entries(gameData.scores || {}).sort((a, b) => b[1] - a[1]).map(([name, score]) => (
               <div key={name} className="flex justify-between items-center p-md bg-glass-dark/30 rounded-xl border border-glass">
                 <div className="flex items-center gap-sm">
                   {name === loser ? <Skull size={16} className="text-danger" /> : <Crown size={16} className="text-warning" />}
                   <span className="font-bold">{name}</span>
                 </div>
-                <span className="font-black text-primary">{score} แต้ม</span>
+                <span className="font-black text-primary">{score} {t('taboo.pointsGuesser').split(' ')[1]}</span>
               </div>
             ))}
           </div>
@@ -507,14 +599,14 @@ const TargetNumber = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <button className="btn btn-primary w-full py-xl text-xl font-black" onClick={nextRound}>
             <RotateCcw size={24} />
-            เล่นรอบถัดไป
+            {t('taboo.playAgain')}
           </button>
         ) : (
           <button
             className="btn btn-outline w-full py-lg font-black"
             onClick={requestLeave}
           >
-            <LogOut size={18} /> ออกจากห้อง
+            <LogOut size={18} /> {t('taboo.leaveRoom')}
           </button>
         )}
       </div>

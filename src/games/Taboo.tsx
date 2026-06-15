@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
+import { useTranslation } from 'react-i18next';
+import { useGame } from '../contexts/GameContext';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { Clock, Crown, SkipForward, EyeOff, LogOut, RotateCcw } from 'lucide-react';
 import { getRandomCards } from './logic/tabooData';
 import { recordWin } from '../components/Scoreboard';
@@ -23,9 +27,12 @@ function shuffle(arr) {
   return a;
 }
 
-const Taboo = ({ roomId, roomData, userNickname }) => {
+const Taboo = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = userNickname === roomData.host;
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const players = Object.keys(roomData.players || {});
 
@@ -45,11 +52,9 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
 
   useTurnNotification(isDescriber, phase);
 
-  const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
   const [showGuesserPicker, setShowGuesserPicker] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [cardMode, setCardMode] = useState('all');
-  const timerRef = useRef(null);
   const lastCountdownRef = useRef(null);
   const advancingRef = useRef(false);
   const skipRef = useRef(false);
@@ -57,7 +62,40 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
   const correctGuessRef = useRef(false);
   const personalRecordedRef = useRef(false);
   const startGameRef = useRef(false);
-  const playAgainRef2 = useRef(false);
+
+  // ─── Helpers ───
+  const safeUpdate = async (path, data) => {
+    try {
+      await update(ref(db, path), data);
+    } catch (e) {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+      throw e;
+    }
+  };
+
+  // ─── Host: Time up ───
+  const handleTimeUp = useCallback(async () => {
+    if (!isHost) return;
+    feedback('timeUp');
+
+    await safeUpdate(`rooms/${roomId}/gameData`, {
+      phase: 'roundEnd',
+      roundResult: 'timeUp',
+      roundEndedAt: Date.now(),
+      timerEnd: null
+    });
+  }, [isHost, roomId]);
+
+  // ─── Timer ───
+  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
+
+  useEffect(() => {
+    if (timeLeft <= 5 && timeLeft > 0 && timeLeft !== lastCountdownRef.current) {
+      lastCountdownRef.current = timeLeft;
+      feedback('countdown');
+    }
+  }, [timeLeft]);
 
   // Reset personal record on new game
   useEffect(() => {
@@ -75,37 +113,10 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
     if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
       recordPersonalWin('taboo');
     }
-  }, [phase]);
+  }, [phase, scores, userNickname]);
 
-  // ─── Timer ───
+  // Reset guards when round/phase changes
   useEffect(() => {
-    if (phase !== 'playing' || !roundStartedAt) return;
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    lastCountdownRef.current = null;
-
-    timerRef.current = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - roundStartedAt) / 1000);
-      const remaining = Math.max(0, ROUND_TIME - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining <= 5 && remaining > 0 && remaining !== lastCountdownRef.current) {
-        lastCountdownRef.current = remaining;
-        feedback('countdown');
-      }
-
-      if (remaining === 0) {
-        clearInterval(timerRef.current);
-        if (isHost) handleTimeUp();
-      }
-    }, 500);
-
-    return () => clearInterval(timerRef.current);
-  }, [phase, roundStartedAt, isHost]);
-
-  // Reset timer display and all guards when round/phase changes
-  useEffect(() => {
-    if (phase === 'playing') setTimeLeft(ROUND_TIME);
     advancingRef.current = false;
     skipRef.current = false;
     confirmRef.current = false;
@@ -118,17 +129,6 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
       {errorMsg}
     </div>
   ) : null;
-
-  // ─── Helpers ───
-  const safeUpdate = async (path, data) => {
-    try {
-      await update(ref(db, path), data);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
-  };
 
   // ─── Host: Start Game ───
   const handleStartGame = async () => {
@@ -151,6 +151,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         usedWords: [],
         currentCard: null,
         roundStartedAt: 0,
+        timerEnd: null,
         skipsUsed: 0,
         previewCard: firstCard,
         correctGuesser: null,
@@ -191,7 +192,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
       await safeUpdate(`rooms/${roomId}/gameData`, {
         phase: 'playing',
         currentCard: card,
-        roundStartedAt: Date.now(),
+        timerEnd: Date.now() + (ROUND_TIME * 1000),
       });
     } finally {
       confirmRef.current = false;
@@ -214,22 +215,11 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         roundResult: 'correct',
         roundEndedAt: Date.now(),
         correctGuesser: guesserName,
+        timerEnd: null
       });
     } finally {
       correctGuessRef.current = false;
     }
-  };
-
-  // ─── Host: Time up ───
-  const handleTimeUp = async () => {
-    if (!isHost) return;
-    feedback('timeUp');
-
-    await safeUpdate(`rooms/${roomId}/gameData`, {
-      phase: 'roundEnd',
-      roundResult: 'timeUp',
-      roundEndedAt: Date.now(),
-    });
   };
 
   // ─── Host: Advance to next round or finish ───
@@ -246,6 +236,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         await safeUpdate(`rooms/${roomId}/gameData`, {
           phase: 'finished',
           usedWords: newUsedWords,
+          timerEnd: null
         });
         if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
           await recordWin(roomId, sortedScores[0][0], 'taboo');
@@ -260,6 +251,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
           round: round + 1,
           currentCard: null,
           roundStartedAt: 0,
+          timerEnd: null,
           skipsUsed: 0,
           usedWords: newUsedWords,
           previewCard: nextCard,
@@ -270,7 +262,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
     } finally {
       advancingRef.current = false;
     }
-  }, [isHost, currentDescriberIndex, describerOrder.length, scores, currentCard, usedWords, round, roomId]);
+  }, [isHost, currentDescriberIndex, describerOrder.length, scores, currentCard, usedWords, round, roomId, gameData.cardMode]);
 
   // ─── Auto-advance after roundEnd (3s) ───
   useEffect(() => {
@@ -300,6 +292,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         usedWords: [],
         currentCard: null,
         roundStartedAt: 0,
+        timerEnd: null,
         skipsUsed: 0,
         previewCard: firstCard,
         roundResult: null,
@@ -315,10 +308,6 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
     if (!isHost) return;
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
-
-  const timerPercent = (timeLeft / ROUND_TIME) * 100;
-  const timerColor =
-    timeLeft > 20 ? 'bg-sage-400' : timeLeft > 10 ? 'bg-amber-400' : 'bg-red-400';
 
   const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
@@ -337,41 +326,41 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
           🤫
         </motion.div>
         <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">ใบ้คำ (Taboo)</h2>
+          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('taboo.title')}</h2>
           <p className="text-olive-400 text-[13px] max-w-xs leading-relaxed">
-            อธิบายคำลับโดยห้ามพูดคำต้องห้าม ให้คนอื่นทาย!
+            {t('taboo.description')}
           </p>
         </div>
 
         <div className="card p-4 w-full max-w-xs space-y-2">
           <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">ผู้เล่น</span>
-            <span className="font-bold text-olive-700">{players.length} คน</span>
+            <span className="text-olive-400 font-semibold">{t('taboo.players')}</span>
+            <span className="font-bold text-olive-700">{players.length} {t('common.people') || 'คน'}</span>
           </div>
           <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">เวลาต่อรอบ</span>
-            <span className="font-bold text-olive-700">{ROUND_TIME} วินาที</span>
+            <span className="text-olive-400 font-semibold">{t('taboo.roundTime')}</span>
+            <span className="font-bold text-olive-700">{ROUND_TIME} {t('common.seconds') || 'วินาที'}</span>
           </div>
           <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">ข้ามการ์ดได้</span>
-            <span className="font-bold text-olive-700">{MAX_SKIPS} ครั้ง/รอบ</span>
+            <span className="text-olive-400 font-semibold">{t('taboo.maxSkips')}</span>
+            <span className="font-bold text-olive-700">{MAX_SKIPS} {t('common.times') || 'ครั้ง'}/{t('common.round') || 'รอบ'}</span>
           </div>
           <hr className="border-olive-100" />
           <div className="text-[11px] text-olive-400 space-y-0.5">
-            <p>🎯 ผู้อธิบาย +3 คะแนน (ทายถูก)</p>
-            <p>✅ ผู้ทาย +1 คะแนน (ทายถูก)</p>
+            <p>🎯 {t('taboo.pointsDescriber')}</p>
+            <p>✅ {t('taboo.pointsGuesser')}</p>
           </div>
         </div>
 
         {isHost ? (
           <>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">ชุดคำศัพท์</p>
+              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('taboo.cardPack')}</p>
               <div className="flex gap-2">
                 {[
-                  { id: 'all', label: '🎲 ทุกคำ' },
-                  { id: 'normal', label: '📝 ปกติ' },
-                  { id: 'funny', label: '🤪 ปั่นๆ ฮาๆ' },
+                  { id: 'all', label: t('taboo.cardPackAll') },
+                  { id: 'normal', label: t('taboo.cardPackNormal') },
+                  { id: 'funny', label: t('taboo.cardPackFunny') },
                 ].map(opt => (
                   <button
                     key={opt.id}
@@ -392,18 +381,18 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
               className="btn btn-primary py-3.5 px-8 text-[15px]"
               disabled={players.length < 2}
             >
-              🚀 เริ่มเกม!
+              {t('taboo.startGame')}
             </button>
             {players.length < 2 && (
               <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl">
-                ต้องมีอย่างน้อย 2 คน
+                {t('taboo.minPlayers')}
               </p>
             )}
           </>
         ) : (
           <div className="flex items-center gap-2 text-olive-400">
             <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[13px] font-semibold">รอ Host เริ่มเกม...</span>
+            <span className="text-[13px] font-semibold">{t('taboo.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -421,7 +410,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
           <span className="text-5xl">🏆</span>
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mt-2">จบเกม!</h2>
+          <h2 className="font-display font-bold text-[20px] text-olive-800 mt-2">{t('common.finished') || 'จบเกม!'}</h2>
         </div>
 
         {winner && (
@@ -432,12 +421,12 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
           >
             <Crown size={26} className="text-amber-500 mx-auto mb-2" />
             <p className="font-bold text-[17px] text-olive-800">{winner[0]}</p>
-            <p className="text-[24px] font-black text-amber-600">{winner[1]} คะแนน</p>
+            <p className="text-[24px] font-black text-amber-600">{winner[1]} {t('common.points') || 'คะแนน'}</p>
           </motion.div>
         )}
 
         <div className="card p-4">
-          <h3 className="font-bold text-[13px] text-olive-600 mb-3">📊 คะแนนรวม</h3>
+          <h3 className="font-bold text-[13px] text-olive-600 mb-3">📊 {t('taboo.totalScores')}</h3>
           <div className="space-y-2">
             {sortedScores.map(([name, score], idx) => (
               <motion.div
@@ -453,7 +442,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
                 <span className="flex-1 font-bold text-[14px] text-olive-700">{name}</span>
                 <span className="font-black text-[15px] text-sage-600">{score}</span>
                 {name === userNickname && (
-                  <span className="text-[9px] font-extrabold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-md">คุณ</span>
+                  <span className="text-[9px] font-extrabold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-md">{t('taboo.you')}</span>
                 )}
               </motion.div>
             ))}
@@ -463,10 +452,10 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         {isHost ? (
           <div className="space-y-2">
             <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> เล่นอีกรอบ
+              <RotateCcw size={16} /> {t('taboo.playAgain')}
             </button>
             <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
-              <LogOut size={14} /> กลับ Lobby
+              <LogOut size={14} /> {t('taboo.backToLobby')}
             </button>
           </div>
         ) : (
@@ -474,7 +463,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
             className="btn btn-outline w-full py-3.5 text-[14px]"
             onClick={requestLeave}
           >
-            <LogOut size={15} /> ออกจากห้อง
+            <LogOut size={15} /> {t('taboo.leaveRoom')}
           </button>
         )}
       </div>
@@ -495,16 +484,16 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
           {/* Round info */}
           <div className="flex-between">
             <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
-              รอบ {round}/{totalRounds}
+              {t('taboo.round')} {round}/{totalRounds}
             </span>
             <span className="text-[11px] font-bold text-sage-600 bg-sage-100 px-3 py-1.5 rounded-full">
-              คุณคืออธิบาย!
+              {t('taboo.youAreDescriber')}
             </span>
           </div>
 
           <div className="text-center mb-1">
-            <p className="text-[14px] text-olive-500 font-semibold">เลือกการ์ดของคุณ</p>
-            <p className="text-[11px] text-olive-400 mt-0.5">ข้ามได้อีก {skipsLeft} ครั้ง</p>
+            <p className="text-[14px] text-olive-500 font-semibold">{t('taboo.chooseYourCard')}</p>
+            <p className="text-[11px] text-olive-400 mt-0.5">{t('taboo.skipsLeft', { count: skipsLeft })}</p>
           </div>
 
           {/* Card preview */}
@@ -520,13 +509,13 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
                 style={{ perspective: 600 }}
               >
                 {/* Secret word */}
-                <p className="text-[11px] font-bold text-olive-400 mb-3 uppercase tracking-widest">คำลับ</p>
+                <p className="text-[11px] font-bold text-olive-400 mb-3 uppercase tracking-widest">{t('taboo.secretWord')}</p>
                 <p className="font-display font-black text-[36px] text-olive-800 mb-5">
                   {card.word}
                 </p>
 
                 {/* Taboo words */}
-                <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">ห้ามพูด</p>
+                <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {(card.taboo || card.examples || []).map((w) => (
                     <span
@@ -549,13 +538,13 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
               className="btn btn-outline flex-1 py-3 text-[14px] flex items-center justify-center gap-2 disabled:opacity-40"
             >
               <SkipForward size={16} />
-              ข้าม ({skipsLeft})
+              {t('taboo.skip')} ({skipsLeft})
             </button>
             <button
               onClick={handleConfirmCard}
               className="btn btn-primary flex-[2] py-3 text-[14px]"
             >
-              เริ่มเลย!
+              {t('taboo.startNow')}
             </button>
           </div>
         </div>
@@ -574,16 +563,16 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
           🤔
         </motion.div>
         <div className="text-center">
-          <p className="text-[13px] text-olive-400 font-semibold mb-1">รอบ {round}/{totalRounds}</p>
+          <p className="text-[13px] text-olive-400 font-semibold mb-1">{t('taboo.round')} {round}/{totalRounds}</p>
           <p className="font-bold text-[17px] text-olive-800">
-            <span className="text-sage-600">{currentDescriber}</span> กำลังเลือกการ์ด...
+            {t('taboo.isChoosing', { name: currentDescriber })}
           </p>
         </div>
 
         {/* Mini scores */}
         {Object.keys(scores).length > 0 && (
           <div className="card p-3 w-full max-w-xs">
-            <p className="text-[10px] font-bold text-olive-400 mb-2 text-center">คะแนนปัจจุบัน</p>
+            <p className="text-[10px] font-bold text-olive-400 mb-2 text-center">{t('taboo.currentScores')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {sortedScores.map(([name, score]) => (
                 <div key={name} className="flex items-center gap-1.5 bg-olive-50 px-2.5 py-1 rounded-lg">
@@ -615,11 +604,11 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         >
           <span className="text-5xl">{correct ? '🎉' : '⏰'}</span>
           <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">
-            {correct ? 'ทายถูก!' : 'หมดเวลา!'}
+            {correct ? t('taboo.correct') : t('taboo.timeUp')}
           </h3>
           {correct && correctGuesser && (
             <p className="text-[13px] text-olive-500 mt-1">
-              <span className="font-bold text-sage-600">{correctGuesser}</span> ทายถูก
+              <span className="font-bold text-sage-600">{correctGuesser}</span> {t('taboo.correct')}
             </p>
           )}
         </motion.div>
@@ -632,11 +621,11 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
             transition={{ delay: 0.15 }}
             className="card p-5 text-center"
           >
-            <p className="text-[11px] font-bold text-olive-400 mb-2 uppercase tracking-widest">คำลับคือ</p>
+            <p className="text-[11px] font-bold text-olive-400 mb-2 uppercase tracking-widest">{t('taboo.secretWordWas')}</p>
             <p className="font-display font-black text-[32px] text-olive-800 mb-4">
               {currentCard.word}
             </p>
-            <p className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider">คำต้องห้าม</p>
+            <p className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {(currentCard.taboo || currentCard.examples || []).map((w) => (
                 <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1 rounded-full">
@@ -649,7 +638,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
 
         {/* Scores */}
         <div className="card p-4">
-          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 คะแนนสะสม</h3>
+          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 {t('taboo.currentScores')}</h3>
           <div className="space-y-1.5">
             {sortedScores.map(([name, score], idx) => (
               <div key={name} className="flex items-center gap-2.5 p-2 rounded-xl bg-olive-50/60">
@@ -657,7 +646,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
                 <span className="flex-1 font-bold text-[13px] text-olive-700">{name}</span>
                 <span className="font-black text-[14px] text-sage-600">{score}</span>
                 {name === userNickname && (
-                  <span className="text-[9px] font-bold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded">คุณ</span>
+                  <span className="text-[9px] font-bold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded">{t('taboo.you')}</span>
                 )}
               </div>
             ))}
@@ -666,12 +655,12 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
 
         {isHost ? (
           <button onClick={handleNextRound} className="btn btn-primary w-full py-3 text-[14px]">
-            {currentDescriberIndex + 1 >= describerOrder.length ? '🏆 ดูผลลัพธ์' : '➡️ รอบถัดไป'}
+            {currentDescriberIndex + 1 >= describerOrder.length ? t('taboo.viewResults') : t('taboo.nextRound')}
           </button>
         ) : (
           <div className="flex-center gap-2 text-olive-400 py-2">
             <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[12px] font-semibold">รอรอบถัดไป...</span>
+            <span className="text-[12px] font-semibold">{t('taboo.waitNextRound')}</span>
           </div>
         )}
       </div>
@@ -689,28 +678,13 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
       {/* Round header */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
-          รอบ {round}/{totalRounds}
+          {t('taboo.round')} {round}/{totalRounds}
         </span>
         <span className="text-[12px] font-bold text-olive-600 text-center">
-          <span className="text-sage-600">{currentDescriber}</span> กำลังอธิบาย
+          {t('taboo.isExplaining', { name: currentDescriber })}
         </span>
         {/* Timer display */}
-        <div className="flex items-center gap-1">
-          <Clock size={13} className={timeLeft <= 10 ? 'text-red-500' : 'text-olive-400'} />
-          <span className={`font-black text-[15px] ${timeLeft <= 10 ? 'text-red-500' : 'text-olive-700'}`}>
-            {timeLeft}
-          </span>
-        </div>
-      </div>
-
-      {/* Timer bar */}
-      <div className="h-2 rounded-full bg-olive-100 overflow-hidden">
-        <motion.div
-          className={`h-full rounded-full ${timerColor} transition-colors duration-500`}
-          initial={{ width: '100%' }}
-          animate={{ width: `${timerPercent}%` }}
-          transition={{ duration: 0.3 }}
-        />
+        <TimerDisplay timeLeft={timeLeft} size="sm" />
       </div>
 
       {/* ─── Describer view ─── */}
@@ -718,11 +692,11 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         <div className="flex-1 flex flex-col gap-3 min-h-0">
           {/* The secret card */}
           <div className="card p-5 text-center">
-            <p className="text-[10px] font-bold text-olive-400 mb-2 uppercase tracking-widest">คำลับของคุณ</p>
+            <p className="text-[10px] font-bold text-olive-400 mb-2 uppercase tracking-widest">{t('taboo.secretWord')}</p>
             <p className="font-display font-black text-[40px] text-olive-800 leading-none mb-5">
               {currentCard?.word}
             </p>
-            <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">ห้ามพูด</p>
+            <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {(currentCard?.taboo || currentCard?.examples || []).map((w) => (
                 <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-full">
@@ -734,7 +708,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
 
           <div className="card p-3 bg-amber-50/60 border border-amber-100">
             <p className="text-[11px] text-amber-700 font-semibold text-center">
-              💬 อธิบายให้เพื่อนทาย โดยห้ามพูดคำต้องห้าม!
+              💬 {t('taboo.description')}
             </p>
           </div>
 
@@ -743,7 +717,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
             onClick={() => setShowGuesserPicker(true)}
             className="btn btn-primary w-full py-4 text-[16px] mt-auto bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
           >
-            ✅ มีคนทายถูก!
+            {t('taboo.someoneCorrect')}
           </button>
 
           {/* Guesser picker overlay */}
@@ -764,8 +738,8 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
                   className="card p-5 w-full max-w-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="font-display font-bold text-[16px] text-olive-800 text-center mb-1">ใครทายถูก?</p>
-                  <p className="text-[12px] text-olive-400 text-center mb-4">เลือกคนที่ทายคำได้ถูกต้อง</p>
+                  <p className="font-display font-bold text-[16px] text-olive-800 text-center mb-1">{t('taboo.whoCorrect')}</p>
+                  <p className="text-[12px] text-olive-400 text-center mb-4">{t('taboo.selectWhoCorrect')}</p>
                   <div className="space-y-2.5">
                     {nonDescribers.map((name) => (
                       <button
@@ -781,7 +755,7 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
                     onClick={() => setShowGuesserPicker(false)}
                     className="w-full mt-4 text-[12px] font-semibold text-olive-400 py-2"
                   >
-                    ยกเลิก
+                    {t('taboo.cancel')}
                   </button>
                 </motion.div>
               </motion.div>
@@ -793,22 +767,22 @@ const Taboo = ({ roomId, roomData, userNickname }) => {
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           {/* Hidden word card */}
           <div className="card p-6 text-center w-full">
-            <p className="text-[10px] font-bold text-olive-400 mb-3 uppercase tracking-widest">คำลับ</p>
+            <p className="text-[10px] font-bold text-olive-400 mb-3 uppercase tracking-widest">{t('taboo.secretWord')}</p>
             <p className="font-display font-black text-[52px] text-olive-200 leading-none select-none mb-4">
               ???
             </p>
-            <p className="text-[10px] font-bold text-olive-300 mb-1 uppercase tracking-wider">คำต้องห้าม</p>
+            <p className="text-[10px] font-bold text-olive-300 mb-1 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex items-center justify-center gap-1 text-olive-300">
               <EyeOff size={12} />
-              <span className="text-[11px] font-semibold">เปิดเผยหลังรอบจบ</span>
+              <span className="text-[11px] font-semibold">{t('common.revealAfterRound') || 'เปิดเผยหลังรอบจบ'}</span>
             </div>
           </div>
 
           {/* Listening prompt */}
           <div className="card p-4 text-center w-full bg-sage-50/60 border border-sage-100">
             <p className="text-[28px] mb-2">👂</p>
-            <p className="font-bold text-[14px] text-olive-700">ฟังคำอธิบาย แล้วตอบดังๆ!</p>
-            <p className="text-[11px] text-olive-400 mt-1">ตะโกนคำตอบเมื่อคิดออก</p>
+            <p className="font-bold text-[14px] text-olive-700">{t('taboo.listenAndAnswer')}</p>
+            <p className="text-[11px] text-olive-400 mt-1">{t('taboo.shoutAnswer')}</p>
           </div>
         </div>
       )}

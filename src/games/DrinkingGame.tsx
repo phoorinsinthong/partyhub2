@@ -5,34 +5,35 @@ import { db } from '../firebase';
 import { RotateCcw, ChevronRight, LogOut, Settings, X } from 'lucide-react';
 import { recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
+import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
-const DEFAULT_RULES = {
+const DEFAULT_RULES: Record<string, string> = {
   'A':'ดื่มคนเดียว','2':'เลือกเพื่อนดื่ม 1 คน','3':'เลือกเพื่อนดื่ม 2 คน','4':'คนทางซ้ายดื่ม',
   '5':'ดื่มทุกคน!','6':'Thumb Master — คนช้าสุดดื่ม','7':'Heaven — ชูมือ คนช้าดื่ม',
   '8':'Mate — เลือกคู่ดื่มจนจบ','9':'Rhyme — คล้องจอง','10':'Categories — เลือกหมวด',
   'J':'Rule Maker — ตั้งกฎ','Q':'Question Master','K':"King's Cup — ดื่มทั้งแก้ว!",
 };
 
-const DrinkingGame = ({ roomId, roomData, userNickname }) => {
+const DrinkingGame: React.FC = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
   const [isDrawing, setIsDrawing] = useState(false);
-  const nickname = userNickname;
-  const isHost = roomData.host === nickname;
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, nickname);
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const gameRecordedRef = useRef(false);
-  const drawTimerRef = useRef(null);
+  const drawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawingCardRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showRuleEditor, setShowRuleEditor] = useState(false);
-  const [editingRules, setEditingRules] = useState({});
+  const [editingRules, setEditingRules] = useState<Record<string, string>>({});
 
-  const safeUpdate = async (refPath, data) => {
+  const safeUpdate = async (refPath: string, data: any) => {
     try {
       await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
       setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
     }
   };
 
@@ -49,6 +50,7 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
     return () => { if (drawTimerRef.current) clearTimeout(drawTimerRef.current); };
   }, []);
 
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const deck = gameData.deck || [];
   const drawnCards = gameData.drawnCards || [];
@@ -58,11 +60,11 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
   const playerNames = roomData.players ? Object.keys(roomData.players).sort() : [];
   const turnIndex = gameData.turnIndex ?? 0;
   const currentTurnPlayer = playerNames[turnIndex % playerNames.length] || '';
-  const isMyTurn = currentTurnPlayer === nickname;
+  const isMyTurn = currentTurnPlayer === userNickname;
 
   const customRules = gameData.customRules || {};
   const rules = { ...DEFAULT_RULES, ...customRules };
-  const getRule = (v) => rules[v] || '';
+  const getRule = (v: string) => rules[v] || '';
 
   const openRuleEditor = () => {
     setEditingRules({ ...rules });
@@ -70,7 +72,7 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
   };
 
   const saveCustomRules = async () => {
-    const changed = {};
+    const changed: Record<string, string> = {};
     Object.keys(editingRules).forEach((k) => {
       if (editingRules[k] !== DEFAULT_RULES[k]) changed[k] = editingRules[k];
     });
@@ -82,11 +84,11 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
     if (isHost && deck.length === 0 && drawnCards.length === 0) {
       const suits = ['hearts','diamonds','clubs','spades'];
       const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-      const d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
+      const d: any[] = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
       for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
-      update(ref(db,`rooms/${roomId}/gameData`),{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'init',by:nickname,time:Date.now()}});
+      update(ref(db,`rooms/${roomId}/gameData`),{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'init',by:userNickname,time:Date.now()}});
     }
-  }, [isHost, roomId, deck.length, drawnCards.length, nickname]);
+  }, [isHost, roomId, deck.length, drawnCards.length, userNickname]);
 
   const drawCard = async () => {
     if (isDrawing || deck.length === 0 || !isMyTurn) return;
@@ -95,230 +97,160 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
     setIsDrawing(true);
     const newDeck = [...deck]; const card = newDeck.pop();
     const nextTurnIndex = (turnIndex + 1) % playerNames.length;
-    try {
-      await safeUpdate(`rooms/${roomId}/gameData`,{
-        deck: newDeck,
-        drawnCards: [card,...drawnCards],
-        currentCard: card,
-        turnIndex: nextTurnIndex,
-        lastAction: { type:'draw', by: nickname, time: Date.now() }
-      });
-    } finally {
+    
+    await safeUpdate(`rooms/${roomId}/gameData`, {
+      deck: newDeck,
+      currentCard: card,
+      drawnCards: [card, ...drawnCards],
+      turnIndex: nextTurnIndex,
+      lastAction: { type: 'draw', by: userNickname, card, time: Date.now() }
+    });
+    
+    drawTimerRef.current = setTimeout(() => {
+      setIsDrawing(false);
       drawingCardRef.current = false;
-    }
-    if (drawTimerRef.current) clearTimeout(drawTimerRef.current);
-    drawTimerRef.current = setTimeout(() => setIsDrawing(false), 400);
+    }, 1000);
   };
 
-  const restartRef = useRef(false);
-  const handleRestart = async () => {
-    if (!isHost || restartRef.current) return;
-    restartRef.current = true;
-    const suits = ['hearts','diamonds','clubs','spades'];
-    const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-    const d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
-    for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
-    try {
-      await safeUpdate(`rooms/${roomId}/gameData`,{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'restart',by:nickname,time:Date.now()}});
-    } finally {
-      restartRef.current = false;
-    }
+  const renderCard = (card: any, index = 0, isLarge = false) => {
+    if (!card) return null;
+    const color = (card.s === 'hearts' || card.s === 'diamonds') ? 'text-red-500' : 'text-slate-800';
+    const Icon = { hearts: '♥️', diamonds: '♦️', clubs: '♣️', spades: '♠️' }[card.s as keyof typeof Icon] || '';
+    
+    return (
+      <motion.div
+        key={card.id || index}
+        initial={isLarge ? { scale: 0.5, rotateY: 180, opacity: 0 } : { y: 20, opacity: 0 }}
+        animate={{ scale: 1, rotateY: 0, opacity: 1, y: 0 }}
+        className={`${isLarge ? 'w-48 h-72' : 'w-24 h-36'} bg-white rounded-2xl shadow-xl border-2 border-slate-100 flex flex-col items-center justify-between p-4 relative overflow-hidden`}
+      >
+        <div className={`absolute top-2 left-2 flex flex-col items-center leading-none ${color}`}>
+          <span className={`${isLarge ? 'text-2xl' : 'text-lg'} font-black`}>{card.v}</span>
+          <span className={isLarge ? 'text-xl' : 'text-sm'}>{Icon}</span>
+        </div>
+        <div className={`${isLarge ? 'text-8xl' : 'text-5xl'} ${color}`}>{Icon}</div>
+        <div className={`absolute bottom-2 right-2 flex flex-col items-center rotate-180 leading-none ${color}`}>
+          <span className={`${isLarge ? 'text-2xl' : 'text-lg'} font-black`}>{card.v}</span>
+          <span className={isLarge ? 'text-xl' : 'text-sm'}>{Icon}</span>
+        </div>
+      </motion.div>
+    );
   };
 
-  const isRed = (s) => s==='hearts'||s==='diamonds';
-  const suit = (s) => ({hearts:'♥',diamonds:'♦',clubs:'♣',spades:'♠'}[s]||'');
-
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
       {errorMsg}
     </div>
   ) : null;
 
   return (
-    <div className="flex flex-col gap-4 pb-6 flex-1">
-      <ErrorToast />
+    <div className="flex-1 flex flex-col py-2 animate-fade-in">
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-      {/* Rule Editor Modal */}
+
       <AnimatePresence>
         {showRuleEditor && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center p-0"
-            style={{ background: 'rgba(47,42,34,0.4)' }}
-            onClick={() => setShowRuleEditor(false)}
-          >
-            <motion.div
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="bg-white rounded-t-3xl w-full max-w-[460px] max-h-[80dvh] flex flex-col"
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex-between p-4 pb-2 border-b border-olive-100">
-                <h3 className="font-display font-bold text-[14px] text-olive-700">แก้ไขกฎไพ่</h3>
-                <button onClick={() => setShowRuleEditor(false)} className="w-8 h-8 rounded-xl bg-olive-50 flex-center">
-                  <X size={16} className="text-olive-400" />
-                </button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex-center p-6 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="card w-full max-w-md p-6 max-h-[80vh] flex flex-col">
+              <div className="flex-between mb-4">
+                <h3 className="font-black text-lg text-slate-800">{t('drinking.editRules') || 'แก้ไขกฎกติกา'}</h3>
+                <button onClick={() => setShowRuleEditor(false)} className="p-2 rounded-xl bg-slate-100 text-slate-400"><X size={20}/></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ WebkitOverflowScrolling: 'touch' }}>
-                {Object.keys(DEFAULT_RULES).map((card) => (
-                  <div key={card} className="flex items-center gap-2">
-                    <span className="w-8 text-center font-black text-[14px] text-olive-700">{card}</span>
-                    <input
-                      type="text"
-                      value={editingRules[card] || ''}
-                      onChange={(e) => setEditingRules({ ...editingRules, [card]: e.target.value })}
-                      className="flex-1 px-3 py-2 rounded-xl border-2 border-olive-100 text-[12px] font-semibold focus:border-sage-300 outline-none"
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                {Object.keys(DEFAULT_RULES).map(k => (
+                  <div key={k} className="space-y-1">
+                    <label className="text-[10px] font-black text-slate-400 ml-1">{k}</label>
+                    <input 
+                      className="input-field py-2 text-sm" 
+                      value={editingRules[k]} 
+                      onChange={e => setEditingRules({...editingRules, [k]: e.target.value})}
                     />
                   </div>
                 ))}
               </div>
-              <div className="p-4 pt-2 border-t border-olive-100">
-                <button onClick={saveCustomRules} className="btn btn-primary w-full py-3 text-[14px]">
-                  บันทึกกฎ
-                </button>
-              </div>
+              <button onClick={saveCustomRules} className="btn btn-primary w-full py-4 mt-4 rounded-2xl font-black shadow-lg">
+                {t('common.save') || 'บันทึกการเปลี่ยนแปลง'}
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Stats */}
-      <div className="flex-between">
-        <div className="inline-flex items-center gap-2 bg-cream-100 border-2 border-cream-200 rounded-full px-3.5 py-2">
-          <span className="text-[12px] font-extrabold text-olive-600">🃏 {deck.length}/52</span>
+      <div className="flex-between px-1 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 flex-center text-xl shadow-sm">🍺</div>
+          <div>
+            <h2 className="font-black text-slate-800 text-lg leading-none">{t('drinking.title') || 'วงเหล้า'}</h2>
+            <p className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{t('drinking.deckLeft', { count: deck.length }) || `เหลือไพ่ ${deck.length} ใบ`}</p>
+          </div>
         </div>
-        {isHost && (
-          <div className="flex items-center gap-2">
-            <button className="btn btn-outline py-2 px-3 text-[12px] min-h-[40px]" onClick={openRuleEditor}>
-              <Settings size={13} /> กฎ
-            </button>
-            <button className="btn btn-outline py-2 px-3 text-[12px] min-h-[40px]" onClick={handleRestart}>
-              <RotateCcw size={13} /> สับใหม่
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Turn Indicator */}
-      <div className={`rounded-2xl p-3 border-2 text-center ${isMyTurn ? 'bg-sage-50 border-sage-200' : 'bg-cream-50 border-cream-200'}`}>
-        <p className="text-[11px] text-olive-400 font-bold uppercase tracking-wider mb-1">
-          ตาจั่วไพ่
-        </p>
-        <p className={`text-[15px] font-extrabold ${isMyTurn ? 'text-sage-700' : 'text-olive-700'}`}>
-          {isMyTurn ? '🎉 ตาของคุณ!' : `⏳ รอ ${currentTurnPlayer} จั่ว...`}
-        </p>
-      </div>
-
-      {/* Turn Order */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1" style={{WebkitOverflowScrolling:'touch'}}>
-        {playerNames.map((name, idx) => (
-          <div key={name} className="flex items-center shrink-0">
-            <div className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
-              idx === (turnIndex % playerNames.length)
-                ? 'bg-sage-500 text-white'
-                : idx < (turnIndex % playerNames.length)
-                  ? 'bg-olive-100 text-olive-400'
-                  : 'bg-cream-100 text-olive-500'
-            }`}>
-              {name === nickname ? 'คุณ' : name}
-            </div>
-            {idx < playerNames.length - 1 && <ChevronRight size={12} className="text-olive-200 mx-0.5 shrink-0" />}
-          </div>
-        ))}
-      </div>
-
-      {/* Progress */}
-      <div className="w-full h-2 bg-olive-100 rounded-full overflow-hidden">
-        <div className="h-full rounded-full bg-gradient-to-r from-sage-300 to-sage-500 transition-[width] duration-300" style={{width:`${(drawnCards.length/52)*100}%`}} />
-      </div>
-
-      {/* Card */}
-      <div className="flex-center flex-1" style={{minHeight:'220px'}}>
-        <AnimatePresence mode="wait">
-          {currentCard ? (
-            <motion.div
-              key={currentCard.id}
-              initial={{opacity:0, y:20, scale:0.95}}
-              animate={{opacity:1, y:0, scale:1}}
-              exit={{opacity:0, scale:0.95}}
-              transition={{duration:0.2, ease:'easeOut'}}
-              className="w-[180px] h-[260px] card flex flex-col items-center justify-between p-4 border-2"
-              style={{borderColor: isRed(currentCard.s) ? '#f5c6c6' : '#d8e4d2'}}
-            >
-              <span className="self-start text-[20px] font-black" style={{color: isRed(currentCard.s)?'#d45b5b':'#2f2a22'}}>
-                {currentCard.v}{suit(currentCard.s)}
-              </span>
-              <span className="text-[60px] leading-none" style={{color: isRed(currentCard.s)?'#d45b5b':'#2f2a22'}}>
-                {suit(currentCard.s)}
-              </span>
-              <div className="w-full bg-cream-50 border-2 border-cream-200 rounded-xl p-2.5">
-                <p className="text-[11px] font-bold text-olive-700 text-center leading-snug">{getRule(currentCard.v)}</p>
-              </div>
-              <span className="self-end text-[20px] font-black rotate-180" style={{color: isRed(currentCard.s)?'#d45b5b':'#2f2a22'}}>
-                {currentCard.v}{suit(currentCard.s)}
-              </span>
-            </motion.div>
-          ) : (
-            <div className="w-[180px] h-[260px] rounded-[20px] border-3 border-dashed border-olive-200 flex-center flex-col gap-2 bg-cream-50">
-              <span className="text-3xl">🎴</span>
-              <span className="text-olive-400 text-[13px] font-semibold">กดจั่วไพ่</span>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Who drew last */}
-      {lastAction && lastAction.type === 'draw' && (
-        <p className="text-center text-[12px] text-olive-500 font-semibold">
-          {lastAction.by === nickname ? 'คุณ' : lastAction.by} เพิ่งจั่วไพ่ใบนี้
-        </p>
-      )}
-
-      {/* Draw Button */}
-      {deck.length > 0 ? (
-        <button
-          className={`btn w-full py-5 text-[18px] ${isMyTurn ? 'btn-primary' : 'btn-outline opacity-60'}`}
-          onClick={drawCard}
-          disabled={isDrawing || !isMyTurn}
-        >
-          {isDrawing ? 'จั่ว...' : isMyTurn ? 'จั่วไพ่! 🎴' : `รอ ${currentTurnPlayer}...`}
-        </button>
-      ) : (
-        <div className="card p-5 text-center">
-          <p className="font-bold text-sage-600 text-[15px]">🎉 จบเกม!</p>
-          <p className="text-olive-400 text-[13px] mt-0.5">ไพ่หมดแล้ว</p>
+        <div className="flex items-center gap-2">
           {isHost && (
-            <button className="btn btn-primary py-3 px-6 text-[14px] mt-3" onClick={handleRestart}>
-              🔄 เล่นอีกครั้ง
+            <button onClick={openRuleEditor} className="w-10 h-10 rounded-2xl bg-slate-100 flex-center text-slate-400 active:scale-95 transition-transform shadow-sm">
+              <Settings size={18} />
             </button>
           )}
+          <button onClick={requestLeave} className="w-10 h-10 rounded-2xl bg-slate-100 flex-center text-slate-400 active:scale-95 transition-transform shadow-sm">
+            <LogOut size={18} />
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* Leave/Back button */}
-      {isHost ? (
-        <button className="btn btn-outline w-full py-3 text-[13px]" onClick={handleBackToLobby}>
-          <LogOut size={14} /> กลับ Lobby
-        </button>
-      ) : (
-        <button className="btn btn-outline w-full py-3 text-[13px]" onClick={requestLeave}>
-          <LogOut size={14} /> ออกจากห้อง
-        </button>
-      )}
+      <div className="flex-1 flex flex-col items-center justify-center gap-8 py-4">
+        <div className="relative w-full flex-center perspective-1000">
+          <AnimatePresence mode="wait">
+            {isDrawing ? (
+              <motion.div key="drawing" initial={{ y: 100, rotateY: 90, opacity: 0 }} animate={{ y: 0, rotateY: 0, opacity: 1 }} exit={{ scale: 1.2, opacity: 0 }} className="w-48 h-72 bg-slate-200 rounded-2xl border-4 border-white shadow-2xl flex-center">
+                <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
+              </motion.div>
+            ) : currentCard ? (
+              <div className="flex flex-col items-center gap-6">
+                {renderCard(currentCard, 0, true)}
+                <motion.div initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center px-6">
+                  <h3 className="text-[32px] font-black text-amber-600 leading-tight mb-2">{currentCard.v}</h3>
+                  <p className="text-xl font-black text-slate-800 leading-relaxed">{getRule(currentCard.v)}</p>
+                </motion.div>
+              </div>
+            ) : (
+              <div onClick={isMyTurn ? drawCard : undefined} className={`w-48 h-72 rounded-2xl border-4 border-white shadow-2xl flex-center flex-col gap-4 cursor-pointer transition-all ${isMyTurn ? 'bg-amber-500 hover:scale-105 active:scale-95' : 'bg-slate-200 grayscale opacity-50'}`}>
+                <div className="w-32 h-48 rounded-xl border-2 border-white/30 flex-center">
+                  <span className="text-6xl text-white opacity-50">?</span>
+                </div>
+                <span className="text-white font-black text-lg">{t('drinking.drawCard') || 'แตะเพื่อจั่ว'}</span>
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* History */}
-      {drawnCards.length > 0 && (
-        <div>
-          <p className="text-[10px] text-olive-400 font-bold uppercase tracking-wider mb-1.5">ล่าสุด</p>
-          <div className="flex overflow-x-auto gap-1.5 pb-1" style={{WebkitOverflowScrolling:'touch'}}>
-            {drawnCards.slice(0,15).map(c => (
-              <span key={c.id} className="shrink-0 px-2.5 py-1.5 text-[11px] font-extrabold rounded-lg bg-white border-2"
-                style={{color:isRed(c.s)?'#d45b5b':'#2f2a22', borderColor:isRed(c.s)?'#fde8e8':'#e4eadf'}}>
-                {c.v}{suit(c.s)}
+        <div className="w-full max-w-sm px-4">
+          <div className="card p-4 bg-white/50 backdrop-blur-sm border-slate-100">
+            <p className="text-center text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('drinking.currentTurn') || 'ตาของใคร?'}</p>
+            <div className="flex-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 flex-center text-xl border-2 border-white shadow-sm">{roomData.players[currentTurnPlayer]?.avatar || '👤'}</div>
+              <span className={`text-lg font-black ${isMyTurn ? 'text-amber-600' : 'text-slate-800'}`}>
+                {isMyTurn ? t('common.you') || 'คุณเอง' : currentTurnPlayer}
               </span>
-            ))}
-            {drawnCards.length > 15 && <span className="shrink-0 px-2 py-1.5 text-[10px] text-olive-300 self-center">+{drawnCards.length-15}</span>}
+              {isMyTurn && <motion.div animate={{ x: [0, 5, 0] }} transition={{ repeat: Infinity }}><ChevronRight className="text-amber-500" /></motion.div>}
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-auto overflow-x-auto pb-4 pt-2 no-scrollbar">
+        <div className="flex gap-3 px-4 min-w-max">
+          {drawnCards.slice(0, 10).map((c, i) => (
+            <div key={c.id || i} className="opacity-60 scale-75 origin-left">
+              {renderCard(c, i)}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {isHost && (
+        <div className="mt-auto py-2 flex-center">
+          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[12px] font-bold text-slate-300 hover:text-slate-500 transition-colors">
+            <RotateCcw size={14} /> {t('common.backToLobby') || 'กลับ Lobby'}
+          </button>
         </div>
       )}
     </div>

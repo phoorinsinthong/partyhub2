@@ -2,14 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
+import { useTranslation } from 'react-i18next';
 import PlayingCard from '../components/PlayingCard';
-import { createDeck, shuffleDeck, calculatePokDeng } from '../utils/cards';
+import { createDeck, shuffleDeck, calculatePokDeng } from './logic/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
 
-const PokDeng = ({ roomId, roomData, userNickname }) => {
-  const isHost = userNickname === roomData.host;
+const PokDeng: React.FC = () => {
+  const { t } = useTranslation();
+  const { roomId, roomData, userNickname, isHost } = useGame();
+  
+  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const phase = gameData.phase || 'waiting'; // waiting, playing, dealer_action, result
   const deck = gameData.deck || [];
@@ -22,11 +27,11 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
   const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
 
-  const safeUpdate = async (updates) => {
+  const safeUpdate = async (updates: any) => {
     try {
       await update(ref(db, `rooms/${roomId}/gameData`), updates);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
       setTimeout(() => setErrorMsg(''), 3000);
     }
   };
@@ -34,7 +39,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
   const startGame = async () => {
     if (!isHost) return;
     const newDeck = shuffleDeck(createDeck());
-    const playersInit = {};
+    const playersInit: Record<string, any> = {};
     const startChips = gameData.settings?.startingChips || localSettings.startingChips || 1000;
     
     playerNames.forEach(name => {
@@ -63,7 +68,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
     });
   };
 
-  const drawCard = async (playerName) => {
+  const drawCard = async (playerName: string) => {
     const pData = playersData[playerName];
     if (pData.hand.length >= 3 || pData.status !== 'playing') return;
     if (advancingRef.current) return;
@@ -80,7 +85,7 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
     advancingRef.current = false;
   };
 
-  const setStand = async (playerName) => {
+  const setStand = async (playerName: string) => {
     await safeUpdate({
       [`players/${playerName}/status`]: 'stand'
     });
@@ -92,14 +97,15 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
       await safeUpdate({ phase: 'dealer_action' });
     } else if (phase === 'dealer_action') {
       // Calculate winnings
-      const dealer = playersData[roomData.host];
+      const dealerName = roomData.host;
+      const dealer = playersData[dealerName];
       const dStats = calculatePokDeng(dealer.hand);
       
-      const updates = { phase: 'result' };
+      const updates: Record<string, any> = { phase: 'result' };
       let hostWonAny = false;
 
-      Object.entries(playersData).forEach(([name, p]) => {
-        if (name === roomData.host) return; // Skip dealer
+      Object.entries(playersData).forEach(([name, p]: [string, any]) => {
+        if (name === dealerName) return; // Skip dealer
 
         const pStats = calculatePokDeng(p.hand);
         let winAmount = 0;
@@ -124,157 +130,161 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         updates[`players/${name}/lastResult`] = winAmount;
 
         // Host balance tracking (Host plays against everyone)
-        const hostCurrent = updates[`players/${roomData.host}/chips`] !== undefined ? updates[`players/${roomData.host}/chips`] : (dealer.chips || 1000);
-        updates[`players/${roomData.host}/chips`] = hostCurrent - winAmount;
+        const hostCurrent = updates[`players/${dealerName}/chips`] !== undefined ? updates[`players/${dealerName}/chips`] : (dealer.chips || 1000);
+        updates[`players/${dealerName}/chips`] = hostCurrent - winAmount;
       });
 
-      if (hostWonAny) recordWin(roomId, roomData.host, 'pokdeng');
+      if (hostWonAny) recordWin(roomId, dealerName, 'pokdeng');
       
       await safeUpdate(updates);
     }
   };
 
+  const handleBackToLobby = async () => {
+    if (!isHost) return;
+    await update(ref(db, `rooms/${roomId}`), { status: 'waiting', currentGame: null, gameData: null });
+  };
+
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      {errorMsg}
+    </div>
+  ) : null;
+
   if (phase === 'waiting') {
     return (
       <div className="flex-center flex-col gap-lg flex-1 text-center p-md animate-fade-in">
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         {showSettings && isHost && (
           <div className="fixed inset-0 z-50 flex-center p-6 bg-stone-900/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
             <div className="card p-6 w-full max-w-[320px] bg-white flex flex-col gap-4 text-left" onClick={e => e.stopPropagation()}>
-              <h3 className="font-bold text-lg text-stone-800">⚙️ ตั้งค่ากติกา (House Rules)</h3>
+              <h3 className="font-bold text-lg text-stone-800">⚙️ {t('pokdeng.settings') || 'ตั้งค่ากติกา'}</h3>
               <label className="flex flex-col gap-1">
-                <span className="font-bold text-sm">ชิปเริ่มต้น</span>
+                <span className="font-bold text-sm">{t('pokdeng.startingChips') || 'ชิปเริ่มต้น'}</span>
                 <input type="number" value={localSettings.startingChips} onChange={(e) => setLocalSettings({...localSettings, startingChips: Number(e.target.value)})} className="input py-2 px-3 border border-stone-300 rounded-lg font-bold" />
               </label>
-              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>บันทึกการตั้งค่า</button>
+              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>{t('common.save') || 'บันทึกการตั้งค่า'}</button>
             </div>
           </div>
         )}
-        <div className="text-6xl drop-shadow-xl animate-bounce-slow">💰</div>
-        <h2 className="text-3xl font-black text-rose-800 tracking-tight">ป๊อกเด้ง (Pok Deng)</h2>
-        <p className="text-rose-600 font-medium">เจ้ามือ 1 คน ปะทะ ผู้เล่นทุกคน! ป๊อก 8 ป๊อก 9 ได้เลย!</p>
-        
+        <div className="text-6xl animate-bounce-soft">💰</div>
+        <div>
+          <h2 className="font-display font-bold text-[24px] text-stone-800 mb-1">{t('pokdeng.title') || 'ป๊อกเด้ง'}</h2>
+          <p className="text-stone-400 text-sm">{t('pokdeng.description') || 'ป๊อก 8 ป๊อก 9 กินรอบวง! เกมไพ่ยอดฮิตของชาวไทย'}</p>
+        </div>
         {isHost ? (
-          <div className="flex gap-2 w-full max-w-[280px]">
-            <button className="btn btn-primary flex-1 py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
-              แจกไพ่! (คุณเป็นเจ้ามือ)
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button onClick={startGame} className="btn btn-primary py-4 rounded-3xl text-lg shadow-lg">
+                {t('pokdeng.startGame') || 'เริ่มแจกไพ่!'}
             </button>
-            <button className="btn bg-stone-100 border border-stone-300 px-4 shadow-sm" onClick={() => setShowSettings(true)}>
-              ⚙️
+            <button onClick={() => setShowSettings(true)} className="btn btn-outline py-3 text-sm font-bold border-stone-200">
+                {t('pokdeng.settings') || 'ตั้งค่ากติกา'}
             </button>
           </div>
         ) : (
-          <div className="card w-full max-w-[280px] p-xl bg-rose-50/50 border-2 border-rose-100 flex-center">
-            <span className="font-bold text-rose-500 animate-pulse">รอเจ้ามือแจกไพ่...</span>
-          </div>
+          <p className="text-stone-400 font-bold animate-pulse">{t('pokdeng.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
         )}
       </div>
     );
   }
 
-  const dealer = playersData[roomData.host];
-  const dealerStats = calculatePokDeng(dealer?.hand);
-  const myData = playersData[userNickname] || {};
-  const myStats = calculatePokDeng(myData.hand);
-  
-  // Check if everyone is ready
-  const everyoneStood = Object.entries(playersData).every(([name, p]) => name === roomData.host || p.status === 'stand');
-
   return (
-    <div className="flex flex-col flex-1 pb-24 relative max-w-2xl mx-auto w-full animate-fade-in bg-stone-50">
+    <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
+      <ErrorToast />
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-      
-      {/* Dealer Area */}
-      <div className="bg-stone-800 text-white p-md text-center rounded-b-3xl shadow-xl z-10 relative">
-        <h3 className="font-black text-stone-400 text-xs uppercase tracking-widest mb-2">เจ้ามือ (Dealer): {roomData.host}</h3>
-        <div className="flex-center gap-xs min-h-[100px]">
-          {dealer?.hand?.map((c, i) => (
-            <div key={i} className="-ml-4 first:ml-0">
-               <PlayingCard card={c} hidden={!isHost && phase === 'playing' && !dealer.isPok} />
-            </div>
-          ))}
-        </div>
-        {(phase === 'dealer_action' || phase === 'result' || dealer?.isPok) && (
-          <div className="mt-2 text-rose-400 font-bold text-sm bg-rose-900/30 inline-block px-3 py-1 rounded-full">
-            {dealerStats.type !== 'Normal' ? dealerStats.type : `${dealerStats.score} แต้ม`} {dealerStats.deng > 1 && `(${dealerStats.deng} เด้ง)`}
-          </div>
-        )}
-      </div>
 
-      {/* Players Area */}
-      <div className="flex-1 overflow-y-auto p-md space-y-md">
-        {Object.entries(playersData).filter(([name]) => name !== roomData.host).map(([name, p]) => {
-          const stats = calculatePokDeng(p.hand);
+      {/* Players List */}
+      <div className="flex-1 overflow-y-auto space-y-4 pb-24 custom-scrollbar">
+        {Object.entries(playersData).map(([name, data]: [string, any]) => {
+          const isMe = name === userNickname;
+          const isDealer = name === roomData.host;
+          const stats = calculatePokDeng(data.hand);
+          const isStanding = data.status === 'stand';
+          const showCards = isMe || phase === 'result' || (phase === 'dealer_action' && isDealer);
+
           return (
-            <div key={name} className={`card p-md border-2 ${name === userNickname ? 'border-primary shadow-md' : 'border-stone-200'}`}>
-              <div className="flex justify-between items-center mb-sm">
-                <div>
-                  <span className="font-bold">{name}</span>
-                  <span className="text-xs text-stone-500 ml-2">💰 {p.chips}</span>
-                </div>
-                {p.status === 'stand' && phase === 'playing' && <span className="text-xs font-bold text-success bg-success/10 px-2 py-1 rounded">พร้อมแล้ว</span>}
-                {p.isPok && <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded border border-rose-200 animate-pulse">ป๊อก!</span>}
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex -space-x-4">
-                  {p.hand?.map((c, i) => (
-                    <div key={i} style={{ transform: 'scale(0.7)', transformOrigin: 'left center' }}><PlayingCard card={c} hidden={name !== userNickname && phase === 'playing' && !p.isPok} animated={false} /></div>
-                  ))}
-                </div>
-                
-                {(name === userNickname || phase === 'result' || p.isPok || (phase === 'dealer_action' && isHost)) && (
-                  <div className="text-right">
-                    <p className="font-black text-lg text-stone-800">{stats.type !== 'Normal' ? stats.type : `${stats.score} แต้ม`}</p>
-                    {stats.deng > 1 && <p className="text-sm font-bold text-orange-500">{stats.deng} เด้ง</p>}
+            <div key={name} className={`card p-4 mx-1 transition-all ${isDealer ? 'bg-stone-50 border-stone-200 ring-2 ring-stone-100' : 'border-stone-50'}`}>
+              <div className="flex-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-xl flex-center text-sm shadow-sm ${isDealer ? 'bg-amber-100' : 'bg-stone-100'}`}>
+                    {isDealer ? '🏦' : (roomData.players[name]?.avatar || '👤')}
                   </div>
+                  <div className="flex flex-col">
+                    <span className={`font-bold text-[13px] ${isMe ? 'text-amber-600' : 'text-stone-700'}`}>
+                        {name} {isDealer ? `(${t('pokdeng.dealer') || 'เจ้ามือ'})` : ''}
+                    </span>
+                    <span className="text-[10px] font-black text-stone-400">{data.chips} 🪙</span>
+                  </div>
+                </div>
+                {phase === 'result' && (
+                    <div className="text-right flex flex-col">
+                        {data.isPok && <span className="text-[10px] font-black text-red-500 uppercase tracking-tighter">POK {stats.weight}!</span>}
+                        <span className={`text-lg font-black ${stats.weight >= 8 ? 'text-red-500' : 'text-stone-700'}`}>
+                            {stats.weight} {t('pokdeng.points') || 'แต้ม'} {stats.deng > 1 ? `${stats.deng} ${t('pokdeng.deng') || 'เด้ง'}` : ''}
+                        </span>
+                        {data.lastResult !== undefined && (
+                            <span className={`text-[11px] font-black ${data.lastResult > 0 ? 'text-green-500' : data.lastResult < 0 ? 'text-red-400' : 'text-stone-400'}`}>
+                                {data.lastResult > 0 ? `+${data.lastResult}` : data.lastResult}
+                            </span>
+                        )}
+                    </div>
+                )}
+                {phase === 'playing' && !isDealer && (
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${isStanding ? 'bg-stone-200 text-stone-500' : 'bg-amber-100 text-amber-600 animate-pulse'}`}>
+                        {isStanding ? 'READY' : 'PLAYING'}
+                    </span>
                 )}
               </div>
-              
-              {phase === 'result' && p.lastResult !== undefined && (
-                <div className={`text-center mt-2 font-black text-lg ${p.lastResult > 0 ? 'text-success' : p.lastResult < 0 ? 'text-danger' : 'text-stone-400'}`}>
-                  {p.lastResult > 0 ? `+${p.lastResult}` : p.lastResult < 0 ? p.lastResult : 'เจ๊า'}
-                </div>
+
+              <div className="flex gap-[-10px] justify-center sm:justify-start">
+                {data.hand.map((card: any, i: number) => (
+                  <div key={i} className={i > 0 ? '-ml-12' : ''}>
+                    <PlayingCard card={card} hidden={!showCards} size="sm" />
+                  </div>
+                ))}
+                {data.hand.length < 3 && isMe && phase === 'playing' && !data.isPok && !isDealer && !isStanding && (
+                  <button onClick={() => drawCard(name)} className="w-24 h-36 border-2 border-dashed border-stone-200 rounded-2xl ml-[-48px] bg-stone-50/50 flex-center flex-col gap-2 text-stone-300 hover:text-stone-400 hover:border-stone-300 transition-all">
+                    <span className="text-2xl">+</span>
+                    <span className="text-[10px] font-black">{t('pokdeng.draw') || 'จั่วเพิ่ม'}</span>
+                  </button>
+                )}
+              </div>
+
+              {isMe && phase === 'playing' && !isStanding && !data.isPok && !isDealer && (
+                <button onClick={() => setStand(name)} className="btn btn-outline w-full py-3 mt-4 text-[13px] font-black border-stone-200 rounded-xl">
+                  {t('pokdeng.stand') || 'ไม่จั่ว (อยู่)'}
+                </button>
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Controls */}
-      <div className="mt-auto bg-white border-t p-md shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        {phase === 'playing' && !isHost && myData.status === 'playing' && !myData.isPok ? (
-          <div className="flex gap-sm">
-            <button className="btn btn-primary flex-1 py-3 text-lg font-bold shadow-md" onClick={() => setStand(userNickname)}>
-              พอแล้ว (STAND)
+      {/* Host Controls */}
+      <div className="absolute bottom-4 left-0 w-full px-4">
+        {isHost && phase === 'playing' && (
+            <button onClick={finishPhase} className="btn btn-primary w-full py-4 rounded-2xl shadow-xl">
+                {t('pokdeng.nextPhase') || 'เจ้ามือเล่นต่อ'}
             </button>
-            <button className="btn btn-outline flex-1 py-3 text-lg font-bold border-stone-300" onClick={() => drawCard(userNickname)}>
-              จั่วไพ่ (DRAW)
-            </button>
-          </div>
-        ) : phase === 'playing' && isHost ? (
-          <button className="btn btn-primary w-full py-3 font-bold shadow-md" disabled={!everyoneStood && !dealer?.isPok} onClick={finishPhase}>
-            {dealer?.isPok ? 'เปิดไพ่ผู้เล่นทุกคน (เจ้ามือป๊อก)' : everyoneStood ? 'ลูกมือพร้อมแล้ว เปิดไพ่!' : 'รอลูกมือตัดสินใจ...'}
-          </button>
-        ) : phase === 'dealer_action' && isHost ? (
-          <div className="flex gap-sm">
-            <button className="btn btn-primary flex-1 py-3 font-bold shadow-md" onClick={finishPhase}>
-              {dealer?.hand?.length < 3 ? 'วัดแต้มเลย (ไม่จั่ว)' : 'เปิดไพ่ตัดสิน!'}
-            </button>
-            {dealer?.hand?.length < 3 && (
-              <button className="btn btn-outline flex-1 py-3 font-bold border-stone-300" onClick={() => drawCard(roomData.host)}>
-                จั่วใบที่ 3
-              </button>
-            )}
-          </div>
-        ) : phase === 'result' && isHost ? (
-          <button className="btn btn-primary w-full py-4 font-black shadow-xl" onClick={startGame}>
-            เริ่มตาต่อไป
-          </button>
-        ) : (
-          <div className="text-center font-bold text-stone-400 py-2">
-            {phase === 'result' ? 'รอเจ้ามือเริ่มตาถัดไป...' : 'รอเจ้ามือดำเนินการ...'}
-          </div>
+        )}
+        {isHost && phase === 'dealer_action' && (
+            <div className="flex flex-col gap-3">
+                <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-100 text-center">
+                    <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-1">{t('pokdeng.dealerAction') || 'ตาเจ้ามือแล้ว!'}</p>
+                    <p className="text-sm font-bold text-amber-600">{t('pokdeng.dealerActionDesc') || 'เลือกว่าจะจั่วเพิ่มหรือวัดแต้มเลย'}</p>
+                </div>
+                <div className="flex gap-3">
+                    <button onClick={() => drawCard(userNickname)} disabled={playersData[userNickname].hand.length >= 3} className="btn btn-outline flex-1 py-4 text-[14px] bg-white rounded-2xl">{t('pokdeng.draw') || 'จั่วไพ่'}</button>
+                    <button onClick={finishPhase} className="btn btn-primary flex-1 py-4 text-[14px] rounded-2xl shadow-lg">{t('pokdeng.measure') || 'วัดแต้มทั้งหมด'}</button>
+                </div>
+            </div>
+        )}
+        {isHost && phase === 'result' && (
+            <div className="flex gap-3">
+                <button onClick={startGame} className="btn btn-primary flex-1 py-4 rounded-2xl shadow-lg">{t('common.playAgain') || 'เล่นรอบใหม่'}</button>
+                <button onClick={handleBackToLobby} className="btn btn-outline flex-1 py-4 rounded-2xl bg-white">{t('common.backToLobby') || 'Lobby'}</button>
+            </div>
         )}
       </div>
     </div>
