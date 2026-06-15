@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -21,12 +21,13 @@ const Poker = ({ roomId, roomData, userNickname }) => {
   const currentBet = gameData.currentBet || 0;
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
-  const activePlayers = Object.keys(playersData).filter(p => !playersData[p].folded && playersData[p].chips > 0 || playersData[p].currentRoundBet > 0);
-  
+  const activePlayers = Object.keys(playersData).filter(p => !playersData[p].folded && (playersData[p].chips > 0 || playersData[p].currentRoundBet > 0));
+
   const [errorMsg, setErrorMsg] = useState('');
   const [raiseAmount, setRaiseAmount] = useState(10);
   const [showSettings, setShowSettings] = useState(false);
   const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
+  const advancingRef = useRef(false);
   
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
@@ -124,8 +125,8 @@ const Poker = ({ roomId, roomData, userNickname }) => {
 
       // Fast-forward to showdown
       if (active.length > 1) {
-         let newDeck = updates.deck || [...deck];
-         let newCommunity = updates.communityCards || [...communityCards];
+         const newDeck = updates.deck || [...deck];
+         const newCommunity = updates.communityCards || [...communityCards];
          while (newCommunity.length < 5) {
              newCommunity.push(newDeck.pop());
          }
@@ -172,6 +173,8 @@ const Poker = ({ roomId, roomData, userNickname }) => {
 
   const handleAction = async (action, amount = 0) => {
     if (currentTurn !== userNickname) return;
+    if (advancingRef.current) return;
+    advancingRef.current = true;
     
     const myData = playersData[userNickname];
     let newChips = myData.chips;
@@ -236,22 +239,21 @@ const Poker = ({ roomId, roomData, userNickname }) => {
     }
 
     await safeUpdate(updates);
+    advancingRef.current = false;
   };
 
   const resolveShowdown = async () => {
     if (!isHost) return;
-    
+
     const activeNames = Object.keys(playersData).filter(n => !playersData[n].folded);
     let winners = [];
     let bestScore = -1;
-    let results = {};
 
     if (activeNames.length === 1) {
       winners = [activeNames[0]];
     } else {
       activeNames.forEach(name => {
         const ev = evaluatePokerHand(playersData[name].hand, communityCards);
-        results[name] = ev;
         if (ev.score > bestScore) {
           bestScore = ev.score;
           winners = [name];
@@ -263,19 +265,27 @@ const Poker = ({ roomId, roomData, userNickname }) => {
 
     // Distribute pot
     const winAmount = Math.floor(pot / winners.length);
-    const updates = { phase: 'waiting', pot: 0, currentBet: 0 };
-    
+    const updates = { pot: 0, currentBet: 0, winners };
+
     Object.keys(playersData).forEach(n => {
       let chips = playersData[n].chips;
       if (winners.includes(n)) {
         chips += winAmount;
-        recordWin(roomId, n, 'poker'); // Record win for each winner
+        recordWin(roomId, n, 'poker');
       }
       updates[`players/${n}/chips`] = chips;
     });
 
     await safeUpdate(updates);
   };
+
+  const myData = playersData[userNickname] || {};
+  const isMyTurn = currentTurn === userNickname;
+  const toCall = currentBet - (myData.currentRoundBet || 0);
+
+  useEffect(() => {
+    setRaiseAmount(toCall + 10);
+  }, [toCall]);
 
   // Rendering
   if (phase === 'waiting') {
@@ -297,7 +307,7 @@ const Poker = ({ roomId, roomData, userNickname }) => {
         <div className="text-6xl drop-shadow-xl animate-bounce-slow">💵</div>
         <h2 className="text-3xl font-black text-emerald-800 tracking-tight">โป๊กเกอร์ (Texas Hold'em)</h2>
         <p className="text-emerald-600 font-medium">เดิมพันด้วยชิป ชิงไหวชิงพริบ ลักไก่ให้สุด!</p>
-        
+
         {isHost ? (
           <div className="flex gap-2 w-full max-w-[280px]">
             <button className="btn btn-primary flex-1 py-4 text-lg font-bold shadow-xl shadow-primary/30" onClick={startGame}>
@@ -323,14 +333,6 @@ const Poker = ({ roomId, roomData, userNickname }) => {
       </div>
     );
   }
-
-  const myData = playersData[userNickname] || {};
-  const isMyTurn = currentTurn === userNickname;
-  const toCall = currentBet - (myData.currentRoundBet || 0);
-
-  useEffect(() => {
-    setRaiseAmount(toCall + 10);
-  }, [toCall]);
 
   return (
     <div className="flex flex-col flex-1 pb-24 relative max-w-2xl mx-auto w-full animate-fade-in bg-stone-50">
@@ -391,10 +393,11 @@ const Poker = ({ roomId, roomData, userNickname }) => {
           <div className="card p-md w-full max-w-md bg-white space-y-sm">
             {Object.entries(playersData).filter(([, p]) => !p.folded).map(([name, p]) => {
               const ev = evaluatePokerHand(p.hand, communityCards);
+              const isWinner = gameData.winners?.includes(name);
               return (
-                <div key={name} className="flex justify-between items-center p-sm border-b border-stone-100 last:border-0">
+                <div key={name} className={`flex justify-between items-center p-sm border-b border-stone-100 last:border-0 ${isWinner ? 'bg-success/10 rounded-lg' : ''}`}>
                   <div>
-                    <span className="font-bold text-sm block">{name}</span>
+                    <span className="font-bold text-sm block">{name} {isWinner && '🏆'}</span>
                     <span className="text-xs text-primary font-bold uppercase">{ev.name}</span>
                   </div>
                   <div className="flex -space-x-3">
@@ -404,10 +407,18 @@ const Poker = ({ roomId, roomData, userNickname }) => {
               );
             })}
           </div>
-          {isHost && (
+          {isHost && !gameData.winners && (
             <button className="btn btn-primary mt-lg py-4 px-8 text-lg font-black shadow-xl" onClick={resolveShowdown}>
-              แบ่งเงินรางวัลและเริ่มตาใหม่
+              แบ่งเงินรางวัล
             </button>
+          )}
+          {isHost && gameData.winners && (
+            <button className="btn btn-primary mt-lg py-4 px-8 text-lg font-black shadow-xl" onClick={startGame}>
+              เริ่มตาใหม่
+            </button>
+          )}
+          {!isHost && gameData.winners && (
+            <p className="text-white/70 mt-lg font-bold">รอ Host เริ่มตาถัดไป...</p>
           )}
         </div>
       )}

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { Crown, RotateCcw, LogOut, Play, Clock, Shuffle } from 'lucide-react';
-import { getRandomWord, ALL_CATEGORIES } from './insiderData';
+import { getRandomWord, ALL_CATEGORIES } from './logic/insiderData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';

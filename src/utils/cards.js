@@ -95,7 +95,7 @@ export const calculatePokDeng = (cards) => {
   
   let deng = 1;
   let type = 'Normal';
-  let weight = score;
+  let weight = score; // Base weight; deng is used as tiebreaker when weights are equal
 
   // 2 Cards
   if (cards.length === 2) {
@@ -198,15 +198,23 @@ export const validatePlay = (selectedCards, table, settings) => {
   const tableIsBomb = table.type.type === 'quad' || table.type.type === 'straight_flush';
 
   if (settings.enableBomb && isBomb) {
-    if (!tableIsBomb) return true;
-    
-    if (play.type === 'straight_flush' && table.type.type === 'quad') return true;
+    if (!tableIsBomb) {
+      // Bomb beats non-bomb only if same count (straight_flush must match table count)
+      if (play.type === 'quad') return true;
+      // straight_flush bomb must match table count
+      if (play.count !== table.type.count) return false;
+      return true;
+    }
+
+    if (play.type === 'straight_flush' && table.type.type === 'quad') {
+      if (play.count !== table.type.count) return false;
+      return true;
+    }
     if (play.type === 'quad' && table.type.type === 'straight_flush') return false;
-    
+
     if (play.type === table.type.type) {
-        if (play.count > table.type.count) return true;
-        if (play.count < table.type.count) return false;
-        
+        if (play.count !== table.type.count) return false;
+
         if (play.highestCard.valueRank > table.highestCard.valueRank) return true;
         if (play.highestCard.valueRank === table.highestCard.valueRank) {
           return play.highestCard.suitRank > table.highestCard.suitRank;

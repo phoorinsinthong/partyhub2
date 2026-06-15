@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useTranslation } from 'react-i18next';
 import { generateInitialState, checkVoteResult } from './logic/spyfallLogic';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
-import { CAT_META } from './spyfallCats';
+import { CAT_META } from './logic/spyfallCats';
 import {
   MapPin, User, Timer, AlertCircle, CheckCircle2, XCircle,
   Search, Info, ChevronDown, Vote, Eye,
@@ -206,7 +206,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
     if (advancingRef.current) return;
     advancingRef.current = true;
 
-    const { CATS, DEFAULT_LOCATIONS, NON_STANDARD_LOCATIONS } = await import('./spyfallData');
+    const { CATS, DEFAULT_LOCATIONS, NON_STANDARD_LOCATIONS } = await import('./logic/spyfallData');
 
     // Build location pool
     let pool = [];

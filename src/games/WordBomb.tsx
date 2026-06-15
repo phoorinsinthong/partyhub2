@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, get } from 'firebase/database';
 import { db } from '../firebase';
 import { Crown, RotateCcw, LogOut } from 'lucide-react';
-import { getRandomCategories } from './wordBombData';
+import { getRandomCategories } from './logic/wordBombData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -227,7 +227,7 @@ const WordBomb = ({ roomId, roomData, userNickname }) => {
     const newLives = Math.max(0, currentLives - 1);
     const newLivesMap = { ...lives, [currentPlayer]: newLives };
 
-    let newEliminated = [...eliminated];
+    const newEliminated = [...eliminated];
     let newPhase = 'playing';
 
     if (newLives <= 0 && !newEliminated.includes(currentPlayer)) {

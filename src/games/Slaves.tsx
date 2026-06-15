@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -15,7 +15,6 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
   const table = gameData.table || { cards: [] };
-  const passCount = gameData.passCount || 0;
   const roundCount = gameData.roundCount || 1;
   const ranks = gameData.ranks || []; // Ordered list of nicknames who finished
   
@@ -23,7 +22,8 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedCards, setSelectedCards] = useState([]);
   const [localSettings, setLocalSettings] = useState({ enableBomb: true, allowStraight: true });
-  
+  const advancingRef = useRef(false);
+
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
 
@@ -76,7 +76,6 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       settings: localSettings,
       currentTurn: firstTurn,
       table: { cards: [] },
-      passCount: 0,
       ranks: [],
     });
   };
@@ -105,6 +104,8 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
 
   const handlePlayCards = async () => {
     if (currentTurn !== userNickname) return;
+    if (advancingRef.current) return;
+    advancingRef.current = true;
     
     // In round 1, first play MUST include 3♣️ if table is empty
     if (roundCount === 1 && (!table || table.cards.length === 0)) {
@@ -113,6 +114,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       if (myHandHas3Clubs && !has3Clubs) {
         setErrorMsg('ตาแรกต้องลง 3 ดอกจิก');
         setTimeout(() => setErrorMsg(''), 2000);
+        advancingRef.current = false;
         return;
       }
     }
@@ -121,6 +123,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     if (!play) {
       setErrorMsg('รูปแบบไพ่ไม่ถูกต้อง (ลงได้แค่ เดี่ยว, คู่, ตอง, โฟร์, เรียง)');
       setTimeout(() => setErrorMsg(''), 2000);
+      advancingRef.current = false;
       return;
     }
 
@@ -129,6 +132,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
     if (!validatePlay(selectedCards, table, currentSettings)) {
       setErrorMsg('ไพ่เล็กกว่าบนโต๊ะ หรือรูปแบบ/จำนวนไม่ตรงกัน');
       setTimeout(() => setErrorMsg(''), 2000);
+      advancingRef.current = false;
       return;
     }
 
@@ -147,7 +151,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
       [`players/${userNickname}/isPass`]: false
     };
 
-    let nextRanks = [...ranks];
+    const nextRanks = [...ranks];
     if (newHand.length === 0) {
       nextRanks.push(userNickname);
       updates.ranks = nextRanks;
@@ -186,6 +190,7 @@ const Slaves = ({ roomId, roomData, userNickname }) => {
 
     setSelectedCards([]);
     await safeUpdate(updates);
+    advancingRef.current = false;
   };
 
   const handlePass = async () => {

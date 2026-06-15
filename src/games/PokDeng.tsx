@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -17,7 +17,8 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
-  
+  const advancingRef = useRef(false);
+
   const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
 
@@ -65,15 +66,18 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
   const drawCard = async (playerName) => {
     const pData = playersData[playerName];
     if (pData.hand.length >= 3 || pData.status !== 'playing') return;
+    if (advancingRef.current) return;
+    advancingRef.current = true;
 
     const newDeck = [...deck];
     const newCard = newDeck.pop();
-    
+
     await safeUpdate({
       deck: newDeck,
       [`players/${playerName}/hand`]: [...pData.hand, newCard],
       [`players/${playerName}/status`]: 'stand'
     });
+    advancingRef.current = false;
   };
 
   const setStand = async (playerName) => {
@@ -106,9 +110,14 @@ const PokDeng = ({ roomId, roomData, userNickname }) => {
         } else if (pStats.weight < dStats.weight) {
           winAmount = -(p.bet * dStats.deng);
           hostWonAny = true;
+        } else if (pStats.deng > dStats.deng) {
+          winAmount = p.bet * pStats.deng;
+          recordWin(roomId, name, 'pokdeng');
+        } else if (pStats.deng < dStats.deng) {
+          winAmount = -(p.bet * dStats.deng);
+          hostWonAny = true;
         } else {
-          // Tie score, check deng (Traditional Thai rule: Tie is Push)
-          winAmount = 0; // Push
+          winAmount = 0; // Push - same weight and same deng
         }
 
         updates[`players/${name}/chips`] = (p.chips || 1000) + winAmount;

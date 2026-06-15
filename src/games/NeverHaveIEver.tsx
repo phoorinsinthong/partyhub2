@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { Play, Timer, Users, Trophy, RotateCcw, ChevronRight, Skull, Heart, LogOut } from 'lucide-react';
 import { useGameLeave } from '../hooks/useGameLeave';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import { getRandomStatement } from './neverData';
+import { getRandomStatement } from './logic/neverData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { feedback } from '../utils/feedback';

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { Trophy, Clock, RotateCcw, Crown, LogOut, Play, Send } from 'lucide-react';
-import { generateRound } from './mathRaceData';
+import { generateRound } from './logic/mathRaceData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';

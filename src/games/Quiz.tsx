@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { Trophy, Clock, CheckCircle, XCircle, Crown, RotateCcw, LogOut } from 'lucide-react';
-import { getShuffledQuestions, CATEGORY_LABELS } from './quizData';
+import { getShuffledQuestions, CATEGORY_LABELS } from './logic/quizData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';

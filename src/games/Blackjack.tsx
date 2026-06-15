@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ref, get, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
@@ -17,7 +17,8 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
   const [errorMsg, setErrorMsg] = useState('');
-  
+  const advancingRef = useRef(false);
+
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
 
@@ -33,7 +34,7 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
   const startGame = async () => {
     if (!isHost) return;
     
-    let newDeck = shuffleDeck(createDeck());
+    const newDeck = shuffleDeck(createDeck());
     const playersInit = {};
     const dealerInit = { hand: [newDeck.pop(), newDeck.pop()] };
 
@@ -138,10 +139,12 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
   // Dealer Auto Play
   useEffect(() => {
     if (!isHost || phase !== 'dealerTurn') return;
-    
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+
     const playDealer = async () => {
-      let currentHand = [...(dealer.hand || [])];
-      let currentDeck = [...deck];
+      const currentHand = [...(dealer.hand || [])];
+      const currentDeck = [...deck];
       
       let score = calculateBlackjackScore(currentHand);
       while (score < 17 && currentDeck.length > 0) {
@@ -162,6 +165,7 @@ const Blackjack = ({ roomId, roomData, userNickname }) => {
         deck: currentDeck,
         [`dealer/hand`]: currentHand,
       });
+      advancingRef.current = false;
     };
 
     playDealer();

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { Clock, Crown, SkipForward, EyeOff, LogOut, RotateCcw } from 'lucide-react';
-import { getRandomCards } from './tabooData';
+import { getRandomCards } from './logic/tabooData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';

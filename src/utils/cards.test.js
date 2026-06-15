@@ -61,6 +61,48 @@ describe('PokDeng Logic', () => {
     expect(result.deng).toBe(5);
     expect(result.weight).toBe(17);
   });
+
+  it('should use deng as tiebreaker when weights are equal', () => {
+    const sameSuitHand = [
+      { value: 'A', suit: 'hearts' },
+      { value: '4', suit: 'hearts' },
+      { value: '10', suit: 'hearts' }
+    ];
+    const normalHand = [
+      { value: 'A', suit: 'hearts' },
+      { value: '4', suit: 'spades' },
+      { value: '10', suit: 'clubs' }
+    ];
+    const sameSuitResult = calculatePokDeng(sameSuitHand);
+    const normalResult = calculatePokDeng(normalHand);
+    expect(sameSuitResult.score).toBe(normalResult.score);
+    expect(sameSuitResult.deng).toBe(3);
+    expect(normalResult.deng).toBe(1);
+  });
+
+  it('should detect Straight (3 consecutive cards)', () => {
+    const hand = [
+      { value: '5', suit: 'hearts' },
+      { value: '6', suit: 'spades' },
+      { value: '7', suit: 'clubs' }
+    ];
+    const result = calculatePokDeng(hand);
+    expect(result.type).toBe('Straight (เรียง)');
+    expect(result.deng).toBe(3);
+    expect(result.weight).toBe(15);
+  });
+
+  it('should detect Straight Flush', () => {
+    const hand = [
+      { value: '5', suit: 'hearts' },
+      { value: '6', suit: 'hearts' },
+      { value: '7', suit: 'hearts' }
+    ];
+    const result = calculatePokDeng(hand);
+    expect(result.type).toBe('Straight Flush (เรียงสี)');
+    expect(result.deng).toBe(5);
+    expect(result.weight).toBe(16);
+  });
 });
 
 describe('Blackjack Logic', () => {
@@ -132,7 +174,66 @@ describe('Slaves Logic', () => {
         { value: '3', suit: 'hearts', valueRank: 1, suitRank: 3 },
         { value: '3', suit: 'spades', valueRank: 1, suitRank: 4 }
     ];
-    
+
     expect(validatePlay(bomb, lower, settings)).toBe(true);
+  });
+
+  it('should NOT allow straight of different count to beat table straight', () => {
+    const table3 = {
+      cards: [
+        { value: '3', suit: 'clubs', valueRank: 1, suitRank: 1 },
+        { value: '4', suit: 'clubs', valueRank: 2, suitRank: 1 },
+        { value: '5', suit: 'clubs', valueRank: 3, suitRank: 1 },
+      ],
+      type: { type: 'straight', count: 3, highestCard: { valueRank: 3, suitRank: 1 } },
+      highestCard: { valueRank: 3, suitRank: 1 }
+    };
+    const straight4 = [
+      { value: '6', suit: 'spades', valueRank: 4, suitRank: 4 },
+      { value: '7', suit: 'spades', valueRank: 5, suitRank: 4 },
+      { value: '8', suit: 'spades', valueRank: 6, suitRank: 4 },
+      { value: '9', suit: 'spades', valueRank: 7, suitRank: 4 },
+    ];
+
+    expect(validatePlay(straight4, table3, settings)).toBe(false);
+  });
+
+  it('should allow straight of same count with higher card to beat table straight', () => {
+    const table3 = {
+      cards: [
+        { value: '3', suit: 'clubs', valueRank: 1, suitRank: 1 },
+        { value: '4', suit: 'clubs', valueRank: 2, suitRank: 1 },
+        { value: '5', suit: 'clubs', valueRank: 3, suitRank: 1 },
+      ],
+      type: { type: 'straight', count: 3, highestCard: { valueRank: 3, suitRank: 1 } },
+      highestCard: { valueRank: 3, suitRank: 1 }
+    };
+    const straight3Higher = [
+      { value: '6', suit: 'spades', valueRank: 4, suitRank: 4 },
+      { value: '7', suit: 'spades', valueRank: 5, suitRank: 4 },
+      { value: '8', suit: 'spades', valueRank: 6, suitRank: 4 },
+    ];
+
+    expect(validatePlay(straight3Higher, table3, settings)).toBe(true);
+  });
+
+  it('should NOT allow straight_flush of different count to beat table straight_flush', () => {
+    const tableSF3 = {
+      cards: [
+        { value: '3', suit: 'hearts', valueRank: 1, suitRank: 3 },
+        { value: '4', suit: 'hearts', valueRank: 2, suitRank: 3 },
+        { value: '5', suit: 'hearts', valueRank: 3, suitRank: 3 },
+      ],
+      type: { type: 'straight_flush', count: 3, highestCard: { valueRank: 3, suitRank: 3 } },
+      highestCard: { valueRank: 3, suitRank: 3 }
+    };
+    const sf4 = [
+      { value: '6', suit: 'spades', valueRank: 4, suitRank: 4 },
+      { value: '7', suit: 'spades', valueRank: 5, suitRank: 4 },
+      { value: '8', suit: 'spades', valueRank: 6, suitRank: 4 },
+      { value: '9', suit: 'spades', valueRank: 7, suitRank: 4 },
+    ];
+
+    expect(validatePlay(sf4, tableSF3, settings)).toBe(false);
   });
 });

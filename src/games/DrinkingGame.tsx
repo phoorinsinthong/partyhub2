@@ -82,7 +82,7 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
     if (isHost && deck.length === 0 && drawnCards.length === 0) {
       const suits = ['hearts','diamonds','clubs','spades'];
       const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-      let d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
+      const d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
       for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
       update(ref(db,`rooms/${roomId}/gameData`),{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'init',by:nickname,time:Date.now()}});
     }
@@ -116,7 +116,7 @@ const DrinkingGame = ({ roomId, roomData, userNickname }) => {
     restartRef.current = true;
     const suits = ['hearts','diamonds','clubs','spades'];
     const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-    let d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
+    const d = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
     for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
     try {
       await safeUpdate(`rooms/${roomId}/gameData`,{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'restart',by:nickname,time:Date.now()}});

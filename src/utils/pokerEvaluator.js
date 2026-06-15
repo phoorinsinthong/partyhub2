@@ -5,7 +5,7 @@ export const evaluatePokerHand = (holeCards, communityCards) => {
   const values = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
   
   // Sort cards descending by value
-  let sortedCards = [...allCards].sort((a, b) => values[b.value] - values[a.value]);
+  const sortedCards = [...allCards].sort((a, b) => values[b.value] - values[a.value]);
   
   const valueCounts = {};
   const suitCounts = {};
@@ -20,7 +20,7 @@ export const evaluatePokerHand = (holeCards, communityCards) => {
   
   // Helper for straight
   const getStraightHigh = (cards) => {
-    let uniqueValues = [...new Set(cards.map(c => values[c.value]))].sort((a, b) => b - a);
+    const uniqueValues = [...new Set(cards.map(c => values[c.value]))].sort((a, b) => b - a);
     if (uniqueValues.includes(14)) uniqueValues.push(1); // Ace can be 1
 
     for (let i = 0; i <= uniqueValues.length - 5; i++) {
