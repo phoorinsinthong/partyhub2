@@ -152,30 +152,4 @@ const DRAWING_WORDS = {
   ],
 };
 
-export function getRandomWord(difficulty = 'random') {
-  if (difficulty === 'random') {
-    const keys = Object.keys(DRAWING_WORDS);
-    const key = keys[Math.floor(Math.random() * keys.length)];
-    const words = DRAWING_WORDS[key];
-    return { word: words[Math.floor(Math.random() * words.length)], difficulty: key };
-  }
-  const words = DRAWING_WORDS[difficulty] || DRAWING_WORDS.easy;
-  return { word: words[Math.floor(Math.random() * words.length)], difficulty };
-}
-
-export function getWordChoices(count = 3) {
-  const difficulties = ['easy', 'medium', 'hard', 'funny'];
-  const shuffled = [...difficulties].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count).map((diff) => {
-    const words = DRAWING_WORDS[diff];
-    return { word: words[Math.floor(Math.random() * words.length)], difficulty: diff };
-  });
-}
-
-export function getWordChoicesFromDifficulty(difficulty, count = 3) {
-  const words = DRAWING_WORDS[difficulty] || DRAWING_WORDS.easy;
-  const shuffled = [...words].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count).map(word => ({ word, difficulty }));
-}
-
-export default DRAWING_WORDS;
+export const DRAWING_WORDS_TYPED = DRAWING_WORDS as Record<string, string[]>;

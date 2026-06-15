@@ -3,11 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, onValue, push, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { Eraser, Palette, RotateCcw, Send, Trophy, Clock, Pencil, LogOut, Share2 } from 'lucide-react';
-import { getWordChoicesFromDifficulty, getRandomWord } from './drawingData';
+import { getWordChoicesFromDifficulty, getRandomWord } from './logic/drawingLogic';
+import { useTranslation } from 'react-i18next';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { feedback } from '../utils/feedback';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGameTimer } from '../hooks/useGameTimer';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
@@ -25,6 +28,7 @@ function shuffle(arr) {
 }
 
 const Drawing = ({ roomId, roomData, userNickname }) => {
+  const { t } = useTranslation();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const isHost = userNickname === roomData.host;
   const gameData = roomData.gameData || {};
@@ -82,7 +86,8 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
   const [color, setColor] = useState(COLORS[0]);
   const [brushSize, setBrushSize] = useState(BRUSH_SIZES[1]);
   const [guess, setGuess] = useState('');
-  const [timeLeft, setTimeLeft] = useState(60);
+  const timerEnd = roundStartedAt > 0 ? roundStartedAt + (roundTime * 1000) : null;
+  const { timeLeft } = useGameTimer(timerEnd);
   const [localPaths, setLocalPaths] = useState([]);
   const [showWordChoices, setShowWordChoices] = useState(false);
   const [wordChoices, setWordChoices] = useState([]);
@@ -183,25 +188,19 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
 
   useEffect(() => {
     if (phase !== 'playing' || !roundStartedAt) return;
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - roundStartedAt) / 1000);
-      const remaining = Math.max(0, roundTime - elapsed);
-      setTimeLeft(remaining);
-
-      if (remaining <= 5 && remaining > 0) {
-        feedback('countdown');
+    
+    if (timeLeft <= 5 && timeLeft > 0) {
+      feedback('countdown');
+    }
+    
+    if (timeLeft === 0) {
+      feedback('timeUp');
+      if (isHost && !timerFiredRef.current) {
+        timerFiredRef.current = true;
+        handleEndRound();
       }
-      if (remaining === 0) {
-        feedback('timeUp');
-        clearInterval(interval);
-        if (isHost && !timerFiredRef.current) {
-          timerFiredRef.current = true;
-          handleEndRound();
-        }
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [phase, roundStartedAt, isHost]);
+    }
+  }, [phase, roundStartedAt, isHost, timeLeft]);
 
   // ─── Sync drawing from Firebase ───
   useEffect(() => {
@@ -835,11 +834,10 @@ const Drawing = ({ roomId, roomData, userNickname }) => {
           <span className="text-[10px] font-bold text-olive-400 bg-white dark:bg-olive-700 px-1.5 py-0.5 rounded-full">
             {round + 1}/{totalRounds}
           </span>
-          <span className="text-[9px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full">
+          <span className="text-[9px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full mr-2">
             {{ easy: 'ง่าย', medium: 'กลาง', hard: 'ยาก', funny: 'ฮาๆ', random: 'สุ่ม', custom: 'กำหนดเอง' }[gameData.difficulty] || 'ง่าย'}
           </span>
-          <Clock size={10} className={timeLeft <= 10 ? 'text-red-500' : 'text-olive-400'} />
-          <span className={`font-black text-[12px] ${timeLeft <= 10 ? 'text-red-500' : 'text-olive-700'}`}>{timeLeft}s</span>
+          <TimerDisplay timeLeft={timeLeft} />
         </div>
         <div className="flex items-center gap-1.5">
           <Pencil size={10} className="text-olive-400" />

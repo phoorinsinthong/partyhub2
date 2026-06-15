@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
+import { useTranslation } from 'react-i18next';
+import { generateInitialState, checkVoteResult } from './logic/spyfallLogic';
+import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { CAT_META } from './spyfallCats';
 import {
   MapPin, User, Timer, AlertCircle, CheckCircle2, XCircle,
@@ -18,6 +21,7 @@ import LeaveConfirmModal from '../components/LeaveConfirmModal';
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const Spyfall = ({ roomId, roomData, userNickname }) => {
+  const { t } = useTranslation();
   const nickname = userNickname;
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, nickname);
   const players = roomData.players || {};
@@ -135,39 +139,16 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
     if (!isHost || gameData.status !== 'voting') return;
 
     const gamePlayers = gameData.players || {};
-    const allVoted = gamePlayerList.every(p => gamePlayers[p]?.votedFor);
-    if (!allVoted) return;
-
-    // Count votes
-    const voteCounts = {};
-    gamePlayerList.forEach(p => {
-      const target = gamePlayers[p].votedFor;
-      if (target) {
-        voteCounts[target] = (voteCounts[target] || 0) + 1;
-      }
-    });
-
-    // Find who got most votes
-    let maxVotes = 0;
-    let maxTarget = null;
-    Object.entries(voteCounts).forEach(([target, count]) => {
-      if (count > maxVotes) {
-        maxVotes = count;
-        maxTarget = target;
-      }
-    });
-
-    // Check if majority voted for the spy
-    const spyName = gamePlayerList.find(p => gamePlayers[p].isSpy);
-    const majority = Math.ceil(gamePlayerCount / 2);
-
+    const result = checkVoteResult(gamePlayers, gamePlayerCount);
+    
+    if (!result) return;
     if (voteResultRef.current) return;
     voteResultRef.current = true;
 
-    if (maxTarget === spyName && maxVotes >= majority) {
+    if (result.winner) {
       (async () => {
         try {
-          await safeUpdate(`rooms/${roomId}/gameData`, { status: 'finished', winner: 'Civilians' });
+          await safeUpdate(`rooms/${roomId}/gameData`, { status: 'finished', winner: result.winner });
           await safeUpdate(`rooms/${roomId}`, { status: 'finished' });
           const civilianWinner = gamePlayerList.find(p => !gamePlayers[p].isSpy) || roomData.host;
           await recordWin(roomId, civilianWinner, 'spyfall');
@@ -175,7 +156,8 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
           voteResultRef.current = false;
         }
       })();
-    } else {
+    } else if (result.forcedSpy) {
+      const spyName = gamePlayerList.find(p => gamePlayers[p].isSpy);
       (async () => {
         try {
           await safeUpdate(`rooms/${roomId}/gameData`, {
@@ -216,13 +198,6 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-
   // ─── Game Actions ────────────────────────────────────────────────────────────
 
   const startGame = async () => {
@@ -255,11 +230,9 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
     if (pool.length === 0) pool = CATS[0].places.map(p => ({ n: p.n, r: p.r }));
 
+    let placeCategory = '';
     const targetIdx = Math.floor(Math.random() * pool.length);
     const targetPlace = pool[targetIdx];
-
-    // Find the main category of the target place
-    let placeCategory = '';
     for (const cat of CATS) {
       if (cat.places.some(p => p.n === targetPlace.n)) {
         placeCategory = cat.name;
@@ -270,74 +243,14 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
       if (Object.keys(DEFAULT_LOCATIONS).includes(targetPlace.n)) placeCategory = 'ทั่วไป';
       else if (Object.keys(NON_STANDARD_LOCATIONS).includes(targetPlace.n)) placeCategory = 'พิเศษ';
     }
-    const shuffledPlayers = [...playerList];
-    for (let i = shuffledPlayers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffledPlayers[i], shuffledPlayers[j]] = [shuffledPlayers[j], shuffledPlayers[i]];
-    }
 
-    const spyId = shuffledPlayers[0];
-    let accompliceId = null;
-    // Accomplice enabled at 4+ players
-    if (enableAccomplice && playerCount >= 4) {
-      accompliceId = shuffledPlayers[1];
-    }
-
-    const availableRoles = [...targetPlace.r];
-    for (let i = availableRoles.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [availableRoles[i], availableRoles[j]] = [availableRoles[j], availableRoles[i]];
-    }
-    const gamePlayers = {};
-
-    playerList.forEach((pid) => {
-      if (pid === spyId) {
-        gamePlayers[pid] = {
-          role: 'สายลับ',
-          place: '',
-          isSpy: true,
-          isAccomplice: false,
-          spyName: '',
-          votedFor: '',
-          wantsToVote: false
-        };
-      } else if (pid === accompliceId) {
-        gamePlayers[pid] = {
-          role: 'ผู้สมรู้ร่วมคิด',
-          place: '???',
-          isSpy: false,
-          isAccomplice: true,
-          spyName: spyId,
-          votedFor: '',
-          wantsToVote: false
-        };
-      } else {
-        const roleName = availableRoles.pop() || 'ชาวบ้าน';
-        gamePlayers[pid] = {
-          role: roleName,
-          place: targetPlace.n,
-          isSpy: false,
-          isAccomplice: false,
-          spyName: '',
-          votedFor: '',
-          wantsToVote: false
-        };
-      }
-    });
-
-    const newGameData = {
-      status: 'playing',
-      targetPlace: targetPlace.n,
-      placeCategory: placeCategory || 'อื่นๆ',
-      timerEnd: Date.now() + timerMinutes * 60 * 1000,
-      players: gamePlayers,
-      allPlaces: pool.map(p => p.n).sort(),
-      spyRevealing: null,
-      spyForced: false,
-      winner: null,
-      guess: null,
-      enableAccomplice: enableAccomplice && playerCount >= 4
-    };
+    const newGameData = generateInitialState(
+      playerList,
+      pool,
+      placeCategory,
+      timerMinutes,
+      enableAccomplice
+    );
 
     try {
       await safeUpdate(`rooms/${roomId}`, {
@@ -467,8 +380,8 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
               <Info size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Spyfall</h3>
-              <p className="text-secondary text-sm">หาตัวสายลับที่แฝงตัวอยู่ในกลุ่ม!</p>
+              <h3 className="text-xl font-bold">{t('spyfall.title')}</h3>
+              <p className="text-secondary text-sm">{t('spyfall.description')}</p>
             </div>
           </div>
 
@@ -476,7 +389,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
           {/* Category Selection */}
           <h4 className="text-sm font-bold mb-md flex items-center gap-sm">
-            <MapPin size={16} /> หมวดหมู่สถานที่ ({selectedCats.length} หมวด)
+            <MapPin size={16} /> {t('spyfall.categoryTitle')} ({selectedCats.length} หมวด)
           </h4>
 
           <div className="grid grid-cols-2 gap-sm mb-md">
@@ -615,14 +528,9 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {/* Timer */}
-        <div className="glass-panel px-lg py-md flex items-center gap-md border-primary/30 w-fit">
-          <Timer size={20} className={timeLeft < 60 ? 'text-danger animate-pulse' : 'text-primary'} />
-          <span className={`font-mono text-2xl font-black ${timeLeft < 60 ? 'text-danger' : 'text-white'}`}>
-            {formatTime(timeLeft)}
-          </span>
-        </div>
+        <TimerDisplay timeLeft={timeLeft} />
 
         {/* Category Hint */}
         {gameData.placeCategory && (
@@ -1015,7 +923,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
     return (
       <div className="flex flex-col gap-lg w-full text-center animate-fade-in">
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
+        {renderErrorToast()}
         <div className={`glass-panel p-xl w-full border-2 shadow-2xl relative overflow-hidden ${
           gameData.winner === 'Spy' ? 'border-danger' : 'border-success'
         }`}>

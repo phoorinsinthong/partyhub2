@@ -79,7 +79,7 @@ export function resolveNightActions(nightActions, gameState) {
   const spellcasterTarget = nightActions.spellcasterTarget;
   const oldHagTarget = nightActions.old_hagTarget;
 
-  let killedTonight = new Set();
+  const killedTonight = new Set();
 
   // 1. Werewolf Kill vs Protections
   if (killedByWolf && killedByWolf !== 'skip') {
