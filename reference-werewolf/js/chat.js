@@ -63,7 +63,7 @@ function handleSend() {
 
   // Determine which channel to post to based on active tab
   const me = STATE.roomData?.players?.[STATE.playerId];
-  let type = activeTab;
+  const type = activeTab;
 
   // Gate posting to wolf channel
   if (type === "werewolf" && me?.role !== "werewolf") return;

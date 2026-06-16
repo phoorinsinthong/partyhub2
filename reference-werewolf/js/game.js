@@ -216,7 +216,7 @@ export function assignRoles(playerIds, customDeck) {
   // Fallback if no custom deck provided or sizes mismatch
   if (roles.length !== count) {
     roles = [];
-    let wolfCount = count >= 7 ? 2 : 1;
+    const wolfCount = count >= 7 ? 2 : 1;
     for (let i = 0; i < wolfCount; i++) roles.push("werewolf");
     if (count >= 4) roles.push("seer");
     if (count >= 5) roles.push("doctor");

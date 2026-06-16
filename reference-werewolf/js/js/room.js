@@ -753,7 +753,7 @@ function renderNightPanel(me, players) {
   const targets = Object.entries(players)
     .filter(([id, p]) => p.isAlive && p.role !== "gm" && id !== STATE.playerId && (cfg.team !== "werewolf" || !["werewolf", "alpha_wolf", "dire_wolf", "lone_wolf", "mystic_wolf", "wolf_cub", "wolf_man"].includes(p.role)));
 
-  let skipBtn = `<button class="btn btn-ghost mt-3 w-100" style="color:#d1d5db; border: 1px solid rgba(255,255,255,0.3)" onclick="window._nightAction('${role}', 'skip', this, 'skip')"> ข้าม(ไม่ใช้พลัง)</button> `;
+  const skipBtn = `<button class="btn btn-ghost mt-3 w-100" style="color:#d1d5db; border: 1px solid rgba(255,255,255,0.3)" onclick="window._nightAction('${role}', 'skip', this, 'skip')"> ข้าม(ไม่ใช้พลัง)</button> `;
 
   panel.innerHTML =`
     <div class="night-action" style="padding:16px">

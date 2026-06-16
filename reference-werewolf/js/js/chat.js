@@ -66,7 +66,7 @@ function handleSend() {
   const me = STATE.roomData?.players?.[STATE.playerId];
   const myRole = me?.role;
   const isGM = myRole === "gm";
-  let type = activeTab;
+  const type = activeTab;
 
   // Gate posting based on role/status, unless GM
   if (!isGM) {

@@ -36,6 +36,8 @@ const Home: React.FC = () => {
   const [showQR, setShowQR] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { setUserNickname } = useGame();
+
   // Initialize avatar state from localStorage or generate new ones once
   const [avatarEmoji, setAvatarEmoji] = useState(() => {
     const saved = loadAvatar();
@@ -68,7 +70,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const ROOM_MAX_AGE = 2 * 60 * 60 * 1000;
     const PLAYING_MAX_AGE = 60 * 60 * 1000;
-    const HOST_DISCONNECT_MAX = 60 * 1000;
+    const HOST_DISCONNECT_MAX = 10 * 60 * 1000; // 10 minutes grace period
     const cleanedRooms = new Set();
     const shouldCleanup = Math.random() < 0.33;
 
@@ -165,6 +167,7 @@ const Home: React.FC = () => {
       });
       
       localStorage.setItem('nickname', trimmedName);
+      setUserNickname(trimmedName);
       localStorage.setItem('isHost', 'true');
       navigate(`/lobby/${code}`);
     } catch (err: any) {
@@ -206,6 +209,7 @@ const Home: React.FC = () => {
       });
       
       localStorage.setItem('nickname', trimmedName);
+      setUserNickname(trimmedName);
       localStorage.setItem('isHost', 'false');
       navigate(`/lobby/${roomCode}`);
     } catch (err: any) {

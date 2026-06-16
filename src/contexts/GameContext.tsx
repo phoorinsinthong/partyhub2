@@ -70,7 +70,12 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, [roomId]);
 
-  const isHost = roomData?.host === userNickname;
+  const updateRoomId = (id: string | null) => {
+    if (id !== roomId) {
+      setRoomId(id);
+      if (id) setIsLoading(true);
+    }
+  };
 
   const value = {
     roomId,
@@ -79,7 +84,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isHost,
     isLoading,
     error,
-    setRoomId,
+    setRoomId: updateRoomId,
     setUserNickname
   };
 

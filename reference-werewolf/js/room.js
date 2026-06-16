@@ -16,8 +16,8 @@ import { renderVoting, castVote, resetVoteSelection, resolveVotes, gmSkipVote } 
 import { initChat, setActiveChatTab } from "./chat.js";
 
 let unsubRoom = null;
-let lastStatus = null;
-let lastPhase = null;
+const lastStatus = null;
+const lastPhase = null;
 let lastPlayersStr = null;
 let lastRoleDeckCountsStr = null;
 
@@ -1169,7 +1169,7 @@ function renderNightPanel(me, players) {
       return true;
     });
 
-  let skipBtn = `<button class="btn btn-ghost mt-3 w-100" style="color:#d1d5db; border: 1px solid rgba(255,255,255,0.3)" onclick="window._nightAction('${role}', 'skip', this, 'skip')">ข้าม (ไม่ใช้พลัง)</button>`;
+  const skipBtn = `<button class="btn btn-ghost mt-3 w-100" style="color:#d1d5db; border: 1px solid rgba(255,255,255,0.3)" onclick="window._nightAction('${role}', 'skip', this, 'skip')">ข้าม (ไม่ใช้พลัง)</button>`;
 
   panel.innerHTML = `
     <div class="night-action" style="padding:16px">
