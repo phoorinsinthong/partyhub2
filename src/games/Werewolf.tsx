@@ -1220,7 +1220,7 @@ const Werewolf: React.FC = () => {
           {/* Player Status Table */}
           <div className="space-y-xs max-h-60 overflow-y-auto">
             <p className="text-[10px] font-bold text-secondary uppercase tracking-widest">สถานะผู้เล่น</p>
-            {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
+            {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.role !== 'gm').map(([name, p]: [string, any]) => {
               const cfg = ROLES[p.role] || ROLES.villager;
               const isDead = !p.isAlive;
               return (
@@ -1250,8 +1250,8 @@ const Werewolf: React.FC = () => {
                 // Only include roles where at least one alive player has that role
                 const activeRoles = Array.from(new Set(
                   Object.values(wwPlayers)
-                    .filter(p => p.isAlive && p.role !== 'gm')
-                    .map(p => p.role)
+                    .filter((p: any) => p.isAlive && p.role !== 'gm')
+                    .map((p: any) => p.role)
                     .filter(role => {
                       const cfg = ROLES[role];
                       return cfg && (cfg.actionPhase === 'nightly' || (cfg.actionPhase === 'firstNight' && dayCount === 1));
@@ -1264,7 +1264,7 @@ const Werewolf: React.FC = () => {
                 const actionKeys = wolfPresent ? ['werewolf', ...nonWolfRoles] : nonWolfRoles;
 
                 // Alive non-GM players as target options
-                const targets = Object.entries(wwPlayers).filter(([, p]) => p.isAlive && p.role !== 'gm');
+                const targets = Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm');
 
                 return actionKeys.map(actionKey => {
                   const cfg = ROLES[actionKey] || ROLES.villager;
@@ -1369,8 +1369,8 @@ const Werewolf: React.FC = () => {
           {phase === 'voting' && (
             <div className="space-y-sm border-t border-glass pt-md">
               <p className="text-xs font-bold text-red-300">ผลโหวตปัจจุบัน</p>
-              {Object.entries(wwPlayers).filter(([, p]) => p.isAlive && p.role !== 'gm').map(([name, p]) => {
-                const voteCount = Object.values(wwPlayers).filter(pp => pp.vote === name).reduce((acc, pp) => acc + (pp.role === 'mayor' ? 2 : 1), 0);
+              {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm').map(([name]) => {
+                const voteCount = Object.values(wwPlayers).filter((pp: any) => pp.vote === name).reduce((acc: number, pp: any) => acc + (pp.role === 'mayor' ? 2 : 1), 0);
                 return voteCount > 0 ? (
                   <div key={name} className="flex justify-between items-center p-sm bg-glass-dark/30 rounded-lg">
                     <span className="text-xs font-bold">{name}</span>
@@ -1415,12 +1415,12 @@ const Werewolf: React.FC = () => {
           {/* Wolf allies */}
           {WOLF_ROLES.includes(myRole) && (
             <div className="glass-panel-werewolf p-md border-danger/30 bg-danger/5">
-              <p className="text-xs text-danger font-bold">🐺 เพื่อนหมาป่า: {Object.entries(wwPlayers).filter(([n, p]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</p>
+              <p className="text-xs text-danger font-bold">🐺 เพื่อนหมาป่า: {Object.entries(wwPlayers).filter(([n, p]: [string, any]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</p>
             </div>
           )}
 
           {/* Seer Result */}
-          {['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(myRole) && wwData.privateData?.[userNickname]?.seerResult && (
+          {userNickname && ['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(myRole) && wwData.privateData?.[userNickname]?.seerResult && (
             <div className={`glass-panel-werewolf p-md text-center ${wwData.privateData[userNickname].seerResult.isWolf ? 'border-danger/30 bg-danger/5' : 'border-success/30 bg-success/5'}`}>
               <p className="text-xs font-bold text-secondary mb-xs">🔮 ผลการส่อง</p>
               <p className="font-bold">
@@ -1457,7 +1457,7 @@ const Werewolf: React.FC = () => {
                 }
 
                 // Show targets
-                const targets = Object.entries(wwPlayers).filter(([name, p]) => {
+                const targets = Object.entries(wwPlayers).filter(([name, p]: [string, any]) => {
                   if (!p.isAlive || p.role === 'gm') return false;
                   if (name === userNickname && myRole !== 'bodyguard') return false;
                   if (cfg.team === 'werewolf' && WOLF_ROLES.includes(p.role) && name !== userNickname) return false;
@@ -1541,9 +1541,9 @@ const Werewolf: React.FC = () => {
               <p className="text-xs font-bold text-red-300 uppercase tracking-widest">🗳️ เลือกคนที่จะแขวนคอ</p>
               {myIsAlive && !myPlayerData?.status?.silenced && !myPlayerData?.status?.banned ? (
                 <div className="grid grid-cols-2 gap-sm">
-                  {Object.entries(wwPlayers).filter(([name, p]) => p.isAlive && p.role !== 'gm' && name !== userNickname).map(([name]) => {
+                  {Object.entries(wwPlayers).filter(([name, p]: [string, any]) => p.isAlive && p.role !== 'gm' && name !== userNickname).map(([name]) => {
                     const isSelected = myPlayerData?.vote === name;
-                    const voteCount = Object.values(wwPlayers).filter(p => p.vote === name).length;
+                    const voteCount = Object.values(wwPlayers).filter((p: any) => p.vote === name).length;
                     return (
                       <button
                         key={name}
@@ -1583,7 +1583,7 @@ const Werewolf: React.FC = () => {
       <div className="glass-panel-werewolf p-md">
         <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่น</p>
         <div className="flex flex-wrap gap-xs">
-          {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
+          {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.role !== 'gm').map(([name, p]: [string, any]) => (
             <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${!p.isAlive ? 'opacity-40 line-through border-glass text-secondary' : name === userNickname ? 'border-primary/40 text-primary bg-primary/10' : 'border-glass text-white'}`}>
               {!p.isAlive && '💀 '}{name}
               {isGM && WOLF_ROLES.includes(p.role) && <span className="text-danger ml-xs">🐺</span>}

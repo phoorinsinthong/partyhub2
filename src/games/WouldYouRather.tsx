@@ -40,7 +40,7 @@ const WouldYouRather: React.FC = () => {
   const currentQuestion = questions[currentQIndex];
   const votes = gameData.votes?.[currentQIndex] || {};
 
-  const myVote = votes[userNickname];
+  const myVote = userNickname ? votes[userNickname] : null;
   const totalVotes = Object.keys(votes).length;
 
   const handleStart = async () => {
@@ -55,7 +55,7 @@ const WouldYouRather: React.FC = () => {
   };
 
   const handleVote = async (option: 'a' | 'b') => {
-    if (myVote) return;
+    if (!userNickname || myVote) return;
     await safeUpdate(`rooms/${roomId}/gameData/votes/${currentQIndex}`, {
       [userNickname]: option,
     });

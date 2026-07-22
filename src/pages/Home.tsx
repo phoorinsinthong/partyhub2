@@ -251,7 +251,7 @@ const Home: React.FC = () => {
         <div className="flex flex-col items-center">
           <div className="relative mb-3">
             <div className="w-16 h-16 rounded-[22px] bg-gradient-to-br from-sage-200 to-sage-100 flex-center shadow-sm overflow-hidden pixel-logo-frame">
-              <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="Party Hub" className="w-12 h-12" style={{ imageRendering: 'pixelated' }} />
+              <img src="./favicon.svg" alt="Party Hub" className="w-12 h-12" style={{ imageRendering: 'pixelated' }} />
             </div>
             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warm-200 flex-center animate-pixel-sparkle">
               <Sparkles size={10} className="text-warm-500" />

@@ -19,6 +19,9 @@ interface PlayerSetup {
   notes: string;
 }
 
+const STORAGE_KEY = 'werewolf_moderator_session';
+const NIGHT_ORDER = ['cupid', 'werewolf', 'seer', 'bodyguard', 'witch', 'hunter'];
+
 const getSavedSession = () => {
   if (typeof window === 'undefined') return null;
   const saved = localStorage.getItem(STORAGE_KEY);
@@ -71,6 +74,25 @@ export const WerewolfModerator: React.FC = () => {
   // Day Voting Modal State
   const [showVoteModal, setShowVoteModal] = useState<boolean>(false);
   const [voteTarget, setVoteTarget] = useState<string>('');
+
+  const activeNightRoles = NIGHT_ORDER.filter(role => 
+    players.some(p => p.role === role && p.isAlive)
+  );
+
+  const currentNightRole = activeNightRoles[nightStepIndex] || null;
+
+  const speakScript = (text: string) => {
+    if (!enableTTS || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'th-TH';
+      utterance.rate = 0.9;
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      /* ignore */
+    }
+  };
 
   // Auto-Save State
   useEffect(() => {

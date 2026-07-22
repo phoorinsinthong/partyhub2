@@ -172,7 +172,7 @@ const WordBomb: React.FC = () => {
     if (phase !== 'finished' || isHost || personalRecordedRef.current) return;
     personalRecordedRef.current = true;
     recordPersonalGame('wordbomb');
-    const survivors = turnOrder.filter(p => !eliminated.includes(p));
+    const survivors = turnOrder.filter((p: string) => !eliminated.includes(p));
     if (survivors[0] === userNickname) recordPersonalWin('wordbomb');
   }, [phase, isHost, turnOrder, eliminated, userNickname]);
 
@@ -194,7 +194,7 @@ const WordBomb: React.FC = () => {
       newEliminated.push(currentPlayer);
     }
 
-    const survivors = turnOrder.filter(p => !newEliminated.includes(p));
+    const survivors = turnOrder.filter((p: string) => !newEliminated.includes(p));
     if (survivors.length <= 1) {
       newPhase = 'finished';
     }
@@ -302,10 +302,10 @@ const WordBomb: React.FC = () => {
 
     const usedCats = gameData.usedCategories || [];
     const catObj = getRandomCategories(1, usedCats)[0];
-    const survivors = turnOrder.filter(p => !eliminated.includes(p));
+    const survivors = turnOrder.filter((p: string) => !eliminated.includes(p));
     const newDuration = randomBombTime();
 
-    const firstIdx = turnOrder.findIndex(p => survivors.includes(p));
+    const firstIdx = turnOrder.findIndex((p: string) => survivors.includes(p));
 
     try {
       await safeUpdate(`rooms/${roomId}/gameData`, {
@@ -371,7 +371,7 @@ const WordBomb: React.FC = () => {
   }
 
   if (phase === 'finished') {
-    const survivors = turnOrder.filter(p => !eliminated.includes(p));
+    const survivors = turnOrder.filter((p: string) => !eliminated.includes(p));
     const winner = survivors[0] || '???';
 
     return (
@@ -451,7 +451,7 @@ const WordBomb: React.FC = () => {
 
       <div className="mt-auto card p-4 bg-white/50 backdrop-blur-sm border-olive-50">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4">
-          {turnOrder.map((p) => (
+          {turnOrder.map((p: string) => (
             <div key={p} className={`flex items-center justify-between gap-2 ${eliminated.includes(p) ? 'opacity-30 grayscale' : ''}`}>
               <div className="flex items-center gap-2 min-w-0">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${activePlayer === p ? 'bg-red-500 animate-pulse' : 'bg-olive-200'}`} />

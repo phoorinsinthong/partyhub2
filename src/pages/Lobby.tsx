@@ -158,7 +158,7 @@ const Lobby: React.FC = () => {
     </div>
   );
 
-  const playersList = Object.entries(roomData.players || {}).map(([key, val]) => ({
+  const playersList = Object.entries(roomData.players || {}).map(([key, val]: [string, any]) => ({
     key,
     ...val,
     name: val.name || key
