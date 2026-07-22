@@ -8,7 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import AvatarPicker from '../components/AvatarPicker';
 import ThemeToggle from '../components/ThemeToggle';
 import SoundToggle from '../components/SoundToggle';
-import ReconnectBanner from '../components/ReconnectBanner';
+import ReconnectBanner, { saveSession } from '../components/ReconnectBanner';
 import { loadAvatar, getAvatarColor, getRandomAvatar, getRandomColor, saveAvatar } from '../utils/avatars';
 import { rateLimitCreateRoom, rateLimitJoinRoom } from '../utils/rateLimit';
 import { useGame } from '../contexts/GameContext';
@@ -167,6 +167,7 @@ const Home: React.FC = () => {
       localStorage.setItem('nickname', trimmedName);
       setUserNickname(trimmedName);
       localStorage.setItem('isHost', 'true');
+      saveSession(code, trimmedName);
       navigate(`/lobby/${code}`);
     } catch (err: any) {
       setError('เกิดข้อผิดพลาดในการสร้างห้อง: ' + (err.message || ''));
@@ -209,6 +210,7 @@ const Home: React.FC = () => {
       localStorage.setItem('nickname', trimmedName);
       setUserNickname(trimmedName);
       localStorage.setItem('isHost', 'false');
+      saveSession(roomCode, trimmedName);
       navigate(`/lobby/${roomCode}`);
     } catch (err: any) {
       setError('เกิดข้อผิดพลาดในการเข้าห้อง: ' + (err.message || ''));

@@ -87,16 +87,24 @@ const GameRoom: React.FC = () => {
     setRoomId(roomId || null);
   }, [roomId, setRoomId]);
 
-  usePresence(roomId || '', userNickname || '', isHost);
+  const effectiveNickname = userNickname || localStorage.getItem('nickname');
+
+  useEffect(() => {
+    if (!userNickname && effectiveNickname) {
+      setUserNickname(effectiveNickname);
+    }
+  }, [userNickname, effectiveNickname, setUserNickname]);
+
+  usePresence(roomId || '', effectiveNickname || '', isHost);
   usePlayerCleanup(roomId || '');
 
   useEffect(() => {
-    if (!userNickname && !isLoading) { navigate('/'); return; }
-  }, [userNickname, navigate, isLoading]);
+    if (!effectiveNickname && !isLoading) { navigate('/'); return; }
+  }, [effectiveNickname, navigate, isLoading]);
 
   useEffect(() => {
-    if (roomId && userNickname) saveSession(roomId, userNickname);
-  }, [roomId, userNickname]);
+    if (roomId && effectiveNickname) saveSession(roomId, effectiveNickname);
+  }, [roomId, effectiveNickname]);
 
   // Handle navigation and session cleanup based on room state
   useEffect(() => {
