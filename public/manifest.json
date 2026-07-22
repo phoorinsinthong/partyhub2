@@ -2,8 +2,8 @@
   "name": "Party Hub — เกมปาร์ตี้ออนไลน์",
   "short_name": "Party Hub",
   "description": "รวมเกมปาร์ตี้สุดสนุก เล่นกับเพื่อนได้ทุกที่ทุกเวลา — วงเหล้า, สปายฟอล, เลขเป้า, หมาป่า",
-  "start_url": "/partyhub/",
-  "scope": "/partyhub/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#f4f5ee",
@@ -42,7 +42,7 @@
     {
       "name": "สร้างห้องใหม่",
       "short_name": "สร้างห้อง",
-      "url": "/partyhub/",
+      "url": "./",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
