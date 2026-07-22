@@ -73,7 +73,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({ message, onConfirm, onCance
 const GameRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { roomData, userNickname, isHost, isLoading, setRoomId } = useGame();
+  const { roomData, userNickname, isHost, isLoading, setRoomId, setUserNickname } = useGame();
   
   const [restartingOverlay, setRestartingOverlay] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ message: string; onConfirm: () => void } | null>(null);

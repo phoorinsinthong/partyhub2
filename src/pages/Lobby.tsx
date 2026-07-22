@@ -55,7 +55,7 @@ const allGames = gameCategories.flatMap(cat => cat.games);
 const Lobby: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { roomData, userNickname, isHost, isLoading, setRoomId } = useGame();
+  const { roomData, userNickname, isHost, isLoading, setRoomId, setUserNickname } = useGame();
   
   const [selectedGame, setSelectedGame] = useState('drinking');
   const [copied, setCopied] = useState(false);
