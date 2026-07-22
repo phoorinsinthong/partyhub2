@@ -107,10 +107,14 @@ const GameRoom: React.FC = () => {
     }
     
     if (roomData) {
-      if (userNickname && roomData.players && !roomData.players[userNickname]) {
-        clearSession();
-        navigate('/', { state: { kicked: true } });
-        return;
+      if (userNickname && roomData.players) {
+        const playerKeys = Object.keys(roomData.players);
+        const isPlayerInRoom = playerKeys.some(k => k.toLowerCase() === userNickname.toLowerCase());
+        if (playerKeys.length > 0 && !isPlayerInRoom) {
+          clearSession();
+          navigate('/', { state: { kicked: true } });
+          return;
+        }
       }
       
       if (roomData.status === 'waiting') {

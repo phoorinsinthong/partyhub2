@@ -22,10 +22,13 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
   const onDisconnectRefs = useRef<any[]>([]);
   const cleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const hasBeenOnlineRef = useRef(false);
+
   useEffect(() => {
     if (!roomId || !nickname) return;
 
     kickedRef.current = false;
+    hasBeenOnlineRef.current = false;
 
     const connectedRef = ref(db, '.info/connected');
     const playerRef = ref(db, `rooms/${roomId}/players/${nickname}`);
@@ -35,7 +38,9 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
 
     // Watch own player node — if deleted (kicked), stop all writes
     const unsubPlayer = onValue(playerRef, (snap) => {
-      if (!snap.exists()) {
+      if (snap.exists()) {
+        hasBeenOnlineRef.current = true;
+      } else if (hasBeenOnlineRef.current) {
         kickedRef.current = true;
         onDisconnectRefs.current.forEach(od => {
           try { od.cancel(); } catch { /* ignore */ }
