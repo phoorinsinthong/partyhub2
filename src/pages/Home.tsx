@@ -38,15 +38,10 @@ const Home: React.FC = () => {
 
   const { setUserNickname } = useGame();
 
-  // Initialize avatar state from localStorage or generate new ones once
-  const [avatarEmoji, setAvatarEmoji] = useState(() => {
-    const saved = loadAvatar();
-    return saved.emoji || getRandomAvatar();
-  });
-  const [avatarColor, setAvatarColor] = useState(() => {
-    const saved = loadAvatar();
-    return saved.color || getRandomColor();
-  });
+  const [avatarEmoji, setAvatarEmoji] = useState(() => loadAvatar().emoji || getRandomAvatar());
+  const [avatarColor, setAvatarColor] = useState(() => loadAvatar().color || getRandomColor());
+  const [avatarFrame, setAvatarFrame] = useState(() => loadAvatar().frame || 'none');
+  const [avatarGradient, setAvatarGradient] = useState(() => loadAvatar().gradient || '');
 
   // Kicked toast state
   const [kickedToast, setKickedToast] = useState(() => !!location.state?.kicked);
@@ -63,9 +58,9 @@ const Home: React.FC = () => {
   useEffect(() => {
     const saved = loadAvatar();
     if (!saved.emoji) {
-      saveAvatar(avatarEmoji, avatarColor);
+      saveAvatar(avatarEmoji, avatarColor, avatarFrame, avatarGradient);
     }
-  }, [avatarEmoji, avatarColor]);
+  }, [avatarEmoji, avatarColor, avatarFrame, avatarGradient]);
 
   useEffect(() => {
     const ROOM_MAX_AGE = 2 * 60 * 60 * 1000;
@@ -121,21 +116,23 @@ const Home: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleAvatarSelect = (emoji: string, color: string) => {
+  const handleAvatarSelect = (emoji: string, color: string, frame = 'none', gradient = '') => {
     setAvatarEmoji(emoji);
     setAvatarColor(color);
+    setAvatarFrame(frame);
+    setAvatarGradient(gradient);
     setShowAvatarPicker(false);
   };
 
   const validateNickname = (name: string) => {
-    if (/[.#$\[\]\/]/.test(name)) {
+    if (/[.#$[\]/]/.test(name)) {
       setError('ชื่อห้ามมีอักขระ . # $ [ ] /');
       return false;
     }
     return true;
   };
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoom = useCallback(async () => {
     if (isSubmitting) return;
     const trimmedName = nickname.trim();
     if (!trimmedName) { setError('โปรดใส่ชื่อเล่นก่อนนะ!'); return; }
@@ -175,9 +172,9 @@ const Home: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting, nickname, avatarEmoji, avatarColor, setUserNickname, navigate]);
 
-  const handleJoinRoom = async (roomCode: string) => {
+  const handleJoinRoom = useCallback(async (roomCode: string) => {
     if (isSubmitting) return;
     const trimmedName = nickname.trim();
     if (!trimmedName) { setError('ใส่ชื่อเล่นก่อนเข้าห้องนะ!'); return; }
@@ -217,7 +214,7 @@ const Home: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isSubmitting, nickname, avatarEmoji, avatarColor, setUserNickname, navigate]);
 
   const waitingRooms = rooms.filter(r => r.status === 'waiting');
   const playingRooms = rooms.filter(r => r.status === 'playing');
@@ -311,11 +308,18 @@ const Home: React.FC = () => {
           >
             <motion.div
               whileTap={{ scale: 0.9 }}
-              className="w-14 h-14 rounded-[20px] flex-center text-2xl shadow-md border-[3px] border-white/80 transition-shadow group-active:shadow-sm"
-              style={{ backgroundColor: avatarColor }}
+              className={`w-14 h-14 rounded-[20px] flex-center text-2xl shadow-md border-[3px] border-white/80 transition-shadow group-active:shadow-sm ${
+                avatarFrame === 'neon' ? 'ring-2 ring-purple-400 ring-offset-1' : ''
+              } ${avatarFrame === 'star' ? 'ring-2 ring-amber-300 ring-offset-1' : ''}`}
+              style={{ background: avatarGradient || avatarColor }}
             >
               {avatarEmoji}
             </motion.div>
+            {avatarFrame === 'crown' && (
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 text-xs animate-bounce-soft">
+                👑
+              </div>
+            )}
             <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white shadow-sm border-2 border-olive-100 flex-center">
               <span className="text-[8px]">✏️</span>
             </div>
@@ -454,7 +458,7 @@ const Home: React.FC = () => {
         )}
       </section>
 
-      <section className="pt-1 pb-2">
+      <section className="pt-1 pb-2 space-y-2">
         <button
           className="btn btn-primary w-full py-4 text-[17px]"
           onClick={handleCreateRoom}
@@ -462,6 +466,14 @@ const Home: React.FC = () => {
         >
           <Plus size={20} strokeWidth={2.5} />
           {isSubmitting ? 'กำลังสร้าง...' : 'สร้างห้องใหม่'}
+        </button>
+
+        <button
+          className="w-full py-3 px-4 rounded-2xl bg-purple-900/30 border-2 border-purple-500/40 hover:bg-purple-900/40 text-purple-300 font-bold text-[14px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+          onClick={() => navigate('/werewolf-moderator')}
+        >
+          <span className="text-base">🎭</span>
+          ผู้บรรยาย Werewolf (การ์ดจริง GM)
         </button>
       </section>
 

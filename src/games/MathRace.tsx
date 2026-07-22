@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../firebase';
-import { Trophy, Clock, RotateCcw, Crown, LogOut, Play, Send } from 'lucide-react';
+import { Trophy, RotateCcw, Crown, LogOut, Play, Send } from 'lucide-react';
 import { generateRound } from './logic/mathRaceData';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
@@ -16,60 +16,34 @@ import { feedback } from '../utils/feedback';
 
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
-const AUTO_ADVANCE_DELAY = 3000;
 
 const MathRace = () => {
-  const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
+  const { t } = useTranslation();
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
-
-  const phase = gameData.phase || 'waiting';
-  const difficulty = gameData.difficulty || 'easy';
-  const questions = gameData.questions || [];
-  const currentQuestion = gameData.currentQuestion || 0;
-  const answers = gameData.answers || {};
-  const scores = gameData.scores || {};
-
   const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
   const [inputValue, setInputValue] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const inputRef = useRef(null);
-  const autoAdvanceRef = useRef(null);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advancingRef = useRef(false);
   const answerSubmittingRef = useRef(false);
   const startRef = useRef(false);
   const replayRef = useRef(false);
-  const lastCountdownRef = useRef(null);
+  const lastCountdownRef = useRef<number | null>(null);
   const personalRecordedRef = useRef(false);
 
-  useEffect(() => {
-    if (phase === 'waiting' || phase === 'playing') personalRecordedRef.current = false;
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase !== 'finished' || personalRecordedRef.current) return;
-    personalRecordedRef.current = true;
-    recordPersonalGame('mathrace');
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
-      recordPersonalWin('mathrace');
+  const safeUpdate = useCallback(async (path: string, data: any) => {
+    try {
+      await update(ref(db, path), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
+      setTimeout(() => setErrorMsg(''), 3000);
     }
-  }, [phase, scores, userNickname]);
-
-  // Check if current user already answered this question
-  const myAnswer = answers[currentQuestion]?.[userNickname];
-  const alreadyAnswered = !!myAnswer;
-
-  // Reset input when question changes
-  useEffect(() => {
-    setInputValue('');
-    setHasAnswered(alreadyAnswered);
-  }, [currentQuestion, alreadyAnswered]);
+  }, [t]);
 
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
@@ -78,58 +52,46 @@ const MathRace = () => {
       phase: 'results',
       timerEnd: null
     });
-  }, [isHost, roomId]);
+  }, [isHost, roomId, safeUpdate]);
 
-  // Timer
+  const gameData = roomData?.gameData || {};
   const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
 
-  useEffect(() => {
-    if (timeLeft <= 5 && timeLeft > 0 && timeLeft !== lastCountdownRef.current) {
-      lastCountdownRef.current = timeLeft;
-      feedback('countdown');
-    }
-  }, [timeLeft]);
+  // Derived variables
+  const players = Object.keys(roomData?.players || {});
+  const phase = gameData.phase || 'waiting';
+  const difficulty = gameData.difficulty || 'easy';
+  const questions = gameData.questions || [];
+  const currentQuestion = gameData.currentQuestion || 0;
+  const answers = gameData.answers || {};
+  const scores = gameData.scores || {};
+  const myAnswer = answers[currentQuestion]?.[userNickname || ''];
+  const alreadyAnswered = !!myAnswer;
+  const currentQ = questions[currentQuestion];
+  const answeredThisRound = Object.keys(answers[currentQuestion] || {});
+  const answeredCount = answeredThisRound.length;
+  const sortedScores = Object.entries(scores).sort((a: any, b: any) => b[1] - a[1]);
 
-  // Reset guards when question/phase changes
-  useEffect(() => {
-    advancingRef.current = false;
-    answerSubmittingRef.current = false;
-  }, [currentQuestion, phase]);
-
-  // Auto-advance from results phase
-  useEffect(() => {
-    if (phase !== 'results') return;
-    autoAdvanceRef.current = setTimeout(() => {
-      if (isHost) advanceToNext();
-    }, AUTO_ADVANCE_DELAY);
-    return () => { if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current); };
-  }, [phase, currentQuestion, isHost]);
-
-  // Focus input when playing
-  useEffect(() => {
-    if (phase === 'playing' && !hasAnswered && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 300);
-    }
-  }, [phase, currentQuestion, hasAnswered]);
-
-  const safeUpdate = async (path, data) => {
-    try {
-      await update(ref(db, path), data);
-    } catch (e) {
-      setErrorMsg(t('common.error'));
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+          <div className="p-1 bg-white/20 rounded-lg">
+            <LogOut size={18} className="rotate-90" />
+          </div>
+          <p className="text-[14px] font-bold">{errorMsg}</p>
+        </div>
+      </div>
+    );
   };
-
-  // ─── Host Actions ───
 
   const handleStart = async () => {
     if (!isHost || players.length < 2 || startRef.current) return;
     startRef.current = true;
     feedback('gameStart');
     const roundQuestions = generateRound(selectedDifficulty, TOTAL_QUESTIONS);
-    const initialScores = {};
+    const initialScores: any = {};
     players.forEach(p => { initialScores[p] = 0; });
 
     try {
@@ -161,10 +123,10 @@ const MathRace = () => {
           phase: 'finished',
           timerEnd: null
         });
-        const sortedPlayers = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        const sortedPlayers = Object.entries(scores).sort((a: any, b: any) => b[1] - a[1]);
         const winner = sortedPlayers[0];
-        if (winner && winner[1] > 0) {
-          await recordWin(roomId, winner[0], 'mathrace');
+        if (winner && (winner[1] as number) > 0) {
+          await recordWin(roomId!, winner[0], 'mathrace');
         }
         feedback('victory');
       } else {
@@ -184,7 +146,7 @@ const MathRace = () => {
     if (!isHost || replayRef.current) return;
     replayRef.current = true;
     const roundQuestions = generateRound(difficulty, TOTAL_QUESTIONS);
-    const initialScores = {};
+    const initialScores: any = {};
     players.forEach(p => { initialScores[p] = 0; });
 
     try {
@@ -202,8 +164,6 @@ const MathRace = () => {
     }
   };
 
-  // ─── Player Actions ───
-
   const handleSubmitAnswer = async () => {
     if (hasAnswered || alreadyAnswered || phase !== 'playing') return;
     if (answerSubmittingRef.current) return;
@@ -213,9 +173,7 @@ const MathRace = () => {
 
     const timerEnd = gameData.timerEnd || 0;
     const timeLeftLocal = Math.max(0, Math.ceil((timerEnd - Date.now()) / 1000));
-    const timeTaken = QUESTION_TIME - timeLeftLocal;
-    const correctAnswer = questions[currentQuestion]?.answer;
-    const isCorrect = numAnswer === correctAnswer;
+    const isCorrect = numAnswer === questions[currentQuestion]?.answer;
     const points = isCorrect ? Math.max(1, timeLeftLocal) : 0;
 
     if (isCorrect) feedback('correctGuess');
@@ -230,10 +188,10 @@ const MathRace = () => {
         answeredAt: Date.now(),
       });
 
-      await safeUpdate(`rooms/${roomId}/gameData/scores`, { [userNickname]: increment(points) });
+      await safeUpdate(`rooms/${roomId}/gameData/scores`, { [userNickname!]: increment(points) });
 
       const existingAnswers = Object.keys(answers[currentQuestion] || {});
-      const totalAnswered = existingAnswers.includes(userNickname)
+      const totalAnswered = existingAnswers.includes(userNickname!)
         ? existingAnswers.length
         : existingAnswers.length + 1;
       if (totalAnswered >= players.length && isHost) {
@@ -247,31 +205,59 @@ const MathRace = () => {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: any) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSubmitAnswer();
     }
   };
 
-  // ─── Computed Values ───
-  const currentQ = questions[currentQuestion];
-  const answeredThisRound = Object.keys(answers[currentQuestion] || {});
-  const answeredCount = answeredThisRound.length;
+  useEffect(() => {
+    if (phase === 'waiting' || phase === 'playing') personalRecordedRef.current = false;
+  }, [phase]);
 
-  // Sort scores for display
-  const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  useEffect(() => {
+    if (phase !== 'finished' || personalRecordedRef.current) return;
+    personalRecordedRef.current = true;
+    recordPersonalGame('mathrace');
+    const sorted = Object.entries(scores).sort((a: any, b: any) => b[1] - a[1]);
+    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
+      recordPersonalWin('mathrace');
+    }
+  }, [phase, scores, userNickname]);
 
-  // ─── Waiting Phase ───
+  const prevQuestionRef = useRef<number>(currentQuestion);
+  useEffect(() => {
+    if (prevQuestionRef.current !== currentQuestion) {
+      prevQuestionRef.current = currentQuestion;
+      setInputValue('');
+      setHasAnswered(alreadyAnswered);
+    }
+  }, [currentQuestion, alreadyAnswered]);
+
+  useEffect(() => {
+    if (timeLeft <= 5 && timeLeft > 0 && timeLeft !== lastCountdownRef.current) {
+      lastCountdownRef.current = timeLeft;
+      feedback('countdown');
+    }
+  }, [timeLeft]);
+
+  useEffect(() => {
+    advancingRef.current = false;
+    answerSubmittingRef.current = false;
+  }, [currentQuestion, phase]);
+
+  if (!roomData) return null;
+
   if (phase === 'waiting') {
     return (
       <div className="flex flex-col flex-1 gap-4">
+        {renderErrorToast()}
         <div className="card p-5 text-center">
           <h2 className="font-display font-bold text-[17px] text-olive-800 mb-1">{t('mathrace.title')}</h2>
           <p className="text-olive-400 text-[13px]">{t('mathrace.description')}</p>
         </div>
 
-        {/* Difficulty Selector */}
         {isHost && (
           <div className="card p-4">
             <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.difficulty')}</h3>
@@ -297,7 +283,6 @@ const MathRace = () => {
           </div>
         )}
 
-        {/* Player List */}
         <div className="card p-4">
           <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">
             {t('taboo.players')} ({players.length})
@@ -312,7 +297,6 @@ const MathRace = () => {
           </div>
         </div>
 
-        {/* Start Button (Host) */}
         {isHost ? (
           <div className="mt-auto pt-2">
             <button
@@ -338,11 +322,10 @@ const MathRace = () => {
     );
   }
 
-  // ─── Playing Phase ───
   if (phase === 'playing' && currentQ) {
     return (
       <div className="flex flex-col flex-1 gap-4">
-        {/* Timer Bar */}
+        {renderErrorToast()}
         <div className="w-full h-2 bg-olive-100 rounded-full overflow-hidden">
           <motion.div
             className={`h-full rounded-full ${timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400'}`}
@@ -352,7 +335,6 @@ const MathRace = () => {
           />
         </div>
 
-        {/* Header: Question number + timer + answered count */}
         <div className="flex-between">
           <span className="text-[12px] font-bold text-olive-500">
             {t('mathrace.questionNumber', { current: currentQuestion + 1, total: questions.length })}
@@ -363,7 +345,6 @@ const MathRace = () => {
           </span>
         </div>
 
-        {/* Question Card */}
         <motion.div
           key={currentQuestion}
           initial={{ opacity: 0, scale: 0.9 }}
@@ -378,7 +359,6 @@ const MathRace = () => {
           </p>
         </motion.div>
 
-        {/* Answer Input */}
         {!hasAnswered && !alreadyAnswered ? (
           <div className="card p-4">
             <div className="flex gap-2">
@@ -418,12 +398,11 @@ const MathRace = () => {
     );
   }
 
-  // ─── Results Phase ───
   if (phase === 'results' && currentQ) {
-    const roundAnswers = answers[currentQuestion] || {};
+    const roundAnswers: any = answers[currentQuestion] || {};
     return (
       <div className="flex flex-col flex-1 gap-4">
-        {/* Correct Answer */}
+        {renderErrorToast()}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -434,7 +413,6 @@ const MathRace = () => {
           <p className="text-[13px] text-olive-500 mt-1">{currentQ.question}</p>
         </motion.div>
 
-        {/* Player Results */}
         <div className="card p-4">
           <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.results')}</h3>
           <div className="space-y-2">
@@ -464,7 +442,6 @@ const MathRace = () => {
           </div>
         </div>
 
-        {/* Current Scores */}
         <div className="card p-4">
           <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">{t('taboo.currentScores')}</h3>
           <div className="flex flex-wrap gap-2">
@@ -472,13 +449,12 @@ const MathRace = () => {
               <span key={name} className={`px-3 py-1.5 rounded-xl text-[12px] font-bold ${
                 i === 0 ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-olive-50 border border-olive-100 text-olive-600'
               }`}>
-                {name}: {score}
+                {name}: {score as number}
               </span>
             ))}
           </div>
         </div>
 
-        {/* Host advance button */}
         {isHost && (
           <button className="btn btn-outline w-full py-3" onClick={advanceToNext}>
             {currentQuestion + 1 >= questions.length ? t('taboo.viewResults') : t('mathrace.nextQuestion')}
@@ -488,13 +464,12 @@ const MathRace = () => {
     );
   }
 
-  // ─── Finished Phase ───
   if (phase === 'finished') {
     const winner = sortedScores[0];
     return (
       <div className="flex flex-col flex-1 gap-4">
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        {/* Winner Card */}
         {winner && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -504,11 +479,10 @@ const MathRace = () => {
             <Trophy size={36} className="text-amber-500 mx-auto mb-2" />
             <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
             <p className="font-display font-black text-[22px] text-olive-800">{winner[0]}</p>
-            <p className="text-[15px] font-bold text-amber-600 mt-1">{winner[1]} {t('taboo.pointsGuesser').split(' ')[1]}</p>
+            <p className="text-[15px] font-bold text-amber-600 mt-1">{winner[1] as number} {t('taboo.pointsGuesser').split(' ')[1]}</p>
           </motion.div>
         )}
 
-        {/* Full Scoreboard */}
         <div className="card p-4">
           <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('taboo.totalScores')}</h3>
           <div className="space-y-2">
@@ -526,13 +500,12 @@ const MathRace = () => {
                   <span className="font-bold text-[14px] text-olive-700">{name}</span>
                   {name === roomData.host && <Crown size={12} className="text-amber-500" />}
                 </div>
-                <span className="font-bold text-[14px] text-sage-600">{score} {t('taboo.pointsGuesser').split(' ')[1]}</span>
+                <span className="font-bold text-[14px] text-sage-600">{score as number} {t('taboo.pointsGuesser').split(' ')[1]}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="mt-auto pt-2 space-y-2">
           {isHost ? (
             <button className="btn btn-primary w-full py-4 text-[16px]" onClick={handleReplay}>
@@ -550,9 +523,9 @@ const MathRace = () => {
     );
   }
 
-  // Fallback loading
   return (
     <div className="flex-center flex-1 flex-col gap-3">
+      {renderErrorToast()}
       <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
       <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
     </div>

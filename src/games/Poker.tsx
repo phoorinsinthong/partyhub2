@@ -14,11 +14,20 @@ import { recordWin } from '../components/Scoreboard';
 const STARTING_CHIPS = 1000;
 
 const Poker: React.FC = () => {
-  const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  
+  const { t } = useTranslation();
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
+
+  const [errorMsg, setErrorMsg] = useState('');
+  const [raiseAmount, setRaiseAmount] = useState(10);
+  const [localSettings] = useState({ startingChips: 1000 });
+  const advancingRef = useRef(false);
+
+  const gameData = roomData?.gameData || {};
+
   if (!roomData) return null;
-  const gameData = roomData.gameData || {};
+
+  // Derived variables
   const phase = gameData.phase || 'waiting'; // waiting, pre-flop, flop, turn, river, showdown
   const deck = gameData.deck || [];
   const communityCards = gameData.communityCards || [];
@@ -27,14 +36,23 @@ const Poker: React.FC = () => {
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
   const activePlayers = Object.keys(playersData).filter(p => !playersData[p].folded && (playersData[p].chips > 0 || playersData[p].currentRoundBet > 0));
+  const playerNames = Object.keys(roomData?.players || {});
+  const myData = playersData[userNickname!] || { hand: [], chips: 0, currentRoundBet: 0 };
+  const callAmount = currentBet - myData.currentRoundBet;
 
-  const [errorMsg, setErrorMsg] = useState('');
-  const [raiseAmount, setRaiseAmount] = useState(10);
-  const [localSettings] = useState({ startingChips: 1000 });
-  const advancingRef = useRef(false);
-  
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const playerNames = Object.keys(roomData.players || {});
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+          <div className="p-1 bg-white/20 rounded-lg">
+            <span className="text-white">⚠️</span>
+          </div>
+          <p className="text-[14px] font-bold">{errorMsg}</p>
+        </div>
+      </div>
+    );
+  };
 
   const safeUpdate = async (updates: any) => {
     try {
@@ -98,16 +116,16 @@ const Poker: React.FC = () => {
   };
 
   const advancePhase = async (updates: Record<string, any>, currentPlayers: Record<string, any>) => {
-    const active = Object.values(currentPlayers).filter(p => !p.folded);
-    const activeNonAllIn = active.filter(p => p.chips > 0);
+    const active = Object.values(currentPlayers).filter((p: any) => !p.folded);
+    const activeNonAllIn = active.filter((p: any) => p.chips > 0);
     
     if (active.length <= 1 || activeNonAllIn.length <= 1) {
       // Refund unmatched bets for the lone non-all-in player
       if (activeNonAllIn.length === 1 && active.length > 1) {
-        const lonePlayer = activeNonAllIn[0];
+        const lonePlayer: any = activeNonAllIn[0];
         const lonePlayerName = Object.keys(currentPlayers).find(n => currentPlayers[n] === lonePlayer);
         const otherActive = active.filter(p => p !== lonePlayer);
-        const maxOtherBet = Math.max(...otherActive.map(p => p.currentRoundBet));
+        const maxOtherBet = Math.max(...otherActive.map((p: any) => p.currentRoundBet));
         
         if (lonePlayer.currentRoundBet > maxOtherBet) {
           const refund = lonePlayer.currentRoundBet - maxOtherBet;
@@ -167,34 +185,34 @@ const Poker: React.FC = () => {
     if (advancingRef.current) return;
     advancingRef.current = true;
 
-    const myData = playersData[userNickname];
+    const myDataLocal = playersData[userNickname!];
     const updates: Record<string, any> = {};
     const newPlayersData = JSON.parse(JSON.stringify(playersData));
 
     if (type === 'fold') {
-      newPlayersData[userNickname].folded = true;
+      newPlayersData[userNickname!].folded = true;
     } else if (type === 'call') {
-      const amountToCall = currentBet - myData.currentRoundBet;
-      const callAmount = Math.min(myData.chips, amountToCall);
-      newPlayersData[userNickname].chips -= callAmount;
-      newPlayersData[userNickname].currentRoundBet += callAmount;
-      newPlayersData[userNickname].totalBet += callAmount;
-      updates.pot = pot + callAmount;
-      newPlayersData[userNickname].hasActed = true;
+      const amountToCall = currentBet - myDataLocal.currentRoundBet;
+      const callAmountLocal = Math.min(myDataLocal.chips, amountToCall);
+      newPlayersData[userNickname!].chips -= callAmountLocal;
+      newPlayersData[userNickname!].currentRoundBet += callAmountLocal;
+      newPlayersData[userNickname!].totalBet += callAmountLocal;
+      updates.pot = pot + callAmountLocal;
+      newPlayersData[userNickname!].hasActed = true;
     } else if (type === 'raise') {
-      const totalRaise = (currentBet - myData.currentRoundBet) + raiseAmount;
-      const actualRaise = Math.min(myData.chips, totalRaise);
-      newPlayersData[userNickname].chips -= actualRaise;
-      newPlayersData[userNickname].currentRoundBet += actualRaise;
-      newPlayersData[userNickname].totalBet += actualRaise;
+      const totalRaise = (currentBet - myDataLocal.currentRoundBet) + raiseAmount;
+      const actualRaise = Math.min(myDataLocal.chips, totalRaise);
+      newPlayersData[userNickname!].chips -= actualRaise;
+      newPlayersData[userNickname!].currentRoundBet += actualRaise;
+      newPlayersData[userNickname!].totalBet += actualRaise;
       updates.pot = pot + actualRaise;
-      updates.currentBet = newPlayersData[userNickname].currentRoundBet;
+      updates.currentBet = newPlayersData[userNickname!].currentRoundBet;
       
       // When raising, everyone else needs to act again
       Object.keys(newPlayersData).forEach(n => {
         if (n !== userNickname) newPlayersData[n].hasActed = false;
       });
-      newPlayersData[userNickname].hasActed = true;
+      newPlayersData[userNickname!].hasActed = true;
     }
 
     updates.players = newPlayersData;
@@ -206,9 +224,9 @@ const Poker: React.FC = () => {
 
     if (roundComplete) {
       await advancePhase(updates, newPlayersData);
-      updates.currentTurn = activeNonAllIn.length > 0 ? getNextTurn(userNickname, newPlayersData) : null;
+      updates.currentTurn = activeNonAllIn.length > 0 ? getNextTurn(userNickname!, newPlayersData) : null;
     } else {
-      updates.currentTurn = getNextTurn(userNickname, newPlayersData);
+      updates.currentTurn = getNextTurn(userNickname!, newPlayersData);
     }
 
     await safeUpdate(updates);
@@ -220,16 +238,10 @@ const Poker: React.FC = () => {
     await update(ref(db, `rooms/${roomId}`), { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
-
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-6xl animate-bounce-soft">💵</div>
         <div className="text-center">
@@ -247,12 +259,9 @@ const Poker: React.FC = () => {
     );
   }
 
-  const myData = playersData[userNickname] || { hand: [], chips: 0, currentRoundBet: 0 };
-  const callAmount = currentBet - myData.currentRoundBet;
-
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
-      <ErrorToast />
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Community Cards Area */}

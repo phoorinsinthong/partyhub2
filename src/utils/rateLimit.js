@@ -5,7 +5,7 @@ function getBuckets() {
 }
 
 function saveBuckets(buckets) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(buckets)); } catch {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify(buckets)); } catch { /* ignore */ }
 }
 
 export function rateLimit(key, maxActions, windowMs) {

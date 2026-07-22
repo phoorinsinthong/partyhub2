@@ -11,6 +11,8 @@ import { GameProvider } from './contexts/GameContext';
 import { useKeyboardResize } from './hooks/useKeyboardResize';
 import './index.css';
 
+import WerewolfModerator from './games/WerewolfModerator';
+
 function App() {
   useKeyboardResize();
 
@@ -25,6 +27,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/lobby/:roomId" element={<Lobby />} />
               <Route path="/game/:roomId" element={<GameRoom />} />
+              <Route path="/werewolf-moderator" element={<WerewolfModerator />} />
             </Routes>
           </div>
           <InstallPrompt />

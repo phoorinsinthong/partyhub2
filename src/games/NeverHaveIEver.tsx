@@ -13,13 +13,43 @@ import { getRandomStatement } from './logic/neverData';
 const NeverHaveIEver: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
   const [errorMsg, setErrorMsg] = useState('');
   const advancingRef = useRef(false);
+
+  useEffect(() => {
+    recordPersonalGame('neverhaveiever');
+  }, []);
+
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
+
+  if (!roomData) return null;
+
+  // Derived variables
+  const phase = gameData.phase || 'waiting';
+  const currentQIndex = gameData.currentQuestionIndex ?? 0;
+  const currentStatement = gameData.currentStatement || '';
+  const responses = gameData.responses?.[currentQIndex] || {};
+  const myResponse = responses[userNickname || ''];
+  const hasRespondedCount = Object.keys(responses).length;
+  const everCount = Object.values(responses).filter(v => v === true).length;
+  const neverCount = Object.values(responses).filter(v => v === false).length;
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+          <div className="p-1 bg-white/20 rounded-lg">
+            <LogOut size={18} className="rotate-90" />
+          </div>
+          <p className="text-[14px] font-bold">{errorMsg}</p>
+        </div>
+      </div>
+    );
+  };
 
   const safeUpdate = async (refPath: string, data: any) => {
     try {
@@ -29,18 +59,6 @@ const NeverHaveIEver: React.FC = () => {
       setTimeout(() => setErrorMsg(''), 3000);
     }
   };
-
-  useEffect(() => {
-    recordPersonalGame('neverhaveiever');
-  }, []);
-
-  const phase = gameData.phase || 'waiting';
-  const currentQIndex = gameData.currentQuestionIndex ?? 0;
-  const currentStatement = gameData.currentStatement || '';
-  const responses = gameData.responses?.[currentQIndex] || {};
-
-  const myResponse = responses[userNickname];
-  const hasRespondedCount = Object.keys(responses).length;
 
   const handleStart = async () => {
     if (!isHost) return;
@@ -56,7 +74,7 @@ const NeverHaveIEver: React.FC = () => {
   const handleResponse = async (val: boolean) => {
     if (myResponse !== undefined) return;
     await safeUpdate(`rooms/${roomId}/gameData/responses/${currentQIndex}`, {
-      [userNickname]: val,
+      [userNickname!]: val,
     });
   };
 
@@ -79,12 +97,6 @@ const NeverHaveIEver: React.FC = () => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
-
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
@@ -105,9 +117,6 @@ const NeverHaveIEver: React.FC = () => {
       </div>
     );
   }
-
-  const everCount = Object.values(responses).filter(v => v === true).length;
-  const neverCount = Object.values(responses).filter(v => v === false).length;
 
   return (
     <div className="flex-1 flex flex-col py-4 animate-fade-in">

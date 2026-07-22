@@ -14,7 +14,6 @@ const Blackjack: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
   
-  if (!roomData) return null;
   const gameData = roomData.gameData || {};
   const phase = gameData.phase || 'waiting'; // waiting, playing, dealerTurn, result
   const deck = gameData.deck || [];
@@ -182,10 +181,14 @@ const Blackjack: React.FC = () => {
     </div>
   ) : null;
 
+  if (!roomData) return null;
+
+  const dealerScore = calculateBlackjackScore(dealer.hand || []);
+
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-6xl animate-bounce-soft">🃏</div>
         <div className="text-center">
@@ -203,11 +206,10 @@ const Blackjack: React.FC = () => {
     );
   }
 
-  const dealerScore = calculateBlackjackScore(dealer.hand || []);
 
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in relative">
-      <ErrorToast />
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Dealer Area */}
@@ -284,14 +286,12 @@ const Blackjack: React.FC = () => {
             <h3 className="text-center font-black text-lg text-olive-800 mb-4">{t('blackjack.roundOver') || 'จบตา! ผลการเล่น'}</h3>
             <div className="space-y-2 mb-6">
                 {Object.entries(playersData).map(([name, data]: [string, any]) => {
-                    const score = calculateBlackjackScore(data.hand || []);
-                    let result = '';
-                    let color = 'text-olive-500';
+                    let result = 'LOSE';
+                    let color = 'text-red-400';
                     
                     if (score > 21) { result = 'BUST'; color = 'text-red-500'; }
                     else if (dealerScore > 21 || score > dealerScore) { result = 'WIN! 🏆'; color = 'text-green-600'; }
                     else if (score === dealerScore) { result = 'PUSH'; color = 'text-blue-500'; }
-                    else { result = 'LOSE'; color = 'text-red-400'; }
 
                     return (
                         <div key={name} className="flex-between text-[13px] font-bold">

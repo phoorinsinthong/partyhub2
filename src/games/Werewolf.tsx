@@ -21,18 +21,19 @@ import './Werewolf.css';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-const Werewolf = ({ roomId, roomData, userNickname }) => {
+const Werewolf: React.FC = () => {
   const { t } = useTranslation();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = roomData.host === userNickname;
-  const gameData = roomData.gameData || {};
-  const players = roomData.players || {};
+  const { roomId, roomData, userNickname, isHost } = useGame();
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+  
+  const gameData = roomData?.gameData || {};
+  const players = roomData?.players || {};
   const playerNames = Object.keys(players);
 
   const wwData = gameData.wwData || {};
   const phase = wwData.phase || 'waiting';
   // If currentGame is werewolf_physical, force physical mode. Otherwise use digital.
-  const gameMode = roomData.currentGame === 'werewolf_physical' ? 'physical' : 'digital';
+  const gameMode = roomData?.currentGame === 'werewolf_physical' ? 'physical' : 'digital';
   const dayCount = wwData.dayCount || 0;
 
   const [vfx, setVfx] = useState({ show: false, type: '', text: '' });
@@ -44,13 +45,13 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       let type = 'vfx-overlay-active-vote';
       if (elim.reason === 'werewolf') type = 'vfx-overlay-active-werewolf';
       
-      setVfx({ show: true, type, text: `${elim.playerName} ตาย!` });
+      setTimeout(() => setVfx({ show: true, type, text: `${elim.playerName} ตาย!` }), 0);
       const timer = setTimeout(() => setVfx({ show: false, type: '', text: '' }), 4000);
       return () => clearTimeout(timer);
     }
   }, [wwData.lastElimination]);
 
-  const myPlayerData = wwData.players?.[userNickname];
+  const myPlayerData = wwData.players?.[userNickname || ''];
   const myRole = myPlayerData?.role || '';
   const myIsAlive = myPlayerData?.isAlive !== false;
   const isGM = isHost;
@@ -58,50 +59,47 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
   
   const { timeLeft } = useGameTimer(wwData.timerEnd);
 
-  const [selectedTarget, setSelectedTarget] = useState(null);
-  const [selectedTargets, setSelectedTargets] = useState([]);
+  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
+  const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
   const [showRoleReveal, setShowRoleReveal] = useState(false);
   const personalRecordedRef = useRef(false);
   const castVoteRef = useRef(false);
   const resolvingRef = useRef(false);
   const startVotingRef = useRef(false);
+  const startNextNightRef = useRef(false);
+  const playAgainRef = useRef(false);
   const [showDeckSetup, setShowDeckSetup] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
   const [activeScriptIndex, setActiveScriptIndex] = useState(0);
   const [guestName, setGuestName] = useState('');
 
-  const safeUpdate = async (refPath, data) => {
+  const safeUpdate = React.useCallback(async (refPath: string, data: any) => {
     try {
       await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
       setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
     }
-  };
+  }, [t, roomId]);
 
-  const addGuest = async () => {
-    if (!isHost || !guestName.trim()) return;
-    const name = guestName.trim();
-    if (playerNames.includes(name) || (wwData.guests && Object.keys(wwData.guests).includes(name))) {
-      setErrorMsg('ชื่อนี้มีอยู่แล้ว');
-      setTimeout(() => setErrorMsg(''), 3000);
-      return;
-    }
-    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests/${name}`, { joinedAt: Date.now() });
+  const addGuest = React.useCallback(async () => {
+    if (!guestName.trim()) return;
+    const guests = { ...(wwData.guests || {}) };
+    guests[guestName.trim()] = { role: 'villager', isAlive: true, isGuest: true };
+    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests`, guests);
     setGuestName('');
-  };
+  }, [guestName, wwData.guests, roomId, safeUpdate]);
 
-  const removeGuest = async (name) => {
-    if (!isHost) return;
-    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests`, { [name]: null });
-  };
+  const removeGuest = React.useCallback(async (name: string) => {
+    const guests = { ...(wwData.guests || {}) };
+    delete guests[name];
+    await safeUpdate(`rooms/${roomId}/gameData/wwData/guests`, guests);
+  }, [wwData.guests, roomId, safeUpdate]);
 
-  const toggleGameMode = async (mode) => {
-    if (!isHost) return;
-    await safeUpdate(`rooms/${roomId}/gameData/wwData`, { gameMode: mode });
-  };
+  useEffect(() => {
+    if (phase === 'waiting' || phase === 'night') personalRecordedRef.current = false;
+  }, [phase]);
 
   // Reset vote guard when phase changes away from voting
   useEffect(() => {
@@ -115,7 +113,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     personalRecordedRef.current = true;
     const winner = wwData.winnerTeam;
     const wwPlayers = wwData.players || {};
-    const myRoleResult = wwPlayers[userNickname]?.role;
+    const myRoleResult = wwPlayers[userNickname || '']?.role;
     const isWolfTeam = WOLF_ROLES.includes(myRoleResult) || myRoleResult === 'minion';
     const iWon = (winner === 'werewolf' && isWolfTeam) ||
                  (winner === 'villager' && !isWolfTeam && myRoleResult !== 'gm') ||
@@ -124,8 +122,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     if (iWon) recordPersonalWin('werewolf');
     if (isHost && winner) {
       const winningPlayers = Object.entries(wwPlayers)
-        .filter(([, p]) => p.isAlive && p.role !== 'gm')
-        .filter(([, p]) => {
+        .filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm')
+        .filter(([, p]: [string, any]) => {
           if (winner === 'werewolf') return WOLF_ROLES.includes(p.role) || p.role === 'minion';
           if (winner === 'villager') return !WOLF_ROLES.includes(p.role) && p.role !== 'minion';
           return false;
@@ -133,19 +131,22 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
       if (winningPlayers.length > 0) {
         (async () => {
           try {
-            await recordWin(roomId, winningPlayers[0][0], 'werewolf');
-          } catch (_) {}
+            await recordWin(roomId || '', winningPlayers[0][0], 'werewolf');
+          } catch (err) {
+            console.error('Failed to record win:', err);
+          }
         })();
       }
     }
-  }, [phase]);
+  }, [phase, isHost, wwData.winnerTeam, wwData.players, userNickname, roomId]);
 
   // Show role reveal when game starts
   useEffect(() => {
     if (phase === 'night' && dayCount === 1 && !isGM && myRole && gameMode === 'digital') {
-      setShowRoleReveal(true);
+      setTimeout(() => setShowRoleReveal(true), 0);
     }
   }, [phase, dayCount, isGM, myRole, gameMode]);
+
 
   // ─── Game Actions ────────────────────────────────────────────────────────────
 
@@ -238,8 +239,8 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, { deckCounts: currentCounts });
   };
 
-  const submitNightAction = async (role, targetId, extraData = null) => {
-    const updates = {};
+  const submitNightAction = React.useCallback(async (role: string, targetId: string, extraData: any = null) => {
+    const updates: Record<string, any> = {};
     updates[`nightActions/${role}Target`] = targetId;
     updates[`nightActions/${role}TargetDone`] = true;
     if (extraData) updates[`nightActions/${role}Extra`] = extraData;
@@ -261,15 +262,16 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(role) && targetId && targetId !== 'skip') {
       const targetRole = wwData.players?.[targetId]?.role;
       const isWolf = (WOLF_ROLES.includes(targetRole) && targetRole !== 'wolf_man') || targetRole === 'lycan';
-      updates[`privateData/${userNickname}/seerResult`] = { targetName: targetId, isWolf, timestamp: Date.now() };
+      const now = Date.now();
+      updates[`privateData/${userNickname}/seerResult`] = { targetName: targetId, isWolf, timestamp: now };
     }
 
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
-  };
+  }, [wwData.players, userNickname, roomId, safeUpdate]);
 
   // GM selects target on behalf of a role
-  const gmSubmitForRole = async (actionKey, targetId) => {
-    const updates = {};
+  const gmSubmitForRole = React.useCallback(async (actionKey: string, targetId: string) => {
+    const updates: Record<string, any> = {};
     updates[`nightActions/${actionKey}Target`] = targetId;
     updates[`nightActions/${actionKey}TargetDone`] = true;
 
@@ -291,20 +293,21 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     // Support finding Seer role among real players or guests
     if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(actionKey) && targetId && targetId !== 'skip') {
       const allPlayersMap = { ...(wwData.players || {}), ...(wwData.guests || {}) };
-      const seerEntry = Object.entries(allPlayersMap).find(([, p]) => p.role === actionKey);
+      const seerEntry = Object.entries(allPlayersMap).find(([, p]: [string, any]) => p.role === actionKey);
       
       if (seerEntry) {
         const [seerName] = seerEntry;
         const targetRole = allPlayersMap[targetId]?.role;
         const isWolf = (WOLF_ROLES.includes(targetRole) && targetRole !== 'wolf_man') || targetRole === 'lycan';
-        updates[`privateData/${seerName}/seerResult`] = { targetName: targetId, isWolf, timestamp: Date.now() };
+        const now = Date.now();
+        updates[`privateData/${seerName}/seerResult`] = { targetName: targetId, isWolf, timestamp: now };
         // For physical mode, also store in a common GM viewable area
         updates[`lastSeerResult`] = { seerName, targetName: targetId, isWolf };
       }
     }
 
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
-  };
+  }, [wwData.players, wwData.guests, roomId, safeUpdate]);
 
   const clearSeerResults = async () => {
     if (!isHost) return;
@@ -423,7 +426,6 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
   };
 
-  const startNextNightRef = useRef(false);
   const startNextNight = async () => {
     if (!isHost || startNextNightRef.current) return;
     startNextNightRef.current = true;
@@ -473,7 +475,10 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     
     // Check win condition
     const winner = checkWinCondition(updatedPlayers);
-    if (winner) updates.phase = 'result', updates.winnerTeam = winner;
+    if (winner) {
+      updates.phase = 'result';
+      updates.winnerTeam = winner;
+    }
 
     await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
   };
@@ -489,7 +494,6 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', gameData: null });
   };
 
-  const playAgainRef = useRef(false);
   const handlePlayAgain = async () => {
     if (!isHost || playAgainRef.current) return;
     playAgainRef.current = true;
@@ -675,9 +679,9 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     );
   }
 
-  // ─── Render: Role Reveal Overlay ──────────────────────────────────────────────
+  // ─── Render Helpers ──────────────────────────────────────────────────────────
 
-  const StarsBackground = () => (
+  const renderStarsBackground = () => (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
       {[...Array(20)].map((_, i) => (
         <div 
@@ -696,14 +700,13 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     </div>
   );
 
-  const AmbientMist = () => (
+  const renderAmbientMist = () => (
     <div className={`ambient-mist transition-all duration-1000 ${phase === 'night' ? 'opacity-60' : 'opacity-20'}`} 
          style={{ background: phase === 'night' ? 'radial-gradient(circle, rgba(76, 29, 149, 0.2) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%)' }} 
     />
   );
 
-  const RoleRevealOverlay = () => {
-    const [isFlipped, setIsFlipped] = useState(false);
+  const renderRoleRevealOverlay = () => {
     return (
       <AnimatePresence>
         {showRoleReveal && roleInfo && !isGM && (
@@ -717,16 +720,11 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
               <p className="text-secondary font-bold tracking-[8px] uppercase mb-lg">แตะการ์ดเพื่อเปิดดูบทบาท</p>
               
               <motion.div 
-                onClick={() => setIsFlipped(!isFlipped)}
-                className={`relative w-64 h-96 preserve-3d transition-transform duration-700 cursor-pointer ${isFlipped ? 'rotate-y-180' : ''}`}
+                onClick={() => setShowRoleReveal(false)}
+                className="relative w-64 h-96 preserve-3d transition-transform duration-700 cursor-pointer"
               >
-                {/* Front (Back of card design) */}
-                <div className="absolute inset-0 backface-hidden glass-panel-werewolf border-4 border-white/20 flex-center rounded-3xl bg-gradient-to-br from-indigo-900 to-black">
-                  <div className="text-6xl animate-pulse">🐺</div>
-                </div>
-                
-                {/* Back (Role detail) */}
-                <div className="absolute inset-0 backface-hidden rotate-y-180 glass-panel-werewolf border-4 border-indigo-500/50 flex flex-col items-center justify-between p-xl rounded-3xl bg-slate-900">
+                {/* Simplified for now, just show the role */}
+                <div className="absolute inset-0 glass-panel-werewolf border-4 border-indigo-500/50 flex flex-col items-center justify-between p-xl rounded-3xl bg-slate-900">
                   <div className="w-24 h-24 bg-indigo-500/10 rounded-full flex-center text-6xl shadow-inner">
                     {roleInfo.icon}
                   </div>
@@ -738,7 +736,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
                     <div className="w-full p-md bg-danger/10 border border-danger/30 rounded-xl">
                       <p className="text-[10px] text-danger font-black uppercase mb-1">Wolf Allies</p>
                       <p className="text-xs text-white font-bold truncate">
-                        {Object.entries(wwData.players || {}).filter(([n, p]) => WOLF_ROLES.includes(p.role) && n !== userNickname).map(([n]) => n).join(', ') || 'Lone Wolf'}
+                        {Object.entries(wwData.players || {}).filter(([n, p]: [string, any]) => WOLF_ROLES.includes(p.role) && n !== userNickname).map(([n]) => n).join(', ') || 'Lone Wolf'}
                       </p>
                     </div>
                   )}
@@ -746,7 +744,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
               </motion.div>
 
               <button 
-                onClick={() => { setShowRoleReveal(false); setIsFlipped(false); }}
+                onClick={() => { setShowRoleReveal(false); }}
                 className="btn btn-glass px-xl py-md mt-xl font-bold border-white/10 hover:border-white/30"
               >
                 เข้าสู่หมู่บ้าน
@@ -758,7 +756,7 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     );
   };
 
-  const VFXOverlay = () => (
+  const renderVFXOverlay = () => (
     <div className={`werewolf-vfx-overlay ${vfx.show ? 'animate-shake' : 'hidden'} ${vfx.type}`}>
       <div className="vfx-blood" />
       <div className="vfx-text">{vfx.text}</div>
@@ -1158,13 +1156,22 @@ const Werewolf = ({ roomId, roomData, userNickname }) => {
     );
   }
 
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      {errorMsg}
+    </div>
+  ) : null;
+
+  if (!roomData) return null;
+
   // ─── Digital Mode UI (Original) ───
   return (
     <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
-      <StarsBackground />
-      <AmbientMist />
-      <VFXOverlay />
-      <RoleRevealOverlay />
+      {renderErrorToast()}
+      {renderStarsBackground()}
+      {renderAmbientMist()}
+      {renderVFXOverlay()}
+      {renderRoleRevealOverlay()}
 
       {/* Phase Banner */}
       <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>

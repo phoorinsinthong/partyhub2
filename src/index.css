@@ -85,12 +85,50 @@ body {
   flex-direction: column;
 }
 
-/* ─── Cards ─── */
+/* ─── Cards & Glassmorphism ─── */
 .card {
   background: var(--bg-card);
   border-radius: 20px;
   box-shadow: var(--shadow-card);
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 22px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+html.dark .card-glass {
+  background: rgba(36, 40, 32, 0.75);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glow-pulse {
+  box-shadow: 0 0 20px rgba(122, 170, 106, 0.4);
+  animation: glowPulse 2s infinite ease-in-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(122, 170, 106, 0.3); }
+  50% { box-shadow: 0 0 28px rgba(122, 170, 106, 0.7); }
+}
+
+/* ─── Avatar Frames ─── */
+.avatar-frame-neon {
+  box-shadow: 0 0 0 3px #a855f7, 0 0 16px rgba(168, 85, 247, 0.5);
+}
+
+.avatar-frame-star {
+  box-shadow: 0 0 0 3px #f59e0b, 0 0 16px rgba(245, 158, 11, 0.5);
+}
+
+.avatar-frame-pixel {
+  box-shadow: 0 0 0 3px #3b82f6, 0 0 16px rgba(59, 130, 246, 0.5);
 }
 
 .card-sage {

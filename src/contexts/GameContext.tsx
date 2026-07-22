@@ -41,24 +41,28 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isHost = roomData?.host === userNickname;
+
   useEffect(() => {
     if (!roomId) {
-      setRoomData(null);
+      if (roomData !== null) setTimeout(() => setRoomData(null), 0);
+      if (isLoading) setTimeout(() => setIsLoading(false), 0);
       return;
     }
 
-    setIsLoading(true);
     const roomRef = ref(db, `rooms/${roomId}`);
     
     const unsubscribe = onValue(roomRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setRoomData(snapshot.val() as RoomData);
-        setError(null);
-      } else {
-        setRoomData(null);
-        setError('Room not found');
-      }
-      setIsLoading(false);
+      setTimeout(() => {
+        if (snapshot.exists()) {
+          setRoomData(snapshot.val() as RoomData);
+          setError(null);
+        } else {
+          setRoomData(null);
+          setError('Room not found');
+        }
+        setIsLoading(false);
+      }, 0);
     }, (err) => {
       console.error('Firebase sync error:', err);
       setError('Connection lost');

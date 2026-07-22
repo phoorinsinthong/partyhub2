@@ -5,7 +5,7 @@ import { db } from '../firebase';
 const GRACE_PERIOD_MS = 600000;
 const GRACE_PERIOD_PLAYING_MS = 900000;
 
-export function useHostPromotedToast() {
+export function useHostPromotedToast(): boolean {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const handler = () => { setShow(true); setTimeout(() => setShow(false), 4000); };
@@ -15,10 +15,9 @@ export function useHostPromotedToast() {
   return show;
 }
 
-export function usePresence(roomId, nickname, isHost) {
-  const cleanupTimerRef = useRef(null);
-  const onDisconnectRefs = useRef([]);
-  const kickedRef = useRef(false);
+export function usePresence(roomId: string, nickname: string, isHost: boolean): void {
+  const visibilityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasOfflineDueToVisibilityRef = useRef(false);
 
   useEffect(() => {
     if (!roomId || !nickname) return;
@@ -36,7 +35,7 @@ export function usePresence(roomId, nickname, isHost) {
       if (!snap.exists()) {
         kickedRef.current = true;
         onDisconnectRefs.current.forEach(od => {
-          try { od.cancel(); } catch (e) {}
+          try { od.cancel(); } catch { /* ignore */ }
         });
         onDisconnectRefs.current = [];
       }
@@ -46,7 +45,7 @@ export function usePresence(roomId, nickname, isHost) {
       if (!snap.val() || kickedRef.current) return;
 
       // Cancel any previously registered onDisconnect handlers before re-registering
-      onDisconnectRefs.current.forEach(od => { try { od.cancel(); } catch (e) {} });
+      onDisconnectRefs.current.forEach(od => { try { od.cancel(); } catch { /* ignore */ } });
       onDisconnectRefs.current = [];
 
       update(playerRef, {
@@ -71,9 +70,14 @@ export function usePresence(roomId, nickname, isHost) {
       }
     });
 
-    const handleVisibilityChange = () => {
+    const handleBackground = () => {
       if (kickedRef.current) return;
-      if (document.visibilityState === 'hidden') {
+      if (visibilityTimerRef.current) {
+        clearTimeout(visibilityTimerRef.current);
+      }
+      visibilityTimerRef.current = setTimeout(() => {
+        if (kickedRef.current) return;
+        wasOfflineDueToVisibilityRef.current = true;
         update(playerRef, {
           online: false,
           lastSeen: Date.now()
@@ -81,7 +85,17 @@ export function usePresence(roomId, nickname, isHost) {
         if (isHost) {
           set(hostDisconnectedRef, Date.now());
         }
-      } else if (document.visibilityState === 'visible') {
+      }, 5000);
+    };
+
+    const handleForeground = () => {
+      if (kickedRef.current) return;
+      if (visibilityTimerRef.current) {
+        clearTimeout(visibilityTimerRef.current);
+        visibilityTimerRef.current = null;
+      }
+      if (wasOfflineDueToVisibilityRef.current) {
+        wasOfflineDueToVisibilityRef.current = false;
         update(playerRef, {
           online: true,
           lastSeen: serverTimestamp()
@@ -92,27 +106,28 @@ export function usePresence(roomId, nickname, isHost) {
       }
     };
 
-    const handlePageHide = () => {
-      if (kickedRef.current) return;
-      update(playerRef, {
-        online: false,
-        lastSeen: Date.now()
-      });
-      if (isHost) {
-        set(hostDisconnectedRef, Date.now());
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleBackground();
+      } else if (document.visibilityState === 'visible') {
+        handleForeground();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pagehide', handleBackground);
 
     return () => {
       unsubPlayer();
       unsubConnected();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pagehide', handleBackground);
+      if (visibilityTimerRef.current) {
+        clearTimeout(visibilityTimerRef.current);
+        visibilityTimerRef.current = null;
+      }
       onDisconnectRefs.current.forEach(od => {
-        try { od.cancel(); } catch (e) {}
+        try { od.cancel(); } catch { /* ignore */ }
       });
       onDisconnectRefs.current = [];
     };
@@ -150,7 +165,7 @@ export function usePresence(roomId, nickname, isHost) {
 
         const players = playersSnap.val();
         const onlinePlayers = Object.entries(players)
-          .filter(([, p]) => p.online === true)
+          .filter(([, p]: [string, any]) => p.online === true)
           .sort(([a], [b]) => a.localeCompare(b));
 
         if (onlinePlayers.length === 0) {
@@ -180,14 +195,16 @@ export function usePresence(roomId, nickname, isHost) {
         const oldHost = room.host;
         const newHostName = firstOnlineName;
 
-        await update(ref(db, `rooms/${roomId}`), {
-          host: newHostName,
-          hostDisconnectedAt: null,
-        });
-        await update(ref(db, `rooms/${roomId}/players/${newHostName}`), { isHost: true });
+        // Perform atomic update for all changes to prevent race conditions or invalid states
+        const updates: Record<string, any> = {};
+        updates['host'] = newHostName;
+        updates['hostDisconnectedAt'] = null;
+        updates[`players/${newHostName}/isHost`] = true;
         if (oldHost && players[oldHost]) {
-          await update(ref(db, `rooms/${roomId}/players/${oldHost}`), { isHost: false });
+          updates[`players/${oldHost}/isHost`] = false;
         }
+
+        await update(ref(db, `rooms/${roomId}`), updates);
         window.dispatchEvent(new CustomEvent('partyhub:hostPromoted'));
       };
 
@@ -207,8 +224,8 @@ export function usePresence(roomId, nickname, isHost) {
   }, [roomId, nickname, isHost]);
 }
 
-export function usePlayerCleanup(roomId) {
-  const cleanupTimersRef = useRef({});
+export function usePlayerCleanup(roomId: string): void {
+  const cleanupTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const isPlayingRef = useRef(false);
 
   useEffect(() => {
@@ -228,7 +245,7 @@ export function usePlayerCleanup(roomId) {
       const gracePeriod = isPlayingRef.current ? GRACE_PERIOD_PLAYING_MS : GRACE_PERIOD_MS;
       const now = Date.now();
 
-      Object.entries(players).forEach(([name, data]) => {
+      Object.entries(players).forEach(([name, data]: [string, any]) => {
         if (data.online === false && data.lastSeen) {
           const elapsed = now - data.lastSeen;
           const remaining = gracePeriod - elapsed;

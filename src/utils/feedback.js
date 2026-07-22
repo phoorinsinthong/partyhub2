@@ -8,35 +8,35 @@ export const haptic = {
   light() {
     try {
       if ('vibrate' in navigator) navigator.vibrate(8);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   },
 
   /** Medium tap — confirm action */
   medium() {
     try {
       if ('vibrate' in navigator) navigator.vibrate(15);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   },
 
   /** Heavy tap — important action, error */
   heavy() {
     try {
       if ('vibrate' in navigator) navigator.vibrate([30, 20, 30]);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   },
 
   /** Success pattern */
   success() {
     try {
       if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   },
 
   /** Error pattern */
   error() {
     try {
       if ('vibrate' in navigator) navigator.vibrate([50, 30, 50, 30, 50]);
-    } catch (_) {}
+    } catch (_) { /* ignore */ }
   },
 };
 
@@ -73,7 +73,7 @@ function playTone(freq, duration = 0.15, volume = 0.2, type = 'sine') {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + duration);
-  } catch (_) {}
+  } catch (_) { /* ignore */ }
 }
 
 export const sounds = {

@@ -18,7 +18,7 @@ import { feedback } from '../utils/feedback';
 const ROUND_TIME = 60;
 const MAX_SKIPS = 2;
 
-function shuffle(arr) {
+function shuffle(arr: any[]) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -30,32 +30,11 @@ function shuffle(arr) {
 const Taboo = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
-
-  const phase = gameData.phase || 'waiting';
-  const currentDescriberIndex = gameData.currentDescriberIndex ?? 0;
-  const describerOrder = gameData.describerOrder || [];
-  const currentCard = gameData.currentCard || null;
-  const scores = gameData.scores || {};
-  const roundStartedAt = gameData.roundStartedAt || 0;
-  const round = gameData.round || 1;
-  const totalRounds = gameData.totalRounds || players.length;
-  const usedWords = gameData.usedWords || [];
-  const skipsUsed = gameData.skipsUsed || 0;
-
-  const currentDescriber = describerOrder[currentDescriberIndex] || '';
-  const isDescriber = userNickname === currentDescriber;
-
-  useTurnNotification(isDescriber, phase);
-
   const [showGuesserPicker, setShowGuesserPicker] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [cardMode, setCardMode] = useState('all');
-  const lastCountdownRef = useRef(null);
+  const lastCountdownRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
   const skipRef = useRef(false);
   const confirmRef = useRef(false);
@@ -63,18 +42,26 @@ const Taboo = () => {
   const personalRecordedRef = useRef(false);
   const startGameRef = useRef(false);
 
-  // ─── Helpers ───
-  const safeUpdate = async (path, data) => {
-    try {
-      await update(ref(db, path), data);
-    } catch (e) {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+        {errorMsg}
+      </div>
+    );
   };
 
-  // ─── Host: Time up ───
+  const safeUpdate = useCallback(async (path: string, data: any) => {
+    try {
+      await update(ref(db, path), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  }, [t]);
+
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
     feedback('timeUp');
@@ -85,10 +72,15 @@ const Taboo = () => {
       roundEndedAt: Date.now(),
       timerEnd: null
     });
-  }, [isHost, roomId]);
+  }, [isHost, roomId, safeUpdate]);
 
-  // ─── Timer ───
-  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
+  const { timeLeft } = useGameTimer(roomData?.gameData?.timerEnd, isHost ? handleTimeUp : null);
+
+  const currentDescriber = roomData?.gameData?.describerOrder?.[roomData?.gameData?.currentDescriberIndex ?? 0] || '';
+  const isDescriber = userNickname === currentDescriber;
+  const phase = roomData?.gameData?.phase || 'waiting';
+
+  useTurnNotification(isDescriber, phase);
 
   useEffect(() => {
     if (timeLeft <= 5 && timeLeft > 0 && timeLeft !== lastCountdownRef.current) {
@@ -97,38 +89,98 @@ const Taboo = () => {
     }
   }, [timeLeft]);
 
-  // Reset personal record on new game
   useEffect(() => {
-    if (phase === 'waiting' || phase === 'choosing') {
+    if (phase === 'waiting' || phase === 'playing' || phase === 'choosing') {
       personalRecordedRef.current = false;
     }
   }, [phase]);
 
-  // Record personal stats for all players when finished
   useEffect(() => {
     if (phase !== 'finished' || personalRecordedRef.current) return;
     personalRecordedRef.current = true;
     recordPersonalGame('taboo');
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
+    const scores = roomData?.gameData?.scores || {};
+    const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
       recordPersonalWin('taboo');
     }
-  }, [phase, scores, userNickname]);
+  }, [phase, roomData?.gameData?.scores, userNickname]);
 
-  // Reset guards when round/phase changes
   useEffect(() => {
     advancingRef.current = false;
     skipRef.current = false;
     confirmRef.current = false;
     correctGuessRef.current = false;
     lastCountdownRef.current = null;
-  }, [round, phase]);
+  }, [roomData?.gameData?.round, phase]);
 
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
-      {errorMsg}
-    </div>
-  ) : null;
+  const handleNextRound = useCallback(async () => {
+    if (!isHost || advancingRef.current) return;
+    advancingRef.current = true;
+
+    const gameData = roomData?.gameData || {};
+    const currentDescriberIndex = gameData.currentDescriberIndex ?? 0;
+    const describerOrder = gameData.describerOrder || [];
+    const scores = gameData.scores || {};
+    const currentCard = gameData.currentCard || null;
+    const usedWords = gameData.usedWords || [];
+    const round = gameData.round || 1;
+
+    const nextIndex = currentDescriberIndex + 1;
+    const newUsedWords = currentCard ? [...usedWords, currentCard.word] : usedWords;
+
+    try {
+      if (nextIndex >= describerOrder.length) {
+        const sortedScores = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+        await safeUpdate(`rooms/${roomId}/gameData`, {
+          phase: 'finished',
+          usedWords: newUsedWords,
+          timerEnd: null
+        });
+        if (sortedScores.length > 0 && (sortedScores[0][1] as number) > 0) {
+          await recordWin(roomId, sortedScores[0][0], 'taboo');
+        }
+      } else {
+        feedback('newRound');
+        const [nextCard] = getRandomCards(1, newUsedWords, gameData.cardMode || 'all');
+
+        await safeUpdate(`rooms/${roomId}/gameData`, {
+          phase: 'choosing',
+          currentDescriberIndex: nextIndex,
+          round: round + 1,
+          currentCard: null,
+          roundStartedAt: 0,
+          timerEnd: null,
+          skipsUsed: 0,
+          usedWords: newUsedWords,
+          previewCard: nextCard,
+          roundResult: null,
+          correctGuesser: null,
+        });
+      }
+    } finally {
+      advancingRef.current = false;
+    }
+  }, [isHost, roomId, safeUpdate, roomData?.gameData]);
+
+  useEffect(() => {
+    if (phase !== 'roundEnd' || !isHost) return;
+    const t = setTimeout(handleNextRound, 3500);
+    return () => clearTimeout(t);
+  }, [phase, isHost, handleNextRound]);
+
+  if (!roomData) return null;
+
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
+  const currentDescriberIndex = gameData.currentDescriberIndex ?? 0;
+  const describerOrder = gameData.describerOrder || [];
+  const currentCard = gameData.currentCard || null;
+  const scores = gameData.scores || {};
+  const round = gameData.round || 1;
+  const totalRounds = gameData.totalRounds || players.length;
+  const usedWords = gameData.usedWords || [];
+  const skipsUsed = gameData.skipsUsed || 0;
 
   // ─── Host: Start Game ───
   const handleStartGame = async () => {
@@ -200,7 +252,7 @@ const Taboo = () => {
   };
 
   // ─── Describer: Handle correct guess ───
-  const handleCorrectGuess = async (guesserName) => {
+  const handleCorrectGuess = async (guesserName: string) => {
     if (!isDescriber || !currentCard) return;
     if (correctGuessRef.current) return;
     correctGuessRef.current = true;
@@ -221,55 +273,6 @@ const Taboo = () => {
       correctGuessRef.current = false;
     }
   };
-
-  // ─── Host: Advance to next round or finish ───
-  const handleNextRound = useCallback(async () => {
-    if (!isHost || advancingRef.current) return;
-    advancingRef.current = true;
-
-    const nextIndex = currentDescriberIndex + 1;
-    const newUsedWords = currentCard ? [...usedWords, currentCard.word] : usedWords;
-
-    try {
-      if (nextIndex >= describerOrder.length) {
-        const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-        await safeUpdate(`rooms/${roomId}/gameData`, {
-          phase: 'finished',
-          usedWords: newUsedWords,
-          timerEnd: null
-        });
-        if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
-          await recordWin(roomId, sortedScores[0][0], 'taboo');
-        }
-      } else {
-        feedback('newRound');
-        const [nextCard] = getRandomCards(1, newUsedWords, gameData.cardMode || 'all');
-
-        await safeUpdate(`rooms/${roomId}/gameData`, {
-          phase: 'choosing',
-          currentDescriberIndex: nextIndex,
-          round: round + 1,
-          currentCard: null,
-          roundStartedAt: 0,
-          timerEnd: null,
-          skipsUsed: 0,
-          usedWords: newUsedWords,
-          previewCard: nextCard,
-          roundResult: null,
-          correctGuesser: null,
-        });
-      }
-    } finally {
-      advancingRef.current = false;
-    }
-  }, [isHost, currentDescriberIndex, describerOrder.length, scores, currentCard, usedWords, round, roomId, gameData.cardMode]);
-
-  // ─── Auto-advance after roundEnd (3s) ───
-  useEffect(() => {
-    if (phase !== 'roundEnd' || !isHost) return;
-    const t = setTimeout(handleNextRound, 3500);
-    return () => clearTimeout(t);
-  }, [phase, isHost, handleNextRound]);
 
   // ─── Play Again ───
   const handlePlayAgain = async () => {
@@ -309,7 +312,7 @@ const Taboo = () => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const sortedScores = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
 
   // ──────────────────────────────────────────────
   // PHASE: waiting
@@ -317,7 +320,7 @@ const Taboo = () => {
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
-        <ErrorToast />
+        {renderErrorToast()}
         <motion.div
           className="text-6xl"
           animate={{ rotate: [0, -10, 10, -10, 0] }}
@@ -406,7 +409,7 @@ const Taboo = () => {
     const winner = sortedScores[0];
     return (
       <div className="flex-1 flex flex-col gap-4 py-4">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
           <span className="text-5xl">🏆</span>
@@ -480,7 +483,7 @@ const Taboo = () => {
     if (isDescriber) {
       return (
         <div className="flex-1 flex flex-col gap-4 py-2">
-          <ErrorToast />
+          {renderErrorToast()}
           {/* Round info */}
           <div className="flex-between">
             <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
@@ -517,7 +520,7 @@ const Taboo = () => {
                 {/* Taboo words */}
                 <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {(card.taboo || card.examples || []).map((w) => (
+                  {(card.taboo || card.examples || []).map((w: string) => (
                     <span
                       key={w}
                       className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-full"
@@ -554,7 +557,7 @@ const Taboo = () => {
     // Non-describer waiting view
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-5 py-6">
-        <ErrorToast />
+        {renderErrorToast()}
         <motion.div
           className="text-5xl"
           animate={{ scale: [1, 1.12, 1] }}
@@ -577,7 +580,7 @@ const Taboo = () => {
               {sortedScores.map(([name, score]) => (
                 <div key={name} className="flex items-center gap-1.5 bg-olive-50 px-2.5 py-1 rounded-lg">
                   <span className="text-[11px] font-bold text-olive-600 max-w-[70px] truncate">{name}</span>
-                  <span className="text-[12px] font-black text-sage-600">{score}</span>
+                  <span className="text-[12px] font-black text-sage-600">{score as number}</span>
                 </div>
               ))}
             </div>
@@ -596,7 +599,7 @@ const Taboo = () => {
 
     return (
       <div className="flex-1 flex flex-col gap-4 py-4">
-        <ErrorToast />
+        {renderErrorToast()}
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -627,7 +630,7 @@ const Taboo = () => {
             </p>
             <p className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
-              {(currentCard.taboo || currentCard.examples || []).map((w) => (
+              {(currentCard.taboo || currentCard.examples || []).map((w: string) => (
                 <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1 rounded-full">
                   {w}
                 </span>
@@ -644,7 +647,7 @@ const Taboo = () => {
               <div key={name} className="flex items-center gap-2.5 p-2 rounded-xl bg-olive-50/60">
                 <span className="text-[11px] font-black text-olive-400 w-4">{idx + 1}</span>
                 <span className="flex-1 font-bold text-[13px] text-olive-700">{name}</span>
-                <span className="font-black text-[14px] text-sage-600">{score}</span>
+                <span className="font-black text-[14px] text-sage-600">{score as number}</span>
                 {name === userNickname && (
                   <span className="text-[9px] font-bold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded">{t('taboo.you')}</span>
                 )}
@@ -674,7 +677,7 @@ const Taboo = () => {
 
   return (
     <div className="flex-1 flex flex-col gap-3 min-h-0">
-      <ErrorToast />
+      {renderErrorToast()}
       {/* Round header */}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
@@ -698,8 +701,8 @@ const Taboo = () => {
             </p>
             <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
-              {(currentCard?.taboo || currentCard?.examples || []).map((w) => (
-                <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-full">
+              {(currentCard?.taboo || currentCard?.examples || []).map((w: string) => (
+                <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1 rounded-full">
                   {w}
                 </span>
               ))}
@@ -798,7 +801,7 @@ const Taboo = () => {
           >
             {name === currentDescriber && <span className="text-[9px]">🎤</span>}
             <span className="text-[10px] font-bold text-olive-600 max-w-[64px] truncate">{name}</span>
-            <span className="text-[11px] font-black text-sage-600">{score}</span>
+            <span className="text-[11px] font-black text-sage-600">{score as number}</span>
           </div>
         ))}
       </div>

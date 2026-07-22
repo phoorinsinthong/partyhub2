@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useTranslation } from 'react-i18next';
@@ -16,17 +16,20 @@ import { feedback } from '../utils/feedback';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
+import { useGame } from '../contexts/GameContext';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-const Spyfall = ({ roomId, roomData, userNickname }) => {
+const Spyfall: React.FC = () => {
   const { t } = useTranslation();
-  const nickname = userNickname;
+  const { roomId, roomData, userNickname, isHost } = useGame();
+  
+  const nickname = userNickname || '';
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, nickname);
-  const players = roomData.players || {};
-  const gameData = roomData.gameData || {};
-  const isHost = roomData.host === nickname;
+  const players = roomData?.players || {};
+  const gameData = roomData?.gameData || {};
+  const isHostActually = isHost;
 
   const myGameData = (gameData.players && gameData.players[nickname]) || {};
 
@@ -50,18 +53,23 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
   const submitVoteRef = useRef(false);
   const voteResultRef = useRef(false);
 
+  const playerList = Object.keys(players);
+  const playerCount = playerList.length;
+  const gamePlayerList = Object.keys(gameData.players || {});
+  const gamePlayerCount = gamePlayerList.length;
+
   useEffect(() => {
-    if (roomData.status === 'waiting' || gameData.status === 'waiting') {
+    if (roomData?.status === 'waiting' || gameData.status === 'waiting') {
       personalRecordedRef.current = false;
       advancingRef.current = false;
       guessRef.current = false;
       submitVoteRef.current = false;
       voteResultRef.current = false;
     }
-  }, [roomData.status, gameData.status]);
+  }, [roomData?.status, gameData.status]);
 
   useEffect(() => {
-    const isFinished = roomData.status === 'finished' || gameData.status === 'finished';
+    const isFinished = roomData?.status === 'finished' || gameData.status === 'finished';
     if (!isFinished || personalRecordedRef.current) return;
     personalRecordedRef.current = true;
     const gamePlayers = gameData.players || {};
@@ -70,35 +78,29 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
     const iWon = (gameData.winner === 'Spy' && iSpy) || (gameData.winner === 'Civilians' && !iSpy);
     recordPersonalGame('spyfall');
     if (iWon) recordPersonalWin('spyfall');
-  }, [roomData.status, gameData.status]);
-
-  const playerList = Object.keys(players);
-  const playerCount = playerList.length;
-  const gamePlayerList = Object.keys(gameData.players || {});
-  const gamePlayerCount = gamePlayerList.length;
-
-  const safeUpdate = async (refPath, data) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
-  };
+  }, [roomData?.status, gameData.status, nickname, gameData.players, gameData.winner]);
 
   // ─── Timer ───────────────────────────────────────────────────────────────────
 
+  const safeUpdate = useCallback(async (refPath: string, data: any) => {
+    try {
+      await update(ref(db, refPath), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  }, [t]);
+
   useEffect(() => {
-    if (roomData.status === 'playing' && gameData.timerEnd && gameData.status === 'playing') {
+    if (roomData?.status === 'playing' && gameData.timerEnd && gameData.status === 'playing') {
       let transitioned = false;
       const interval = setInterval(() => {
         const now = Date.now();
         const diff = Math.max(0, Math.floor((gameData.timerEnd - now) / 1000));
-        setTimeLeft(diff);
+        if (diff !== timeLeft) setTimeLeft(diff);
 
         // Auto-transition to voting when timer reaches 0
-        if (diff === 0 && isHost && !transitioned && !voteResultRef.current) {
+        if (diff === 0 && isHostActually && !transitioned && !voteResultRef.current) {
           transitioned = true;
           clearInterval(interval);
           const snap = roomData.gameData || {};
@@ -112,31 +114,33 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [roomData.status, gameData.timerEnd, isHost, gameData.status]);
+  }, [roomData?.status, gameData.timerEnd, isHostActually, gameData.status, roomId, timeLeft, safeUpdate]);
 
   // ─── Sound on spy reveal (notify other players after spy confirmed guess) ───
 
+  const prevSpyRevealingRef = useRef<string | null>(null);
   useEffect(() => {
-    if (gameData.spyRevealing && gameData.spyRevealing !== prevSpyRevealing) {
-      if (gameData.spyRevealing !== nickname) {
+    const newVal = gameData.spyRevealing || null;
+    if (newVal !== prevSpyRevealingRef.current) {
+      if (newVal && newVal !== nickname) {
         feedback('spyReveal');
       }
+      prevSpyRevealingRef.current = newVal;
     }
-    setPrevSpyRevealing(gameData.spyRevealing || null);
-  }, [gameData.spyRevealing]);
+  }, [gameData.spyRevealing, nickname]);
 
   // ─── Show guess modal for spy when forced ───────────────────────────────────
 
   useEffect(() => {
     if (gameData.spyForced && gameData.spyRevealing === nickname && myGameData.isSpy && gameData.status !== 'finished') {
-      setShowGuessModal(true);
+      setTimeout(() => setShowGuessModal(true), 0);
     }
   }, [gameData.spyForced, gameData.spyRevealing, nickname, myGameData.isSpy, gameData.status]);
 
   // ─── Check voting results (host only) ────────────────────────────────────────
 
   useEffect(() => {
-    if (!isHost || gameData.status !== 'voting') return;
+    if (!isHostActually || gameData.status !== 'voting') return;
 
     const gamePlayers = gameData.players || {};
     const result = checkVoteResult(gamePlayers, gamePlayerCount);
@@ -151,7 +155,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
           await safeUpdate(`rooms/${roomId}/gameData`, { status: 'finished', winner: result.winner });
           await safeUpdate(`rooms/${roomId}`, { status: 'finished' });
           const civilianWinner = gamePlayerList.find(p => !gamePlayers[p].isSpy) || roomData.host;
-          await recordWin(roomId, civilianWinner, 'spyfall');
+          await recordWin(roomId || '', civilianWinner, 'spyfall');
         } catch (_) {
           voteResultRef.current = false;
         }
@@ -170,12 +174,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
         }
       })();
     }
-  }, [gameData.players, gameData.status, isHost]);
+  }, [gameData.players, gameData.status, isHostActually, gamePlayerCount, gamePlayerList, roomId, roomData.host, safeUpdate]);
 
   // ─── Check vote request threshold ───────────────────────────────────────────
 
   useEffect(() => {
-    if (!isHost || gameData.status !== 'playing') return;
+    if (!isHostActually || gameData.status !== 'playing') return;
 
     const gamePlayers = gameData.players || {};
     const wantsCount = gamePlayerList.filter(p => gamePlayers[p]?.wantsToVote).length;
@@ -183,25 +187,30 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
     if (wantsCount >= threshold && gamePlayerCount > 0) {
       // Transition to voting
-      safeUpdate(`rooms/${roomId}/gameData`, {
-        status: 'voting',
-        timerEnd: null
-      });
-      // Reset wantsToVote flags
-      const resetUpdates = {};
-      gamePlayerList.forEach(p => {
-        resetUpdates[`players/${p}/wantsToVote`] = false;
-      });
-      safeUpdate(`rooms/${roomId}/gameData`, resetUpdates);
+      setTimeout(() => {
+        safeUpdate(`rooms/${roomId}/gameData`, {
+          status: 'voting',
+          timerEnd: null,
+          ...resetUpdates
+        });
+      }, 0);
     }
-  }, [gameData.players, gameData.status, isHost]);
+  }, [gameData.players, gameData.status, isHostActually, gamePlayerCount, gamePlayerList, roomId, safeUpdate]);
+
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      {errorMsg}
+    </div>
+  ) : null;
+
+  if (!roomData) return null;
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   // ─── Game Actions ────────────────────────────────────────────────────────────
 
   const startGame = async () => {
-    if (!isHost) return;
+    if (!isHostActually) return;
     if (playerCount < 3) return;
     if (advancingRef.current) return;
     advancingRef.current = true;
@@ -339,7 +348,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
   };
 
   const handlePlayAgain = async () => {
-    if (!isHost || advancingRef.current) return;
+    if (!isHostActually || advancingRef.current) return;
     advancingRef.current = true;
     personalRecordedRef.current = false;
     try {
@@ -358,15 +367,6 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
     return { wantsCount, threshold };
   };
 
-
-  // ─── Error Toast ─────────────────────────────────────────────────────────────
-
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
-
   // ═══════════════════════════════════════════════════════════════════════════════
   // RENDER: WAITING / LOBBY
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -374,6 +374,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
   if (roomData.status === 'waiting' || gameData.status === 'waiting') {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
+        {renderErrorToast()}
         <div className="glass-panel p-lg">
           <div className="flex items-center gap-md mb-md">
             <div className="p-sm bg-primary/20 rounded-lg text-primary">
@@ -396,12 +397,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
             {CAT_META.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => isHost && toggleCategory(cat.id)}
+                onClick={() => isHostActually && toggleCategory(cat.id)}
                 className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
                   selectedCats.includes(cat.id)
                     ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
                     : 'border-glass text-secondary opacity-60'
-                } ${!isHost && 'cursor-default'}`}
+                } ${!isHostActually && 'cursor-default'}`}
               >
                 <span className="text-2xl">{cat.emoji}</span>
                 <span className="text-sm font-bold">{cat.name}</span>
@@ -418,12 +419,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
           <div className="flex flex-col gap-sm mb-md">
             <button
-              onClick={() => isHost && setUseDefaultPack(!useDefaultPack)}
+              onClick={() => isHostActually && setUseDefaultPack(!useDefaultPack)}
               className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
                 useDefaultPack
                   ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
                   : 'border-glass text-secondary opacity-60'
-              } ${!isHost && 'cursor-default'}`}
+              } ${!isHostActually && 'cursor-default'}`}
             >
               <span className="text-2xl">🎭</span>
               <div>
@@ -433,12 +434,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
             </button>
 
             <button
-              onClick={() => isHost && setUseNonStandardPack(!useNonStandardPack)}
+              onClick={() => isHostActually && setUseNonStandardPack(!useNonStandardPack)}
               className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
                 useNonStandardPack
                   ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
                   : 'border-glass text-secondary opacity-60'
-              } ${!isHost && 'cursor-default'}`}
+              } ${!isHostActually && 'cursor-default'}`}
             >
               <span className="text-2xl">🏢</span>
               <div>
@@ -459,12 +460,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
             {TIMER_PRESETS.spyfall.map(opt => (
               <button
                 key={opt.value}
-                onClick={() => isHost && setTimerMinutes(opt.value)}
+                onClick={() => isHostActually && setTimerMinutes(opt.value)}
                 className={`px-md py-xs rounded-xl text-xs font-bold border-2 transition-all ${
                   timerMinutes === opt.value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-glass text-secondary opacity-60'
-                } ${!isHost && 'cursor-default'}`}
+                } ${!isHostActually && 'cursor-default'}`}
               >
                 {opt.label}
               </button>
@@ -482,7 +483,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
                 <p className="text-xs text-secondary">เปิดใช้เมื่อมี 4+ คน</p>
               </div>
             </div>
-            {isHost && (
+            {isHostActually && (
               <button
                 onClick={() => setEnableAccomplice(!enableAccomplice)}
                 className={`w-12 h-6 rounded-full transition-all relative ${
@@ -497,12 +498,12 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
           </div>
         </div>
 
-        {isHost && selectedCats.includes('funny') && playerCount >= 3 && playerCount < 5 && (
+        {isHostActually && selectedCats.includes('funny') && playerCount >= 3 && playerCount < 5 && (
           <div className="w-full bg-pink-500/10 border border-pink-300/30 rounded-xl p-md text-center">
             <p className="text-xs font-bold text-pink-300">🤪 หมวดปั่นๆ ฮาๆ เล่น 5+ คนจะสนุกกว่า!</p>
           </div>
         )}
-        {isHost ? (
+        {isHostActually ? (
           <button
             className="btn btn-primary w-full py-xl text-xl font-black shadow-xl shadow-primary/20"
             onClick={startGame}
@@ -784,7 +785,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {/* Spy Reveal Banner (if spy is forced to guess after vote) */}
         <AnimatePresence>
           {gameData.spyRevealing && (
@@ -922,8 +923,8 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
     return (
       <div className="flex flex-col gap-lg w-full text-center animate-fade-in">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         {renderErrorToast()}
+        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className={`glass-panel p-xl w-full border-2 shadow-2xl relative overflow-hidden ${
           gameData.winner === 'Spy' ? 'border-danger' : 'border-success'
         }`}>
@@ -995,7 +996,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
         </div>
 
 
-        {isHost ? (
+        {isHostActually ? (
           <div className="flex flex-col gap-md w-full">
             <button
               className="btn btn-primary py-3 px-6 text-[14px] w-full"
@@ -1028,6 +1029,7 @@ const Spyfall = ({ roomId, roomData, userNickname }) => {
 
   return (
     <div className="w-full flex-center">
+      {renderErrorToast()}
       <div className="glass-panel p-lg text-center">
         <p className="text-secondary">กำลังโหลด...</p>
       </div>

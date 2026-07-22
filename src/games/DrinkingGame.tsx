@@ -17,16 +17,57 @@ const DEFAULT_RULES: Record<string, string> = {
 };
 
 const DrinkingGame: React.FC = () => {
-  const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { t } = useTranslation();
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+  
   const [isDrawing, setIsDrawing] = useState(false);
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const gameRecordedRef = useRef(false);
-  const drawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const drawingCardRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [editingRules, setEditingRules] = useState<Record<string, string>>({});
+
+  const gameRecordedRef = useRef(false);
+  const drawTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawingCardRef = useRef(false);
+
+  // Derived variables
+  const gameData = roomData?.gameData || {};
+  const deck = gameData.deck || [];
+  const drawnCards = gameData.drawnCards || [];
+  const currentCard = gameData.currentCard || null;
+  const lastAction = gameData.lastAction || null;
+  const playerNames = roomData?.players ? Object.keys(roomData.players).sort() : [];
+  const turnIndex = gameData.turnIndex ?? 0;
+  const currentTurnPlayer = playerNames[turnIndex % playerNames.length] || '';
+  const isMyTurn = currentTurnPlayer === userNickname;
+  const customRules = gameData.customRules || {};
+  const rules = { ...DEFAULT_RULES, ...customRules };
+
+  useEffect(() => {
+    if (!gameRecordedRef.current) {
+      gameRecordedRef.current = true;
+      recordPersonalGame('drinking');
+    }
+    return () => { if (drawTimerRef.current) clearTimeout(drawTimerRef.current); };
+  }, []);
+
+  useEffect(() => {
+    if (isHost && roomId && deck.length === 0 && drawnCards.length === 0) {
+      const suits = ['hearts','diamonds','clubs','spades'];
+      const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+      const d: any[] = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
+      for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
+      update(ref(db,`rooms/${roomId}/gameData`),{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'init',by:userNickname,time:Date.now()}});
+    }
+  }, [isHost, roomId, deck.length, drawnCards.length, userNickname]);
+
+  if (!roomData) return null;
+
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+      {errorMsg}
+    </div>
+  ) : null;
 
   const safeUpdate = async (refPath: string, data: any) => {
     try {
@@ -42,28 +83,6 @@ const DrinkingGame: React.FC = () => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  useEffect(() => {
-    if (!gameRecordedRef.current) {
-      gameRecordedRef.current = true;
-      recordPersonalGame('drinking');
-    }
-    return () => { if (drawTimerRef.current) clearTimeout(drawTimerRef.current); };
-  }, []);
-
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const deck = gameData.deck || [];
-  const drawnCards = gameData.drawnCards || [];
-  const currentCard = gameData.currentCard || null;
-  const lastAction = gameData.lastAction || null;
-
-  const playerNames = roomData.players ? Object.keys(roomData.players).sort() : [];
-  const turnIndex = gameData.turnIndex ?? 0;
-  const currentTurnPlayer = playerNames[turnIndex % playerNames.length] || '';
-  const isMyTurn = currentTurnPlayer === userNickname;
-
-  const customRules = gameData.customRules || {};
-  const rules = { ...DEFAULT_RULES, ...customRules };
   const getRule = (v: string) => rules[v] || '';
 
   const openRuleEditor = () => {
@@ -79,16 +98,6 @@ const DrinkingGame: React.FC = () => {
     await safeUpdate(`rooms/${roomId}/gameData`, { customRules: Object.keys(changed).length > 0 ? changed : null });
     setShowRuleEditor(false);
   };
-
-  useEffect(() => {
-    if (isHost && deck.length === 0 && drawnCards.length === 0) {
-      const suits = ['hearts','diamonds','clubs','spades'];
-      const vals = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-      const d: any[] = []; suits.forEach(s => vals.forEach(v => d.push({s,v,id:`${v}-${s}-${Math.random()}`})));
-      for(let i=d.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]; }
-      update(ref(db,`rooms/${roomId}/gameData`),{deck:d,drawnCards:[],currentCard:null,turnIndex:0,lastAction:{type:'init',by:userNickname,time:Date.now()}});
-    }
-  }, [isHost, roomId, deck.length, drawnCards.length, userNickname]);
 
   const drawCard = async () => {
     if (isDrawing || deck.length === 0 || !isMyTurn) return;
@@ -136,12 +145,6 @@ const DrinkingGame: React.FC = () => {
       </motion.div>
     );
   };
-
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
 
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in">

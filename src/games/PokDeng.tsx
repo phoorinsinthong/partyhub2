@@ -11,21 +11,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
 
 const PokDeng: React.FC = () => {
-  const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const phase = gameData.phase || 'waiting'; // waiting, playing, dealer_action, result
-  const deck = gameData.deck || [];
-  const playersData = gameData.players || {};
+  const { t } = useTranslation();
+  const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
   const [errorMsg, setErrorMsg] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
   const advancingRef = useRef(false);
 
-  const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const playerNames = Object.keys(roomData.players || {});
+  const gameData = roomData?.gameData || {};
+  
+  if (!roomData) return null;
+
+  // Derived variables
+  const phase = gameData.phase || 'waiting'; // waiting, playing, dealer_action, result
+  const deck = gameData.deck || [];
+  const playersData = gameData.players || {};
+  const playerNames = Object.keys(roomData?.players || {});
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+          <div className="p-1 bg-white/20 rounded-lg">
+            <span className="text-white">⚠️</span>
+          </div>
+          <p className="text-[14px] font-bold">{errorMsg}</p>
+        </div>
+      </div>
+    );
+  };
 
   const safeUpdate = async (updates: any) => {
     try {
@@ -112,18 +129,16 @@ const PokDeng: React.FC = () => {
 
         if (pStats.weight > dStats.weight) {
           winAmount = p.bet * pStats.deng;
-          recordWin(roomId, name, 'pokdeng');
+          recordWin(roomId!, name, 'pokdeng');
         } else if (pStats.weight < dStats.weight) {
           winAmount = -(p.bet * dStats.deng);
           hostWonAny = true;
         } else if (pStats.deng > dStats.deng) {
           winAmount = p.bet * pStats.deng;
-          recordWin(roomId, name, 'pokdeng');
+          recordWin(roomId!, name, 'pokdeng');
         } else if (pStats.deng < dStats.deng) {
           winAmount = -(p.bet * dStats.deng);
           hostWonAny = true;
-        } else {
-          winAmount = 0; // Push - same weight and same deng
         }
 
         updates[`players/${name}/chips`] = (p.chips || 1000) + winAmount;
@@ -134,7 +149,7 @@ const PokDeng: React.FC = () => {
         updates[`players/${dealerName}/chips`] = hostCurrent - winAmount;
       });
 
-      if (hostWonAny) recordWin(roomId, dealerName, 'pokdeng');
+      if (hostWonAny) recordWin(roomId!, dealerName, 'pokdeng');
       
       await safeUpdate(updates);
     }
@@ -144,12 +159,6 @@ const PokDeng: React.FC = () => {
     if (!isHost) return;
     await update(ref(db, `rooms/${roomId}`), { status: 'waiting', currentGame: null, gameData: null });
   };
-
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
 
   if (phase === 'waiting') {
     return (
@@ -191,7 +200,7 @@ const PokDeng: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
-      <ErrorToast />
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Players List */}
@@ -275,7 +284,7 @@ const PokDeng: React.FC = () => {
                     <p className="text-sm font-bold text-amber-600">{t('pokdeng.dealerActionDesc') || 'เลือกว่าจะจั่วเพิ่มหรือวัดแต้มเลย'}</p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={() => drawCard(userNickname)} disabled={playersData[userNickname].hand.length >= 3} className="btn btn-outline flex-1 py-4 text-[14px] bg-white rounded-2xl">{t('pokdeng.draw') || 'จั่วไพ่'}</button>
+                    <button onClick={() => drawCard(userNickname!)} disabled={playersData[userNickname!].hand.length >= 3} className="btn btn-outline flex-1 py-4 text-[14px] bg-white rounded-2xl">{t('pokdeng.draw') || 'จั่วไพ่'}</button>
                     <button onClick={finishPhase} className="btn btn-primary flex-1 py-4 text-[14px] rounded-2xl shadow-lg">{t('pokdeng.measure') || 'วัดแต้มทั้งหมด'}</button>
                 </div>
             </div>

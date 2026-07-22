@@ -13,14 +13,37 @@ import { TRUTHS, DARES } from './logic/truthData';
 const TruthOrDare: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
   const [errorMsg, setErrorMsg] = useState('');
   const advancingRef = useRef(false);
   const drawingRef = useRef(false);
+
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+        {errorMsg}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    recordPersonalGame('truthordare');
+  }, []);
+
+  if (!roomData) return null;
+
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
+  const phase = gameData.phase || 'waiting';
+  const currentTurnIndex = gameData.currentTurnIndex ?? 0;
+  const currentTarget = players[currentTurnIndex % players.length] || '';
+  const currentCard = gameData.currentCard || null;
+  const cardType = gameData.cardType || '';
+
+  const isMyTurn = userNickname === currentTarget;
 
   const safeUpdate = async (refPath: string, data: any) => {
     try {
@@ -35,18 +58,6 @@ const TruthOrDare: React.FC = () => {
     if (!isHost) return;
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
-
-  useEffect(() => {
-    recordPersonalGame('truthordare');
-  }, []);
-
-  const phase = gameData.phase || 'waiting';
-  const currentTurnIndex = gameData.currentTurnIndex ?? 0;
-  const currentTarget = players[currentTurnIndex % players.length] || '';
-  const currentCard = gameData.currentCard || null;
-  const cardType = gameData.cardType || '';
-
-  const isMyTurn = userNickname === currentTarget;
 
   const nextTurn = async () => {
     if (advancingRef.current) return;
@@ -78,12 +89,6 @@ const TruthOrDare: React.FC = () => {
       drawingRef.current = false;
     }
   };
-
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
 
   if (phase === 'waiting') {
     return (

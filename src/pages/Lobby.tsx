@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Users, Crown, Play, ArrowLeft, Copy, Check, X } from 'lucide-react';
 import { ref, update, remove } from 'firebase/database';
@@ -227,7 +227,9 @@ const Lobby: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15, delay: index * 0.03 }}
-                className={`flex items-center justify-between p-3 rounded-2xl ${
+                className={`flex items-center justify-between p-3 rounded-2xl transition-all duration-200 ${
+                  p.online === false ? 'opacity-40 grayscale-[30%]' : ''
+                } ${
                   p.isHost ? 'bg-gradient-to-r from-sage-50 to-emerald-50 border-2 border-sage-100' : 'bg-olive-50/60 border-2 border-olive-50'
                 }`}
               >
@@ -243,6 +245,7 @@ const Lobby: React.FC = () => {
                       <span className="font-bold text-[14px] text-olive-800">{p.name}</span>
                       {p.isHost && <span className="text-[9px] font-extrabold text-warm-500 bg-warm-100 px-1.5 py-0.5 rounded-md">HOST</span>}
                       {p.key === userNickname && <span className="text-[9px] font-extrabold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-md">คุณ</span>}
+                      {p.online === false && <span className="text-[9px] font-extrabold text-olive-400 bg-olive-100/70 px-1.5 py-0.5 rounded-md">ออฟไลน์</span>}
                     </div>
                   </div>
                 </div>

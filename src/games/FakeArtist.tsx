@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
-import { RotateCcw, LogOut, Pencil, Clock, Maximize2, X } from 'lucide-react';
+import { RotateCcw, LogOut, Pencil, Maximize2, X } from 'lucide-react';
 import { feedback } from '../utils/feedback';
 import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
@@ -10,23 +10,59 @@ import { useGameLeave } from '../hooks/useGameLeave';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { useTranslation } from 'react-i18next';
+import { useGame } from '../contexts/GameContext';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import { WORD_CATEGORIES, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from './logic/fakeArtistData';
-import { shuffle, countSyllables, getRandomWord } from './logic/fakeArtistLogic';
+import { WORD_CATEGORIES, ALL_WORDS, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from './logic/fakeArtistData';
+import { shuffle, getRandomWord } from './logic/fakeArtistLogic';
 
 const PLAYER_COLORS = [
   '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
   '#1abc9c', '#e67e22', '#e91e63', '#00bcd4', '#8bc34a',
 ];
 
-const FakeArtist = ({ roomId, roomData, userNickname }) => {
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const isHost = userNickname === roomData.host;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
+const countSyllables = (text: string) => {
+  if (!text) return 0;
+  const words = text.split(/[\s-]+/).filter(Boolean);
+  let total = 0;
+  for (const w of words) {
+    // Handle English words
+    if (/^[a-zA-Z]+$/.test(w)) {
+      const engVowels = w.match(/[aeiouyAEIOUY]+/g);
+      total += engVowels ? engVowels.length : 1;
+      continue;
+    }
+
+    let temp = w;
+    // 1. Group Thai vowel clusters that count as 1 syllable
+    temp = temp.replace(/เ[ก-ฮ]{1,2}ีย/g, 'A'); // เ-ีย
+    temp = temp.replace(/เ[ก-ฮ]{1,2}ือ/g, 'A'); // เ-ือ
+    temp = temp.replace(/เ[ก-ฮ]{1,2}า/g, 'A');  // เ-า
+    temp = temp.replace(/[ก-ฮ]{1,2}ัว/g, 'A');   // -ัว (เช่น กลัว)
+    
+    // 2. Count visible Thai vowels + ฤ
+    const vowels = temp.match(/(?:\u0E30|\u0E31|\u0E32|\u0E33|\u0E34|\u0E35|\u0E36|\u0E37|\u0E38|\u0E39|\u0E40|\u0E41|\u0E42|\u0E43|\u0E44|\u0E45|\u0E47|\u0E4D|\u0E24)/g) || [];
+    let count = vowels.length;
+
+    // 3. Handle implicit vowels (no visible vowels)
+    if (count === 0 && w.length > 0) {
+      // Remove characters with garan (e.g. ์) as they don't add syllables
+      const clean = w.replace(/[ก-ฮ]์/g, '').replace(/[\u0E01-\u0E2E](?:\u0E30|\u0E31|\u0E32|\u0E33|\u0E34|\u0E35|\u0E36|\u0E37|\u0E38|\u0E39|\u0E40|\u0E41|\u0E42|\u0E43|\u0E44|\u0E47|\u0E4D)์/g, '');
+      // Heuristic: 2 consonants (นก) = 1, 3 consonants (กนก) = 2
+      count = Math.max(1, clean.length - 1);
+    }
+    total += count;
+  }
+  return total;
+};
+
+const FakeArtist: React.FC = () => {
+  const { roomId, roomData, userNickname, isHost } = useGame();
+  const { t } = useTranslation();
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId || '', userNickname || '');
+  
   const [errorMsg, setErrorMsg] = useState('');
-  const [voteTarget, setVoteTarget] = useState(null);
+  const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [guessInput, setGuessInput] = useState('');
   const [customWord, setCustomWord] = useState('');
   const [wordMode, setWordMode] = useState('random');
@@ -34,29 +70,26 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const [selectedTurnTime, setSelectedTurnTime] = useState(15);
   const [selectedRounds, setSelectedRounds] = useState(2);
   const [turnAnnounce, setTurnAnnounce] = useState('');
-  const turnTime = gameData.turnTime || 15;
-  const totalRounds = gameData.totalRounds || 2;
-  const usedWords = gameData.usedWords || [];
-  
-  const turnStartedAt = gameData.turnStartedAt || 0;
-  const timerEnd = (phase === 'drawing' && turnStartedAt > 0) ? turnStartedAt + (turnTime * 1000) : null;
-  const { timeLeft } = useGameTimer(timerEnd);
-
-  const [skippedPlayer, setSkippedPlayer] = useState(null);
+  const [skippedPlayer, setSkippedPlayer] = useState<string | null>(null);
   const [showFullCanvas, setShowFullCanvas] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+  const [localPaths, setLocalPaths] = useState<any[]>([]);
 
-  const canvasRef = useRef(null);
-  const fullCanvasRef = useRef(null);
-  const containerRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fullCanvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
   const autoSkipRef = useRef(false);
   const voteProcessedRef = useRef(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const lastPointRef = useRef(null);
-  const [localPaths, setLocalPaths] = useState([]);
+  const timerExpiredRef = useRef(false);
+  const drawHandlersRef = useRef({ startDraw: (e:any) => {}, moveDraw: (e:any) => {}, endDraw: (e:any) => {} });
 
+  // Derived variables
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
   const phase = gameData.phase || 'waiting';
   const secretWord = gameData.secretWord || '';
   const fakeArtist = gameData.fakeArtist || '';
@@ -69,66 +102,27 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
   const colorMap = gameData.colorMap || {};
   const fakeGuess = gameData.fakeGuess || '';
   const voteResult = gameData.voteResult || null;
-
+  const turnTime = gameData.turnTime || 15;
+  const totalRounds = gameData.totalRounds || 2;
+  const usedWords = gameData.usedWords || [];
+  const turnStartedAt = gameData.turnStartedAt || 0;
+  const timerEnd = (phase === 'drawing' && turnStartedAt > 0) ? turnStartedAt + (turnTime * 1000) : null;
   const totalTurnsNeeded = turnOrder.length * totalRounds;
   const currentPlayer = turnOrder[currentTurnIndex] || '';
   const isMyTurn = currentPlayer === userNickname;
   const iAmFakeArtist = fakeArtist === userNickname;
-
-  const countSyllables = (text) => {
-    if (!text) return 0;
-    const words = text.split(/[\s\-]+/).filter(Boolean);
-    let total = 0;
-    for (const w of words) {
-      // Handle English words
-      if (/^[a-zA-Z]+$/.test(w)) {
-        const engVowels = w.match(/[aeiouyAEIOUY]+/g);
-        total += engVowels ? engVowels.length : 1;
-        continue;
-      }
-
-      let temp = w;
-      // 1. Group Thai vowel clusters that count as 1 syllable
-      temp = temp.replace(/เ[ก-ฮ]{1,2}ีย/g, 'A'); // เ-ีย
-      temp = temp.replace(/เ[ก-ฮ]{1,2}ือ/g, 'A'); // เ-ือ
-      temp = temp.replace(/เ[ก-ฮ]{1,2}า/g, 'A');  // เ-า
-      temp = temp.replace(/[ก-ฮ]{1,2}ัว/g, 'A');   // -ัว (เช่น กลัว)
-      
-      // 2. Count visible Thai vowels + ฤ
-      const vowels = temp.match(/[ะาิีึืุูเแโใไำๅั็ํฤ]/g) || [];
-      let count = vowels.length;
-
-      // 3. Handle implicit vowels (no visible vowels)
-      if (count === 0 && w.length > 0) {
-        // Remove characters with garan (e.g. ์) as they don't add syllables
-        const clean = w.replace(/[ก-ฮ]์/g, '').replace(/[ก-ฮ][ะ-ูเ-ไั็ํ]์/g, '');
-        // Heuristic: 2 consonants (นก) = 1, 3 consonants (กนก) = 2
-        count = Math.max(1, clean.length - 1);
-      }
-      total += count;
-    }
-    return total;
-  };
   const secretSyllables = countSyllables(secretWord);
 
+  const { timeLeft } = useGameTimer(timerEnd);
   useTurnNotification(isMyTurn, phase === 'drawing' ? 'playing' : phase);
 
   useEffect(() => {
     if (phase === 'drawing' && currentPlayer) {
-      setTurnAnnounce(currentPlayer);
+      setTimeout(() => setTurnAnnounce(currentPlayer), 0);
       const t = setTimeout(() => setTurnAnnounce(''), 2000);
       return () => clearTimeout(t);
     }
-  }, [phase, currentTurnIndex]);
-
-  const safeUpdate = async (refPath, data) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
+  }, [phase, currentTurnIndex, currentPlayer]);
 
   useEffect(() => {
     if (phase === 'waiting') personalRecordedRef.current = false;
@@ -144,9 +138,8 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     } else if ((voteResult === 'fake_wins' || voteResult === 'fake_guessed') && iAmFakeArtist) {
       recordPersonalWin('fakeartist');
     }
-  }, [phase, voteResult]);
+  }, [phase, voteResult, iAmFakeArtist]);
 
-  // Canvas resize — re-run when phase changes (container may not exist in earlier phases)
   useEffect(() => {
     const resizeCanvas = () => {
       if (!containerRef.current) return;
@@ -158,9 +151,6 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
   }, [phase]);
-
-  // Turn timer — auto-skip if time runs out
-  const timerExpiredRef = useRef(false);
 
   useEffect(() => {
     if (phase !== 'drawing') {
@@ -182,7 +172,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         const nextIndex = (currentTurnIndex + 1) % turnOrder.length;
         const nextRound = currentRound + (currentTurnIndex + 1 >= turnOrder.length ? 1 : 0);
         const nextPhase = newTurnsPlayed >= totalTurnsNeeded ? 'voting' : 'drawing';
-        safeUpdate(`rooms/${roomId}/gameData`, {
+        update(ref(db, `rooms/${roomId}/gameData`), {
           currentTurnIndex: nextIndex,
           currentRound: nextRound,
           turnsPlayed: newTurnsPlayed,
@@ -191,13 +181,13 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
         });
       }
     }
-  }, [timeLeft, phase, isHost, currentTurnIndex]);
+  }, [timeLeft, phase, isHost, currentTurnIndex, currentPlayer, currentRound, roomId, totalTurnsNeeded, turnOrder.length, turnsPlayed]);
 
-  // Draw all paths on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || canvasSize.w === 0) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -216,11 +206,11 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     });
   }, [paths, localPaths, canvasSize, phase, showFullCanvas]);
 
-  // Draw paths on fullscreen canvas
   useEffect(() => {
     const canvas = fullCanvasRef.current;
     if (!canvas || !showFullCanvas || canvasSize.w === 0) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -238,8 +228,58 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     });
   }, [paths, canvasSize, showFullCanvas]);
 
-  // Drawing handlers
-  const getPos = (e) => {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || phase !== 'drawing') return;
+    const opts = { passive: false };
+    const onStart = (e: any) => drawHandlersRef.current.startDraw(e);
+    const onMove = (e: any) => drawHandlersRef.current.moveDraw(e);
+    const onEnd = (e: any) => drawHandlersRef.current.endDraw(e);
+    canvas.addEventListener('touchstart', onStart, opts);
+    canvas.addEventListener('touchmove', onMove, opts);
+    canvas.addEventListener('touchend', onEnd, opts);
+    return () => {
+      canvas.removeEventListener('touchstart', onStart, opts);
+      canvas.removeEventListener('touchmove', onMove, opts);
+      canvas.removeEventListener('touchend', onEnd, opts);
+    };
+  }, [phase, canvasSize]);
+
+  useEffect(() => {
+    if (phase !== 'voting' || !isHost || !votes || voteProcessedRef.current) return;
+    const totalVoted = Object.keys(votes).length;
+    if (totalVoted < players.length) return;
+
+    voteProcessedRef.current = true;
+    const tally: Record<string, number> = {};
+    Object.values(votes).forEach((v: any) => { tally[v] = (tally[v] || 0) + 1; });
+    const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+    const mostVoted = sorted[0][0];
+
+    if (mostVoted === fakeArtist) {
+      update(ref(db, `rooms/${roomId}/gameData`), { phase: 'fake_guess', voteResult: 'caught' });
+    } else {
+      update(ref(db, `rooms/${roomId}/gameData`), { phase: 'finished', voteResult: 'fake_wins' });
+      recordWin(roomId || '', fakeArtist, 'fakeartist');
+    }
+  }, [votes, phase, players.length, isHost, fakeArtist, roomId]);
+
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+      {errorMsg}
+    </div>
+  ) : null;
+
+  const safeUpdate = async (refPath: string, data: any) => {
+    try {
+      await update(ref(db, refPath), data);
+    } catch {
+      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  };
+
+  const getPos = (e: any) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -251,17 +291,17 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     };
   };
 
-  const startDraw = (e) => {
+  const startDraw = (e: any) => {
     if (!isMyTurn || phase !== 'drawing') return;
     e.preventDefault();
     const pos = getPos(e);
     if (!pos) return;
     setIsDrawing(true);
     lastPointRef.current = pos;
-    setLocalPaths([{ color: colorMap[userNickname] || '#000', points: [pos] }]);
+    setLocalPaths([{ color: colorMap[userNickname || ''] || '#000', points: [pos] }]);
   };
 
-  const moveDraw = (e) => {
+  const moveDraw = (e: any) => {
     if (!isDrawing || !isMyTurn) return;
     e.preventDefault();
     const pos = getPos(e);
@@ -274,7 +314,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     lastPointRef.current = pos;
   };
 
-  const endDraw = async (e) => {
+  const endDraw = async (e?: any) => {
     if (!isDrawing || !isMyTurn) return;
     e?.preventDefault();
     setIsDrawing(false);
@@ -296,32 +336,15 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
       currentRound: nextRound,
       turnsPlayed: newTurnsPlayed,
       phase: nextPhase,
+      turnStartedAt: Date.now(),
     });
     setLocalPaths([]);
   };
 
-  // Register non-passive touch listeners for iOS Safari
-  const drawHandlersRef = useRef({ startDraw, moveDraw, endDraw });
-  drawHandlersRef.current = { startDraw, moveDraw, endDraw };
-
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || phase !== 'drawing') return;
-    const opts = { passive: false };
-    const onStart = (e) => drawHandlersRef.current.startDraw(e);
-    const onMove = (e) => drawHandlersRef.current.moveDraw(e);
-    const onEnd = (e) => drawHandlersRef.current.endDraw(e);
-    canvas.addEventListener('touchstart', onStart, opts);
-    canvas.addEventListener('touchmove', onMove, opts);
-    canvas.addEventListener('touchend', onEnd, opts);
-    return () => {
-      canvas.removeEventListener('touchstart', onStart, opts);
-      canvas.removeEventListener('touchmove', onMove, opts);
-      canvas.removeEventListener('touchend', onEnd, opts);
-    };
-  }, [phase, canvasSize]);
+    drawHandlersRef.current = { startDraw, moveDraw, endDraw };
+  }, [startDraw, moveDraw, endDraw]);
 
-  // Host starts game
   const handleStartGame = async () => {
     if (!isHost || advancingRef.current) return;
     if (wordMode === 'custom' && !customWord.trim()) return;
@@ -332,7 +355,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     if (wordMode === 'custom' && customWord.trim()) {
       word = customWord.trim();
     } else if (wordMode === 'category') {
-      const catWords = WORD_CATEGORIES[selectedCategory]?.words || ALL_WORDS;
+      const catWords = WORD_CATEGORIES[selectedCategory as keyof typeof WORD_CATEGORIES]?.words || ALL_WORDS;
       const available = catWords.filter(w => !usedWords.includes(w));
       const pool = available.length > 0 ? available : catWords;
       word = pool[Math.floor(Math.random() * pool.length)];
@@ -344,7 +367,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     const fake = players[Math.floor(Math.random() * players.length)];
     const order = shuffle(players);
     const startIndex = Math.floor(Math.random() * order.length);
-    const colors = {};
+    const colors: Record<string, string> = {};
     players.forEach((p, i) => { colors[p] = PLAYER_COLORS[i % PLAYER_COLORS.length]; });
 
     try {
@@ -375,36 +398,14 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
 
   const handleStartDrawing = async () => {
     if (!isHost) return;
-    await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'drawing' });
+    await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'drawing', turnStartedAt: Date.now() });
   };
 
-  // Vote submission
   const handleVote = async () => {
-    if (!voteTarget || (votes && votes[userNickname])) return;
-    await safeUpdate(`rooms/${roomId}/gameData/votes`, { [userNickname]: voteTarget });
+    if (!voteTarget || (votes && votes[userNickname || ''])) return;
+    await safeUpdate(`rooms/${roomId}/gameData/votes`, { [userNickname || '']: voteTarget });
   };
 
-  // Check vote results (host processes)
-  useEffect(() => {
-    if (phase !== 'voting' || !isHost || !votes || voteProcessedRef.current) return;
-    const totalVoted = Object.keys(votes).length;
-    if (totalVoted < players.length) return;
-
-    voteProcessedRef.current = true;
-    const tally = {};
-    Object.values(votes).forEach((v) => { tally[v] = (tally[v] || 0) + 1; });
-    const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1]);
-    const mostVoted = sorted[0][0];
-
-    if (mostVoted === fakeArtist) {
-      safeUpdate(`rooms/${roomId}/gameData`, { phase: 'fake_guess', voteResult: 'caught' });
-    } else {
-      safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished', voteResult: 'fake_wins' });
-      recordWin(roomId, fakeArtist, 'fakeartist');
-    }
-  }, [votes, phase, players.length]);
-
-  // Fake artist guesses
   const handleFakeGuess = async () => {
     if (!iAmFakeArtist || !guessInput.trim()) return;
     const correct = guessInput.trim().toLowerCase() === secretWord.toLowerCase();
@@ -415,7 +416,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
       voteResult: result,
     });
     if (correct) {
-      recordWin(roomId, fakeArtist, 'fakeartist');
+      recordWin(roomId || '', fakeArtist, 'fakeartist');
     }
   };
 
@@ -448,159 +449,151 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-xl">
-      {errorMsg}
-    </div>
-  ) : null;
+  if (!roomData) return null;
 
-  // Fullscreen Canvas Modal
-  const fullCanvasModal = showFullCanvas ? (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[60] bg-white flex flex-col"
-    >
-      <div className="flex-between p-3 border-b border-olive-100">
-        <span className="text-[13px] font-bold text-olive-600">ดูรูปเต็มจอ</span>
-        <button className="w-9 h-9 rounded-xl bg-olive-100 flex-center" onClick={() => setShowFullCanvas(false)}>
-          <X size={18} className="text-olive-500" />
-        </button>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-[500px]">
-          <canvas
-            ref={fullCanvasRef}
-            width={canvasSize.w}
-            height={canvasSize.h}
-            className="w-full bg-white border-2 border-olive-100 rounded-xl"
-            style={{ height: `${canvasSize.h}px` }}
-          />
-        </div>
-        <div className="flex flex-wrap gap-2 justify-center mt-4">
-          {players.map((p) => (
-            <div key={p} className="flex items-center gap-1 text-[12px] text-olive-600">
-              <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: colorMap[p] }} />
-              <span className={p === fakeArtist && phase === 'finished' ? 'font-bold text-red-500' : ''}>{p}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  ) : null;
+  return (
+    <div className="flex flex-col flex-1 gap-4 select-none relative">
+      {renderErrorToast()}
+      {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
-  // ─── WAITING ───
-  if (phase === 'waiting') {
-    return (
-      <div className="flex flex-col gap-4 animate-fade-in">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
-        <div className="card p-6 text-center">
-          <div className="text-5xl mb-3">🎨</div>
-          <h2 className="font-display font-bold text-xl text-olive-800 mb-2">ศิลปินปลอม</h2>
-          <p className="text-olive-500 text-sm mb-4">
-            ทุกคนวาดรูปตามคำ แต่มี 1 คนที่ไม่รู้คำ!<br />
-            หาให้เจอว่าใครคือศิลปินปลอม
-          </p>
-          <div className="text-[12px] text-olive-400 mb-4">
-            ผู้เล่น {players.length} คน • วาด {selectedRounds} รอบ • {selectedTurnTime} วิ/ตา
-          </div>
-          {isHost ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                {['random', 'category', 'custom'].map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setWordMode(mode)}
-                    className={`px-3 py-1.5 rounded-full text-[12px] font-bold border-2 transition-all ${
-                      wordMode === mode ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
-                    }`}
-                  >
-                    {{ random: 'สุ่มคำ', category: 'เลือกหมวด', custom: 'ตั้งคำเอง' }[mode]}
-                  </button>
-                ))}
-              </div>
-              {wordMode === 'category' && (
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(WORD_CATEGORIES).map(([key, cat]) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedCategory(key)}
-                      className={`px-2 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
-                        selectedCategory === key ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {wordMode === 'custom' && (
-                <input
-                  type="text"
-                  value={customWord}
-                  onChange={(e) => setCustomWord(e.target.value)}
-                  placeholder="พิมพ์คำที่ต้องการ..."
-                  className="w-full px-4 py-3 rounded-xl border-2 border-olive-200 text-center font-bold text-[15px] focus:border-sage-400 outline-none"
-                />
-              )}
-              <div>
-                <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">เวลาวาดต่อตา</p>
-                <div className="flex gap-2 justify-center">
-                  {TURN_TIME_OPTIONS.map(opt => (
-                    <button
-                      key={opt.seconds}
-                      onClick={() => setSelectedTurnTime(opt.seconds)}
-                      className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
-                        selectedTurnTime === opt.seconds
-                          ? 'bg-sage-500 border-sage-500 text-white'
-                          : 'bg-white border-olive-100 text-olive-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">จำนวนรอบวาด</p>
-                <div className="flex gap-2 justify-center">
-                  {ROUNDS_OPTIONS.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setSelectedRounds(opt.value)}
-                      className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
-                        selectedRounds === opt.value
-                          ? 'bg-sage-500 border-sage-500 text-white'
-                          : 'bg-white border-olive-100 text-olive-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={handleStartGame}
-                disabled={wordMode === 'custom' && !customWord.trim()}
-                className="btn btn-primary w-full py-3.5 text-[15px]"
-              >
-                <Pencil size={16} /> เริ่มเกม
+      <AnimatePresence>
+        {showFullCanvas && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-white flex flex-col"
+          >
+            <div className="flex-between p-3 border-b border-olive-100">
+              <span className="text-[13px] font-bold text-olive-600">ดูรูปเต็มจอ</span>
+              <button className="w-9 h-9 rounded-xl bg-olive-100 flex-center" onClick={() => setShowFullCanvas(false)}>
+                <X size={18} className="text-olive-500" />
               </button>
             </div>
-          ) : (
-            <p className="text-olive-400 text-sm font-semibold">รอ Host เริ่มเกม...</p>
-          )}
-        </div>
-      </div>
-    );
-  }
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+              <div className="w-full max-w-[500px]">
+                <canvas
+                  ref={fullCanvasRef}
+                  width={canvasSize.w}
+                  height={canvasSize.h}
+                  className="w-full bg-white border-2 border-olive-100 rounded-xl"
+                  style={{ height: `${canvasSize.h}px` }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                {players.map((p) => (
+                  <div key={p} className="flex items-center gap-1 text-[12px] text-olive-600">
+                    <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: colorMap[p] }} />
+                    <span className={p === fakeArtist && phase === 'finished' ? 'font-bold text-red-500' : ''}>{p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-  // ─── REVEAL PHASE ───
-  if (phase === 'reveal') {
-    return (
-      <div className="flex flex-col gap-4 animate-fade-in">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
+      {phase === 'waiting' && (
+        <div className="flex flex-col gap-4">
+          <div className="card p-6 text-center">
+            <div className="text-5xl mb-3">🎨</div>
+            <h2 className="font-display font-bold text-xl text-olive-800 mb-2">ศิลปินปลอม</h2>
+            <p className="text-olive-500 text-sm mb-4">
+              ทุกคนวาดรูปตามคำ แต่มี 1 คนที่ไม่รู้คำ!<br />
+              หาให้เจอว่าใครคือศิลปินปลอม
+            </p>
+            <div className="text-[12px] text-olive-400 mb-4">
+              ผู้เล่น {players.length} คน • วาด {selectedRounds} รอบ • {selectedTurnTime} วิ/ตา
+            </div>
+            {isHost ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {['random', 'category', 'custom'].map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setWordMode(mode)}
+                      className={`px-3 py-1.5 rounded-full text-[12px] font-bold border-2 transition-all ${
+                        wordMode === mode ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
+                      }`}
+                    >
+                      {{ random: 'สุ่มคำ', category: 'เลือกหมวด', custom: 'ตั้งคำเอง' }[mode as 'random'|'category'|'custom']}
+                    </button>
+                  ))}
+                </div>
+                {wordMode === 'category' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(WORD_CATEGORIES).map(([key, cat]) => (
+                      <button
+                        key={key}
+                        onClick={() => setSelectedCategory(key)}
+                        className={`px-2 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
+                          selectedCategory === key ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {wordMode === 'custom' && (
+                  <input
+                    type="text"
+                    value={customWord}
+                    onChange={(e) => setCustomWord(e.target.value)}
+                    placeholder="พิมพ์คำที่ต้องการ..."
+                    className="w-full px-4 py-3 rounded-xl border-2 border-olive-200 text-center font-bold text-[15px] focus:border-sage-400 outline-none"
+                  />
+                )}
+                <div>
+                  <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">เวลาวาดต่อตา</p>
+                  <div className="flex gap-2 justify-center">
+                    {TURN_TIME_OPTIONS.map(opt => (
+                      <button
+                        key={opt.seconds}
+                        onClick={() => setSelectedTurnTime(opt.seconds)}
+                        className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
+                          selectedTurnTime === opt.seconds
+                            ? 'bg-sage-500 border-sage-500 text-white'
+                            : 'bg-white border-olive-100 text-olive-600'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">จำนวนรอบวาด</p>
+                  <div className="flex gap-2 justify-center">
+                    {ROUNDS_OPTIONS.map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setSelectedRounds(opt.value)}
+                        className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
+                          selectedRounds === opt.value
+                            ? 'bg-sage-500 border-sage-500 text-white'
+                            : 'bg-white border-olive-100 text-olive-600'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={handleStartGame}
+                  disabled={wordMode === 'custom' && !customWord.trim()}
+                  className="btn btn-primary w-full py-3.5 text-[15px]"
+                >
+                  <Pencil size={16} /> เริ่มเกม
+                </button>
+              </div>
+            ) : (
+              <p className="text-olive-400 text-sm font-semibold">รอ Host เริ่มเกม...</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {phase === 'reveal' && (
         <div className="card p-6 text-center">
           <h2 className="font-display font-bold text-lg text-olive-800 mb-4">บทบาทของคุณ</h2>
           {iAmFakeArtist ? (
@@ -621,7 +614,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             </div>
           )}
           <div className="flex items-center gap-2 justify-center mb-4">
-            <div className="w-5 h-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[userNickname] }} />
+            <div className="w-5 h-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[userNickname || ''] }} />
             <span className="text-sm text-olive-600">สีของคุณ</span>
           </div>
           {isHost && (
@@ -631,123 +624,103 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
           )}
           {!isHost && <p className="text-olive-400 text-sm">รอ Host กดเริ่มวาด...</p>}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // ─── DRAWING PHASE ───
-  if (phase === 'drawing') {
-    return (
-      <div className="flex flex-col gap-3 animate-fade-in">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
-        <AnimatePresence>
-          {skippedPlayer && (
-            <motion.div
-              initial={{ opacity: 0, y: -16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-2xl font-bold text-[12px] shadow-xl"
-            >
-              {skippedPlayer} หมดเวลา! ข้ามตา
-            </motion.div>
-          )}
-          {turnAnnounce && !skippedPlayer && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sage-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[13px] shadow-xl flex items-center gap-2"
-            >
-              <Pencil size={14} />
-              {turnAnnounce === userNickname ? 'ถึงตาคุณวาด!' : `ถึงตา ${turnAnnounce} วาด`}
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {phase === 'drawing' && (
+        <div className="flex flex-col gap-3">
+          <AnimatePresence>
+            {skippedPlayer && (
+              <motion.div
+                initial={{ opacity: 0, y: -16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-2xl font-bold text-[12px] shadow-xl"
+              >
+                {skippedPlayer} หมดเวลา! ข้ามตา
+              </motion.div>
+            )}
+            {turnAnnounce && !skippedPlayer && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sage-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[13px] shadow-xl flex items-center gap-2"
+              >
+                <Pencil size={14} />
+                {turnAnnounce === userNickname ? 'ถึงตาคุณวาด!' : `ถึงตา ${turnAnnounce} วาด`}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Status bar */}
-        <div className="card p-3">
-          <div className="flex-between mb-2">
-            <span className="text-[12px] font-bold text-olive-500">รอบ {currentRound}/{totalRounds}</span>
-            <div className="flex items-center gap-1.5">
-              <TimerDisplay timeLeft={timeLeft} />
+          <div className="card p-3">
+            <div className="flex-between mb-2">
+              <span className="text-[12px] font-bold text-olive-500">รอบ {currentRound}/{totalRounds}</span>
+              <div className="flex items-center gap-1.5">
+                <TimerDisplay timeLeft={timeLeft} />
+              </div>
+              {!iAmFakeArtist && (
+                <span className="text-[12px] font-bold text-olive-600">คำ: <span className="text-sage-600">{secretWord}</span></span>
+              )}
+              {iAmFakeArtist && (
+                <span className="text-[12px] font-bold text-red-400">คำ: ??? <span className="text-amber-600">({secretSyllables} พยางค์)</span></span>
+              )}
             </div>
-            {!iAmFakeArtist && (
-              <span className="text-[12px] font-bold text-olive-600">คำ: <span className="text-sage-600">{secretWord}</span></span>
-            )}
-            {iAmFakeArtist && (
-              <span className="text-[12px] font-bold text-red-400">คำ: ??? <span className="text-amber-600">({secretSyllables} พยางค์)</span></span>
-            )}
+            <div className="h-1 bg-olive-100 rounded-full mb-2 overflow-hidden">
+              <motion.div
+                className={`h-full rounded-full ${timeLeft <= 5 ? 'bg-red-400' : timeLeft <= 10 ? 'bg-amber-400' : 'bg-sage-400'}`}
+                animate={{ width: `${(timeLeft / turnTime) * 100}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[currentPlayer] }} />
+              <span className="text-[13px] font-bold text-olive-700">
+                {isMyTurn ? 'ถึงตาคุณวาด!' : `${currentPlayer} กำลังวาด...`}
+              </span>
+            </div>
           </div>
-          {/* Timer bar */}
-          <div className="h-1 bg-olive-100 rounded-full mb-2 overflow-hidden">
-            <motion.div
-              className={`h-full rounded-full ${timeLeft <= 5 ? 'bg-red-400' : timeLeft <= 10 ? 'bg-amber-400' : 'bg-sage-400'}`}
-              animate={{ width: `${(timeLeft / turnTime) * 100}%` }}
-              transition={{ duration: 0.3 }}
+
+          <div className="flex gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+            {turnOrder.map((p: string, i: number) => (
+              <div
+                key={p}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${
+                  i === currentTurnIndex ? 'bg-sage-100 border-2 border-sage-300' : 'bg-olive-50 border border-olive-100'
+                }`}
+              >
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorMap[p] }} />
+                {p === userNickname ? 'คุณ' : p}
+              </div>
+            ))}
+          </div>
+
+          <div ref={containerRef} className="card overflow-hidden">
+            <canvas
+              ref={canvasRef}
+              width={canvasSize.w}
+              height={canvasSize.h}
+              className={`w-full bg-white ${isMyTurn ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
+              style={{ touchAction: 'none', height: `${canvasSize.h}px` }}
+              onMouseDown={startDraw}
+              onMouseMove={moveDraw}
+              onMouseUp={endDraw}
+              onMouseLeave={endDraw}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[currentPlayer] }} />
-            <span className="text-[13px] font-bold text-olive-700">
-              {isMyTurn ? 'ถึงตาคุณวาด!' : `${currentPlayer} กำลังวาด...`}
-            </span>
-          </div>
+
+          {isMyTurn && (
+            <p className="text-center text-[12px] font-bold text-sage-600 bg-sage-50 rounded-xl p-2">
+              วาดเส้นเดียว แล้วยกนิ้วเพื่อจบตา
+            </p>
+          )}
         </div>
+      )}
 
-        {/* Turn order */}
-        <div className="flex gap-1.5 overflow-x-auto px-1 pb-1">
-          {turnOrder.map((p, i) => (
-            <div
-              key={p}
-              className={`flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${
-                i === currentTurnIndex ? 'bg-sage-100 border-2 border-sage-300' : 'bg-olive-50 border border-olive-100'
-              }`}
-            >
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorMap[p] }} />
-              {p === userNickname ? 'คุณ' : p}
-            </div>
-          ))}
-        </div>
-
-        {/* Canvas */}
-        <div ref={containerRef} className="card overflow-hidden">
-          <canvas
-            ref={canvasRef}
-            width={canvasSize.w}
-            height={canvasSize.h}
-            className={`w-full bg-white ${isMyTurn ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
-            style={{ touchAction: 'none', height: `${canvasSize.h}px` }}
-            onMouseDown={startDraw}
-            onMouseMove={moveDraw}
-            onMouseUp={endDraw}
-            onMouseLeave={endDraw}
-          />
-        </div>
-
-        {isMyTurn && (
-          <p className="text-center text-[12px] font-bold text-sage-600 bg-sage-50 rounded-xl p-2">
-            วาดเส้นเดียว แล้วยกนิ้วเพื่อจบตา
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  // ─── VOTING PHASE ───
-  if (phase === 'voting') {
-    const myVote = votes?.[userNickname];
-    const totalVoted = Object.keys(votes || {}).length;
-    return (
-      <div className="flex flex-col gap-4 animate-fade-in">
-        {fullCanvasModal}
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
+      {phase === 'voting' && (
         <div className="card p-5">
           <h2 className="font-display font-bold text-lg text-olive-800 mb-1 text-center">โหวตหาศิลปินปลอม!</h2>
-          <p className="text-olive-400 text-[12px] text-center mb-4">โหวตแล้ว {totalVoted}/{players.length}</p>
+          <p className="text-olive-400 text-[12px] text-center mb-4">โหวตแล้ว {Object.keys(votes || {}).length}/{players.length}</p>
 
-          {/* Canvas preview */}
           <div ref={containerRef} className="relative rounded-xl overflow-hidden mb-4 border-2 border-olive-100">
             <canvas
               ref={canvasRef}
@@ -768,12 +741,10 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             {players.map((p) => (
               <button
                 key={p}
-                disabled={!!myVote || p === userNickname}
+                disabled={!!(votes && votes[userNickname || '']) || p === userNickname}
                 onClick={() => setVoteTarget(p)}
                 className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-                  voteTarget === p ? 'border-sage-400 bg-sage-50' :
-                  myVote === p ? 'border-sage-400 bg-sage-50' :
-                  'border-olive-100 bg-white'
+                  voteTarget === p || (votes && votes[userNickname || ''] === p) ? 'border-sage-400 bg-sage-50' : 'border-olive-100 bg-white'
                 } ${p === userNickname ? 'opacity-40' : ''}`}
               >
                 <div className="w-5 h-5 rounded-full" style={{ backgroundColor: colorMap[p] }} />
@@ -783,25 +754,18 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             ))}
           </div>
 
-          {!myVote && voteTarget && (
+          {!(votes && votes[userNickname || '']) && voteTarget && (
             <button onClick={handleVote} className="btn btn-primary w-full py-3 mt-4 text-[14px]">
               ยืนยันโหวต
             </button>
           )}
-          {myVote && (
+          {(votes && votes[userNickname || '']) && (
             <p className="text-center text-sage-600 font-bold text-[13px] mt-4">โหวตแล้ว — รอคนอื่น...</p>
           )}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // ─── FAKE GUESS PHASE ───
-  if (phase === 'fake_guess') {
-    return (
-      <div className="flex flex-col gap-4 animate-fade-in">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
+      {phase === 'fake_guess' && (
         <div className="card p-6 text-center">
           <div className="text-4xl mb-3">🎯</div>
           <h2 className="font-display font-bold text-lg text-olive-800 mb-2">จับศิลปินปลอมได้!</h2>
@@ -834,22 +798,13 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             <p className="text-olive-400 text-sm font-semibold">รอศิลปินปลอมเดาคำ...</p>
           )}
         </div>
-      </div>
-    );
-  }
+      )}
 
-  // ─── FINISHED ───
-  if (phase === 'finished') {
-    const artistsWon = voteResult === 'artists_win';
-    return (
-      <div className="flex flex-col gap-4 animate-fade-in">
-        {fullCanvasModal}
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <ErrorToast />
+      {phase === 'finished' && (
         <div className="card p-6 text-center">
-          <div className="text-5xl mb-3">{artistsWon ? '🎨' : '🎭'}</div>
+          <div className="text-5xl mb-3">{voteResult === 'artists_win' ? '🎨' : '🎭'}</div>
           <h2 className="font-display font-bold text-xl text-olive-800 mb-2">
-            {artistsWon ? 'ศิลปินตัวจริงชนะ!' : 'ศิลปินปลอมชนะ!'}
+            {voteResult === 'artists_win' ? 'ศิลปินตัวจริงชนะ!' : 'ศิลปินปลอมชนะ!'}
           </h2>
 
           <div className="bg-olive-50 rounded-2xl p-4 mb-4 space-y-2">
@@ -861,7 +816,7 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             </p>
             {fakeGuess && (
               <p className="text-sm text-olive-600">
-                ศิลปินปลอมเดา: <span className={`font-bold ${fakeGuess === secretWord ? 'text-green-600' : 'text-red-500'}`}>{fakeGuess}</span>
+                ศิลปินปลอมเดา: <span className={`font-bold ${fakeGuess.toLowerCase() === secretWord.toLowerCase() ? 'text-green-600' : 'text-red-500'}`}>{fakeGuess}</span>
               </p>
             )}
             {voteResult === 'fake_wins' && (
@@ -872,7 +827,6 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             )}
           </div>
 
-          {/* Canvas preview */}
           <div ref={containerRef} className="relative rounded-xl overflow-hidden mb-4 border-2 border-olive-100">
             <canvas
               ref={canvasRef}
@@ -889,7 +843,6 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             </button>
           </div>
 
-          {/* Color legend */}
           <div className="flex flex-wrap gap-2 justify-center mb-4">
             {players.map((p) => (
               <div key={p} className="flex items-center gap-1 text-[11px] text-olive-600">
@@ -914,11 +867,9 @@ const FakeArtist = ({ roomId, roomData, userNickname }) => {
             </button>
           )}
         </div>
-      </div>
-    );
-  }
-
-  return null;
+      )}
+    </div>
+  );
 };
 
 export default FakeArtist;

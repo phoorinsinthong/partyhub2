@@ -121,25 +121,24 @@ function TimerArc({ timeLeft, bombTime }: { timeLeft: number, bombTime: number }
 const WordBomb: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
 
   const phase = gameData.phase || 'waiting';
   const category = gameData.category || '';
   const categoryExamples = gameData.categoryExamples || '';
   const currentTurnIndex = gameData.currentTurnIndex ?? 0;
-  const turnOrder = gameData.turnOrder || [];
+  const turnOrder = React.useMemo(() => gameData.turnOrder || [], [gameData.turnOrder]);
   const lives = gameData.lives || {};
   const bombTime = gameData.bombTime || 15;
-  const eliminated = gameData.eliminated || [];
+  const eliminated = React.useMemo(() => gameData.eliminated || [], [gameData.eliminated]);
   const roundNumber = gameData.roundNumber || 1;
 
   const activePlayer = turnOrder[currentTurnIndex] || '';
   const isMyTurn = activePlayer === userNickname;
 
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   useTurnNotification(isMyTurn, phase);
 
   const [exploding, setExploding] = useState(false);
@@ -148,14 +147,14 @@ const WordBomb: React.FC = () => {
   const advancingRef = useRef(false);
   const personalRecordedRef = useRef(false);
 
-  const safeUpdate = async (refPath: string, data: any) => {
+  const safeUpdate = useCallback(async (refPath: string, data: any) => {
     try {
       await update(ref(db, refPath), data);
     } catch {
       setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
       setTimeout(() => setErrorMsg(''), 3000);
     }
-  };
+  }, [t]);
 
   // ── Reset personal stats flag when new game starts ──────────────────────────
   useEffect(() => {
@@ -214,19 +213,19 @@ const WordBomb: React.FC = () => {
       });
       if (newPhase === 'finished') {
         const winner = survivors[0] || null;
-        if (winner) await recordWin(roomId, winner, 'wordbomb');
+        if (winner) await recordWin(roomId || '', winner, 'wordbomb');
       }
     } finally {
       advancingRef.current = false;
     }
-  }, [isHost, phase, lives, turnOrder, currentTurnIndex, eliminated, roomId]);
+  }, [isHost, phase, lives, turnOrder, currentTurnIndex, eliminated, roomId, safeUpdate]);
 
   // ── Timer Hook ─────────────────────────────────────────────────────────────
   const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleBombExplode : null);
 
   useEffect(() => {
     if (phase !== 'playing') {
-      setExploding(false);
+      if (exploding) setTimeout(() => setExploding(false), 0);
       explodedRef.current = false;
       return;
     }
@@ -240,7 +239,9 @@ const WordBomb: React.FC = () => {
       setExploding(true);
       feedback('timeUp');
     }
-  }, [timeLeft, phase]);
+  }, [timeLeft, phase, exploding]);
+
+  if (!roomData) return null;
 
   // ── Handle correct answer (host advances turn) ────────────────────────────
   const handleCorrectAnswer = async () => {
@@ -333,10 +334,12 @@ const WordBomb: React.FC = () => {
     </div>
   ) : null;
 
+  if (!roomData) return null;
+
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <motion.div
           animate={{ y: [0, -6, 0] }}
@@ -373,6 +376,7 @@ const WordBomb: React.FC = () => {
 
     return (
       <div className="flex-1 flex flex-center flex-col gap-6 animate-fade-in">
+        {renderErrorToast()}
         <div className="text-7xl">🏆</div>
         <div className="text-center">
           <h2 className="font-display font-bold text-2xl text-olive-800">{t('common.finished') || 'จบเกม!'}</h2>
@@ -394,7 +398,7 @@ const WordBomb: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in">
-      <ErrorToast />
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       
       <div className="flex-between mb-4 px-1">

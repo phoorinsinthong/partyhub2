@@ -139,6 +139,7 @@ const GameRoom: React.FC = () => {
       fireConfetti();
     }
     prevPhaseRef.current = currentState;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomData?.gameData?.phase, roomData?.gameData?.status]);
 
   const showActionError = useCallback((msg: string) => {

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, X } from 'lucide-react';
 import { GAME_NAMES } from '../utils/gameData';
+import { useGame } from '../contexts/GameContext';
 
 const SESSION_KEY = 'partyhub_session';
 
@@ -17,11 +18,12 @@ export function clearSession() {
 }
 
 const ReconnectBanner = () => {
-  const [session, setSession] = useState(null);
-  const [roomMeta, setRoomMeta] = useState(null);
+  const [session, setSession] = useState<any>(null);
+  const [roomMeta, setRoomMeta] = useState<any>(null);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setUserNickname } = useGame();
 
   useEffect(() => {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -68,6 +70,7 @@ const ReconnectBanner = () => {
     }
     const room = snap.val();
     localStorage.setItem('nickname', session.nickname);
+    setUserNickname(session.nickname);
     if (room.status === 'playing' || room.status === 'finished') {
       navigate(`/game/${session.roomId}`);
     } else {

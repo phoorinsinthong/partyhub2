@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
 
-const DISCUSSION_TIME_OPTIONS = (t) => [
+const DISCUSSION_TIME_OPTIONS = (t: any) => [
   { label: t('insider.discussionTime') + ' 5 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 300 },
   { label: t('insider.discussionTime') + ' 8 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 480 },
   { label: t('insider.discussionTime') + ' 10 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 600 },
@@ -24,12 +24,155 @@ const VOTE_TIME = 180;
 const TwentyQuestions = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   
+  const [votedFor, setVotedFor] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [selectedTime, setSelectedTime] = useState(300);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCategorySetting, setShowCategorySetting] = useState(true);
+  const [confirmGuesser, setConfirmGuesser] = useState<string | null>(null);
+  
+  const personalRecordedRef = useRef(false);
+  const advancingRef = useRef(false);
+  const voteRef = useRef(false);
+  const backToLobbyRef = useRef(false);
+
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
+  const renderErrorToast = () => errorMsg ? (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+      {errorMsg}
+    </div>
+  ) : null;
+
+  const safeUpdate = async (refPath: string, data: any) => {
+    try {
+      await update(ref(db, refPath), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  };
+
+  const handleTimeUp = async () => {
+    if (!isHost || advancingRef.current) return;
+    advancingRef.current = true;
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData`, {
+        phase: 'result',
+        wordGuessed: false,
+        caughtInsider: false,
+        topVoted: null,
+        timerEnd: null
+      });
+    } finally {
+      advancingRef.current = false;
+    }
+  };
+
+  const handleVoteEnd = async () => {
+    if (!isHost || advancingRef.current) return;
+    advancingRef.current = true;
+
+    const gameData = roomData?.gameData || {};
+    const currentVotes = gameData.votes || {};
+    const insiderName = gameData.insider || '';
+    const guesser = gameData.guesser || '';
+    const players = Object.keys(roomData?.players || {});
+    const nonHostPlayers = players.filter(p => p !== roomData?.host);
+
+    const voteCounts: Record<string, number> = {};
+    Object.values(currentVotes).forEach((target: any) => {
+      voteCounts[target] = (voteCounts[target] || 0) + 1;
+    });
+
+    const sorted = Object.entries(voteCounts).sort((a, b) => b[1] - a[1]);
+    const topVoted = sorted.length > 0 ? sorted[0][0] : '';
+    const caughtInsider = topVoted === insiderName;
+
+    const scoreUpdates: Record<string, any> = {};
+    if (caughtInsider) {
+      nonHostPlayers.forEach(p => {
+        if (p !== insiderName && p !== guesser) scoreUpdates[p] = increment(2);
+      });
+      if (guesser && guesser !== insiderName) scoreUpdates[guesser] = increment(3);
+    } else {
+      scoreUpdates[insiderName] = increment(3);
+    }
+
+    const flatScoreUpdates: Record<string, any> = {};
+    Object.entries(scoreUpdates).forEach(([k, v]) => { flatScoreUpdates[`scores/${k}`] = v; });
+
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData`, {
+        ...flatScoreUpdates,
+        phase: 'result',
+        caughtInsider,
+        topVoted,
+        timerEnd: null
+      });
+    } finally {
+      advancingRef.current = false;
+    }
+  };
+
+  const handleTimeUpLocal = useCallback(async () => {
+    if (!isHost) return;
+    const phase = roomData?.gameData?.phase;
+    if (phase === 'discussion') {
+      await handleTimeUp();
+    } else if (phase === 'voting') {
+      await handleVoteEnd();
+    }
+  }, [isHost, roomData?.gameData?.phase]);
+
+  const { timeLeft } = useGameTimer(roomData?.gameData?.timerEnd, isHost ? handleTimeUpLocal : null);
+
+  useEffect(() => {
+    const phase = roomData?.gameData?.phase;
+    if (phase === 'waiting' || phase === 'reveal') {
+      personalRecordedRef.current = false;
+    }
+    if (phase === 'voting') {
+      feedback('newRound');
+    } else {
+      if (votedFor !== '') setTimeout(() => setVotedFor(''), 0);
+    }
+    if (phase === 'result') {
+      feedback('spyReveal');
+    }
+    advancingRef.current = false;
+  }, [roomData?.gameData?.phase]);
+
+  useEffect(() => {
+    const phase = roomData?.gameData?.phase;
+    if (phase !== 'finished' || personalRecordedRef.current) return;
+    personalRecordedRef.current = true;
+    recordPersonalGame('twentyquestions');
+    const scores = roomData?.gameData?.scores || {};
+    const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
+    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
+      recordPersonalWin('twentyquestions');
+    }
+  }, [roomData?.gameData?.phase, roomData?.gameData?.scores, userNickname]);
+
+  useEffect(() => {
+    const phase = roomData?.gameData?.phase;
+    const players = Object.keys(roomData?.players || {});
+    const nonHostPlayers = players.filter(p => p !== roomData?.host);
+    if (phase !== 'voting' || !isHost || advancingRef.current) return;
+    const currentVotes = roomData?.gameData?.votes || {};
+    const totalVoted = Object.keys(currentVotes).length;
+    if (totalVoted >= nonHostPlayers.length && totalVoted > 0) {
+      handleVoteEnd();
+    }
+  }, [roomData?.gameData?.votes, roomData?.gameData?.phase, isHost, roomData?.players, roomData?.host]);
+
   if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
-  const nonHostPlayers = players.filter(p => p !== roomData.host);
+
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
+  const nonHostPlayers = players.filter(p => p !== roomData?.host);
 
   const phase = gameData.phase || 'waiting';
   const secretWord = gameData.secretWord || '';
@@ -44,69 +187,14 @@ const TwentyQuestions = () => {
   const guesser = gameData.guesser || '';
   const votes = gameData.votes || {};
 
-  const [votedFor, setVotedFor] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [selectedTime, setSelectedTime] = useState(300);
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [showCategorySetting, setShowCategorySetting] = useState(true);
-  const [confirmGuesser, setConfirmGuesser] = useState(null);
   const discussionTime = gameData.discussionTime || 300;
   const showCategory = gameData.showCategory !== false;
-  const personalRecordedRef = useRef(false);
-  const advancingRef = useRef(false);
 
-  const safeUpdate = async (refPath, data) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg(t('common.error'));
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
-  };
-
-  useEffect(() => {
-    if (phase === 'waiting' || phase === 'reveal') {
-      personalRecordedRef.current = false;
-    }
-    if (phase === 'voting') {
-      feedback('newRound');
-    } else {
-      setVotedFor('');
-    }
-    if (phase === 'result') {
-      feedback('spyReveal');
-    }
-    advancingRef.current = false;
-  }, [phase]);
-
-  const handleTimeUpLocal = useCallback(async () => {
-    if (!isHost) return;
-    if (phase === 'discussion') {
-      await handleTimeUp();
-    } else if (phase === 'voting') {
-      await handleVoteEnd();
-    }
-  }, [isHost, phase]);
-
-  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUpLocal : null);
-
-  useEffect(() => {
-    if (phase !== 'finished' || personalRecordedRef.current) return;
-    personalRecordedRef.current = true;
-    recordPersonalGame('twentyquestions');
-    const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    if (sorted.length > 0 && sorted[0][0] === userNickname && sorted[0][1] > 0) {
-      recordPersonalWin('twentyquestions');
-    }
-  }, [phase, scores, userNickname]);
-
-  // ─── Host: Start Game ───
   const handleStartGame = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
     feedback('gameStart');
-    const initScores = {};
+    const initScores: Record<string, number> = {};
     players.forEach(p => { initScores[p] = 0; });
     const wordObj = getRandomWord([], selectedCategories.length > 0 ? selectedCategories : '');
     const insider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
@@ -135,7 +223,6 @@ const TwentyQuestions = () => {
     }
   };
 
-  // ─── Host: Start Discussion Timer ───
   const handleStartDiscussion = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
@@ -150,7 +237,6 @@ const TwentyQuestions = () => {
     }
   };
 
-  // ─── Host: Re-roll word ───
   const handleRerollWord = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
@@ -166,26 +252,7 @@ const TwentyQuestions = () => {
     }
   };
 
-  // ─── Host: Time's up (nobody guessed) — no one scores ───
-  const handleTimeUp = async () => {
-    if (!isHost || advancingRef.current) return;
-    advancingRef.current = true;
-    try {
-      await safeUpdate(`rooms/${roomId}/gameData`, {
-        phase: 'result',
-        wordGuessed: false,
-        caughtInsider: false,
-        topVoted: null,
-        timerEnd: null
-      });
-    } finally {
-      advancingRef.current = false;
-    }
-  };
-
-  // ─── Player: Vote for suspected insider ───
-  const voteRef = useRef(false);
-  const handleVote = async (target) => {
+  const handleVote = async (target: string) => {
     if (votedFor || isModerator) return;
     if (voteRef.current) return;
     voteRef.current = true;
@@ -198,58 +265,6 @@ const TwentyQuestions = () => {
     }
   };
 
-  // ─── Host: End voting ───
-  const handleVoteEnd = async () => {
-    if (!isHost || advancingRef.current) return;
-    advancingRef.current = true;
-
-    const currentVotes = gameData.votes || {};
-    const voteCounts = {};
-    Object.values(currentVotes).forEach(target => {
-      voteCounts[target] = (voteCounts[target] || 0) + 1;
-    });
-
-    const sorted = Object.entries(voteCounts).sort((a, b) => b[1] - a[1]);
-    const topVoted = sorted.length > 0 ? sorted[0][0] : '';
-    const caughtInsider = topVoted === insiderName;
-
-    const scoreUpdates = {};
-    if (caughtInsider) {
-      nonHostPlayers.forEach(p => {
-        if (p !== insiderName && p !== guesser) scoreUpdates[p] = increment(2);
-      });
-      if (guesser && guesser !== insiderName) scoreUpdates[guesser] = increment(3);
-    } else {
-      scoreUpdates[insiderName] = increment(3);
-    }
-
-    const flatScoreUpdates = {};
-    Object.entries(scoreUpdates).forEach(([k, v]) => { flatScoreUpdates[`scores/${k}`] = v; });
-
-    try {
-      await safeUpdate(`rooms/${roomId}/gameData`, {
-        ...flatScoreUpdates,
-        phase: 'result',
-        caughtInsider,
-        topVoted,
-        timerEnd: null
-      });
-    } finally {
-      advancingRef.current = false;
-    }
-  };
-
-  // ─── Host: Auto-end voting when all players voted ───
-  useEffect(() => {
-    if (phase !== 'voting' || !isHost || advancingRef.current) return;
-    const currentVotes = gameData.votes || {};
-    const totalVoted = Object.keys(currentVotes).length;
-    if (totalVoted >= nonHostPlayers.length && totalVoted > 0) {
-      handleVoteEnd();
-    }
-  }, [gameData.votes, phase, isHost]);
-
-  // ─── Host: Next round ───
   const handleNextRound = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
@@ -261,7 +276,7 @@ const TwentyQuestions = () => {
       if (roundNumber >= nonHostPlayers.length) {
         await safeUpdate(`rooms/${roomId}/gameData`, { phase: 'finished', usedWords: newUsedWords, timerEnd: null });
         feedback('victory');
-        const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        const sortedScores = Object.entries(scores).sort((a: any, b: any) => b[1] - a[1]);
         if (sortedScores.length > 0 && sortedScores[0][1] > 0) {
           await recordWin(roomId, sortedScores[0][0], 'twentyquestions');
         }
@@ -292,7 +307,7 @@ const TwentyQuestions = () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
     feedback('gameStart');
-    const initScores = {};
+    const initScores: Record<string, number> = {};
     players.forEach(p => { initScores[p] = 0; });
     const wordObj = getRandomWord([], selectedCategories.length > 0 ? selectedCategories : '');
     const insider = nonHostPlayers[Math.floor(Math.random() * nonHostPlayers.length)];
@@ -321,7 +336,6 @@ const TwentyQuestions = () => {
     }
   };
 
-  const backToLobbyRef = useRef(false);
   const handleBackToLobby = async () => {
     if (!isHost || backToLobbyRef.current) return;
     backToLobbyRef.current = true;
@@ -332,13 +346,7 @@ const TwentyQuestions = () => {
     }
   };
 
-  const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
-      {errorMsg}
-    </div>
-  ) : null;
+  const sortedScores = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
 
   // ════════════════════════════════════════════════════════════════
   // WAITING
@@ -346,7 +354,7 @@ const TwentyQuestions = () => {
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl select-none">
           🕵️
         </motion.div>
@@ -469,7 +477,7 @@ const TwentyQuestions = () => {
   if (phase === 'reveal') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-5 py-6 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <div className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
           {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
         </div>
@@ -526,7 +534,7 @@ const TwentyQuestions = () => {
   if (phase === 'discussion') {
     return (
       <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {/* Header */}
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
@@ -646,7 +654,7 @@ const TwentyQuestions = () => {
 
     return (
       <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <div className="text-center">
           <span className="text-4xl">🗳️</span>
           <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">{t('insider.votingPhase')}</h3>
@@ -715,7 +723,7 @@ const TwentyQuestions = () => {
 
     return (
       <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
           <span className="text-5xl">{caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}</span>
           <h3 className="font-display font-bold text-[20px] text-olive-800 mt-2">
@@ -750,7 +758,7 @@ const TwentyQuestions = () => {
                   {name}
                   {name === insiderName && <span className="ml-1 text-[9px] text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded">Insider</span>}
                 </span>
-                <span className="font-black text-[14px] text-sage-600">{score}</span>
+                <span className="font-black text-[14px] text-sage-600">{score as number}</span>
               </div>
             ))}
           </div>
@@ -777,7 +785,7 @@ const TwentyQuestions = () => {
     const topPlayer = sortedScores[0];
     return (
       <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
           <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }} className="text-5xl mb-2">
@@ -806,7 +814,7 @@ const TwentyQuestions = () => {
                   <span className="text-lg">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}</span>
                   <span className="font-bold text-[14px] text-olive-700">{name}</span>
                 </div>
-                <span className="font-bold text-[14px] text-sage-600">{score}</span>
+                <span className="font-bold text-[14px] text-sage-600">{score as number}</span>
               </div>
             ))}
           </div>
@@ -832,6 +840,7 @@ const TwentyQuestions = () => {
 
   return (
     <div className="flex-center flex-1 flex-col gap-3">
+      {renderErrorToast()}
       <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
       <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
     </div>

@@ -17,64 +17,61 @@ import { feedback } from '../utils/feedback';
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
 
-const Quiz = () => {
+const Quiz: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
-
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
   const personalRecordedRef = useRef(false);
-  const autoAdvanceRef = useRef(null);
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const answerSubmittingRef = useRef(false);
   const advancingRef = useRef(false);
+  const startQuizRef = useRef(false);
+  const playAgainRef = useRef(false);
+  const timerFiredRef = useRef(false);
 
+  const gameData = roomData?.gameData || {};
   const { timeLeft } = useGameTimer(gameData.timerEnd);
 
-  const safeUpdate = async (refPath, data) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
+        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+          <div className="p-1 bg-white/20 rounded-lg">
+            <LogOut size={18} className="rotate-90" />
+          </div>
+          <p className="text-[14px] font-bold">{errorMsg}</p>
+        </div>
+      </div>
+    );
   };
 
+  if (!roomData) return null;
+
+  // Derived variables
+  const players = Object.keys(roomData?.players || {});
   const currentQ = gameData.currentQuestion || 0;
   const questions = gameData.questions || [];
   const scores = gameData.scores || {};
   const answers = gameData.answers || {};
   const phase = gameData.phase || 'waiting';
   const question = questions[currentQ];
-
-  useEffect(() => {
-    if (phase === 'waiting' || phase === 'playing') personalRecordedRef.current = false;
-  }, [phase]);
-
-  useEffect(() => {
-    answerSubmittingRef.current = false;
-    advancingRef.current = false;
-  }, [currentQ, phase]);
-
-  useEffect(() => {
-    if (phase !== 'finished' || personalRecordedRef.current) return;
-    personalRecordedRef.current = true;
-    recordPersonalGame('quiz');
-    const sorted = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
-    if (sorted.length > 0 && sorted[0][0] === userNickname && (sorted[0][1] as number) > 0) {
-      recordPersonalWin('quiz');
-    }
-  }, [phase, scores, userNickname]);
-
   const usedQuestionIds = gameData.usedQuestionIds || [];
 
-  const startQuizRef = useRef(false);
+  const safeUpdate = async (refPath: string, data: any) => {
+    try {
+      await update(ref(db, refPath), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  };
+
   const handleStartQuiz = async () => {
     if (!isHost || startQuizRef.current) return;
     startQuizRef.current = true;
@@ -149,7 +146,6 @@ const Quiz = () => {
     }
   };
 
-  const playAgainRef = useRef(false);
   const handlePlayAgain = async () => {
     if (!isHost || playAgainRef.current) return;
     playAgainRef.current = true;
@@ -178,61 +174,11 @@ const Quiz = () => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  // Timer side effects
-  const timerFiredRef = useRef(false);
-  useEffect(() => {
-    timerFiredRef.current = false;
-  }, [phase, currentQ, gameData.timerEnd]);
-
-  useEffect(() => {
-    if (phase !== 'playing' || !gameData.timerEnd) return;
-
-    if (timeLeft <= 5 && timeLeft > 0) {
-      feedback('countdown');
-    }
-
-    if (timeLeft === 0 && !timerFiredRef.current) {
-      timerFiredRef.current = true;
-      feedback('timeUp');
-      setShowResult(true);
-      if (isHost) {
-        autoAdvanceRef.current = setTimeout(() => handleNextQuestion(), 3000);
-      }
-    }
-
-    return () => {
-      if (autoAdvanceRef.current) { clearTimeout(autoAdvanceRef.current); autoAdvanceRef.current = null; }
-    };
-  }, [timeLeft, phase, currentQ, isHost]);
-
-  // Reset local state on question change
-  useEffect(() => {
-    setSelectedAnswer(null);
-    setShowResult(false);
-  }, [currentQ, phase]);
-
-  // Show result when all players answered
-  useEffect(() => {
-    if (phase !== 'playing') return;
-    const currentAnswers = answers[currentQ];
-    if (!currentAnswers) return;
-    const answeredCount = Object.keys(currentAnswers).length;
-    if (answeredCount >= players.length) {
-      setShowResult(true);
-    }
-  }, [answers, currentQ, players.length, phase]);
-
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
-      {errorMsg}
-    </div>
-  ) : null;
-
   // ─── Waiting Phase ───
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
-        <ErrorToast />
+        {renderErrorToast()}
         <div className="text-6xl animate-bounce-soft"></div>
         <div className="text-center">
           <h2 className="font-display font-bold text-[20px] text-olive-800 mb-1">Quiz Trivia</h2>
@@ -260,12 +206,12 @@ const Quiz = () => {
 
   // ─── Finished Phase ───
   if (phase === 'finished') {
-    const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const sortedScores = Object.entries(scores).sort((a, b) => (b[1] as number) - (a[1] as number));
     const winner = sortedScores[0];
 
     return (
       <div className="flex-1 flex flex-col gap-4 py-4">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
           <span className="text-5xl"></span>
@@ -322,16 +268,21 @@ const Quiz = () => {
   }
 
   // ─── Playing Phase ───
-  if (!question) return null;
+  if (!question) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center">
+        {renderErrorToast()}
+        <p className="text-olive-400">{t('common.loading')}</p>
+      </div>
+    );
+  }
 
   const myAnswer = answers?.[currentQ]?.[userNickname];
   const hasAnswered = selectedAnswer !== null || myAnswer;
-  const timerPercent = (timeLeft / QUESTION_TIME) * 100;
-  const timerColor = timeLeft > 7 ? 'bg-sage-400' : timeLeft > 3 ? 'bg-amber-400' : 'bg-red-400';
 
   return (
     <div className="flex-1 flex flex-col gap-3">
-      <ErrorToast />
+      {renderErrorToast()}
       {/* Header */}
       <div className="flex-between">
         <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
@@ -455,12 +406,12 @@ const Quiz = () => {
       {/* Live Scores (mini) */}
       <div className="flex items-center gap-2 px-1 pb-1 overflow-x-auto">
         {Object.entries(scores)
-          .sort((a, b) => b[1] - a[1])
+          .sort((a, b) => (b[1] as number) - (a[1] as number))
           .slice(0, 5)
           .map(([name, score]) => (
             <div key={name} className="flex items-center gap-1 bg-olive-50 px-2 py-1 rounded-lg shrink-0">
               <span className="text-[10px] font-bold text-olive-500 truncate max-w-[60px]">{name}</span>
-              <span className="text-[11px] font-black text-sage-600">{score}</span>
+              <span className="text-[11px] font-black text-sage-600">{score as number}</span>
             </div>
           ))}
       </div>

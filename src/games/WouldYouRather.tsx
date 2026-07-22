@@ -13,11 +13,10 @@ import { getShuffledWyrQuestions } from './logic/wyrData';
 const WouldYouRather: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = Object.keys(roomData.players || {});
+  const gameData = roomData?.gameData || {};
+  const players = Object.keys(roomData?.players || {});
   const [errorMsg, setErrorMsg] = useState('');
   const advancingRef = useRef(false);
 
@@ -34,6 +33,7 @@ const WouldYouRather: React.FC = () => {
     recordPersonalGame('wouldyourather');
   }, []);
 
+  if (!roomData) return null;
   const phase = gameData.phase || 'waiting';
   const currentQIndex = gameData.currentQuestionIndex ?? 0;
   const questions = gameData.questions || [];
@@ -88,6 +88,7 @@ const WouldYouRather: React.FC = () => {
     </div>
   ) : null;
 
+  if (!roomData) return null;
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">

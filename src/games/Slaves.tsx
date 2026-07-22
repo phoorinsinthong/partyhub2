@@ -14,22 +14,32 @@ const Slaves: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
   
+  const [errorMsg, setErrorMsg] = useState('');
+  const [selectedCards, setSelectedCards] = useState<any[]>([]);
+  const [localSettings] = useState({ enableBomb: true, allowStraight: true });
+  const advancingRef = useRef(false);
+
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+        {errorMsg}
+      </div>
+    );
+  };
+
   if (!roomData) return null;
-  const gameData = roomData.gameData || {};
+
+  const gameData = roomData?.gameData || {};
   const phase = gameData.phase || 'waiting'; // waiting, playing, result
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
   const table = gameData.table || { cards: [] };
   const roundCount = gameData.roundCount || 1;
   const ranks = gameData.ranks || []; // Ordered list of nicknames who finished
-  
-  const [errorMsg, setErrorMsg] = useState('');
-  const [selectedCards, setSelectedCards] = useState<any[]>([]);
-  const [localSettings] = useState({ enableBomb: true, allowStraight: true });
-  const advancingRef = useRef(false);
-
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
-  const playerNames = Object.keys(roomData.players || {});
+  const playerNames = Object.keys(roomData?.players || {});
 
   const safeUpdate = async (updates: any) => {
     try {
@@ -215,16 +225,10 @@ const Slaves: React.FC = () => {
     await update(ref(db, `rooms/${roomId}`), { status: 'waiting', currentGame: null, gameData: null });
   };
 
-  const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
-
   if (phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-6xl animate-bounce-soft">👑</div>
         <div className="text-center">
@@ -244,7 +248,7 @@ const Slaves: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
-      <ErrorToast />
+      {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Table Area */}

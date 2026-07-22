@@ -20,7 +20,9 @@ export function useGameTimer(timerEnd, onExpire = null) {
 
   useEffect(() => {
     if (!timerEnd) {
-      if (timeLeft !== 0) setTimeLeft(0);
+      setTimeout(() => {
+        setTimeLeft(0);
+      }, 0);
       expiredRef.current = false;
       return;
     }
@@ -30,12 +32,18 @@ export function useGameTimer(timerEnd, onExpire = null) {
     // Set initial time correctly when timerEnd changes
     const now = Date.now();
     const initialDiff = Math.max(0, Math.floor((timerEnd - now) / 1000));
-    setTimeLeft(initialDiff);
+    setTimeout(() => {
+      setTimeLeft(initialDiff);
+    }, 0);
 
     const interval = setInterval(() => {
       const now = Date.now();
       const diff = Math.max(0, Math.floor((timerEnd - now) / 1000));
-      setTimeLeft(diff);
+      
+      setTimeLeft(prev => {
+        if (prev !== diff) return diff;
+        return prev;
+      });
 
       if (diff === 0 && !expiredRef.current) {
         expiredRef.current = true;

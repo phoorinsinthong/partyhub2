@@ -25,11 +25,12 @@ export function useTurnNotification(isMyTurn, phase) {
   }, [isMyTurn, phase]);
 
   useEffect(() => {
+    const originalTitle = originalTitleRef.current;
     const handleVisibility = () => {
       if (!document.hidden && flashIntervalRef.current) {
         clearInterval(flashIntervalRef.current);
         flashIntervalRef.current = null;
-        document.title = originalTitleRef.current;
+        document.title = originalTitle;
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -37,7 +38,7 @@ export function useTurnNotification(isMyTurn, phase) {
       document.removeEventListener('visibilitychange', handleVisibility);
       if (flashIntervalRef.current) {
         clearInterval(flashIntervalRef.current);
-        document.title = originalTitleRef.current;
+        document.title = originalTitle;
       }
     };
   }, []);

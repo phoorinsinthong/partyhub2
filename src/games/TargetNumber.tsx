@@ -18,62 +18,47 @@ const TURN_TIME = 30;
 const TargetNumber = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
-  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   
-  if (!roomData) return null;
-  const gameData = roomData.gameData || {};
-  const players = roomData.players || {};
-  const playerNames = Object.keys(players);
-
   const [selectedTarget, setSelectedTarget] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
+  const startGameRef = useRef(false);
 
-  const safeUpdate = async (refPath, data) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch (e) {
-      setErrorMsg(t('common.error'));
-      setTimeout(() => setErrorMsg(''), 3000);
-      throw e;
-    }
+  const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
+
+  const renderErrorToast = () => {
+    if (!errorMsg) return null;
+    return (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+        {errorMsg}
+      </div>
+    );
   };
 
-  const gameStatus = gameData.gameStatus || 'waiting';
-  const targetChooser = gameData.targetChooser || null;
-  const isTargetChooser = targetChooser === userNickname;
-  const currentPlayerIndex = gameData.currentPlayerIndex ?? null;
-  const currentPlayer = gameData.playerOrder?.[currentPlayerIndex] || null;
-  const isMyTurn = currentPlayer === userNickname;
-
-  useEffect(() => {
-    advancingRef.current = false;
-  }, [gameData.roundNumber, gameStatus]);
-
-  useEffect(() => {
-    if (gameStatus === 'waiting' || gameStatus === 'playing') personalRecordedRef.current = false;
-  }, [gameStatus]);
-
-  useEffect(() => {
-    if (gameStatus !== 'finished' || personalRecordedRef.current) return;
-    personalRecordedRef.current = true;
-    recordPersonalGame('target');
-    const loser = gameData.loser;
-    if (loser && loser !== userNickname) recordPersonalWin('target');
-  }, [gameStatus, gameData.loser, userNickname]);
-
-  // ─── Host Actions ───
+  const safeUpdate = async (refPath: string, data: any) => {
+    try {
+      await update(ref(db, refPath), data);
+    } catch {
+      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  };
 
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
     feedback('timeUp');
 
+    const gameData = roomData?.gameData || {};
+    const gameStatus = gameData.gameStatus || 'waiting';
+    const playerNames = Object.keys(roomData?.players || {});
+    const players = roomData?.players || {};
+    const targetChooser = gameData.targetChooser || null;
+    const currentPlayerIndex = gameData.currentPlayerIndex ?? null;
+    const currentPlayer = gameData.playerOrder?.[currentPlayerIndex] || null;
+
     if (gameStatus === 'choosing_target') {
-      // Auto-set target if chooser times out
       const randomTarget = Math.floor(Math.random() * 100) + 1;
-      setSelectedTarget(randomTarget.toString());
-      // We need to trigger handleSetTarget logic but as host
       const allPlayers = [...playerNames].sort((a, b) => {
         const aTime = players[a]?.joinedAt || 0;
         const bTime = players[b]?.joinedAt || 0;
@@ -97,10 +82,6 @@ const TargetNumber = () => {
         timerEnd: Date.now() + (TURN_TIME * 1000)
       });
     } else if (gameStatus === 'playing') {
-      // Auto-move +1 if player times out
-      // This is a bit complex because we need the current state.
-      // For simplicity in this refactor, let's just skip/auto-move 1.
-      // But we need the current logic. I'll implement a simplified auto-move.
       const currentCount = gameData.currentCount || 0;
       const target = gameData.targetNumber;
       const playerOrder = gameData.playerOrder || [];
@@ -108,7 +89,7 @@ const TargetNumber = () => {
       const loser = newCount === target ? currentPlayer : null;
       const nextPlayerIndex = loser ? currentPlayerIndex : (currentPlayerIndex + 1) % playerOrder.length;
       
-      const updates = {
+      const updates: any = {
         currentCount: newCount,
         currentPlayerIndex: nextPlayerIndex,
         lastMove: {
@@ -132,25 +113,54 @@ const TargetNumber = () => {
 
       await safeUpdate(`rooms/${roomId}/gameData`, updates);
     }
-  }, [isHost, gameStatus, roomId, targetChooser, playerNames, players, gameData, currentPlayer, currentPlayerIndex]);
+  }, [isHost, roomId, roomData]);
 
-  const { timeLeft } = useGameTimer(gameData.timerEnd, isHost ? handleTimeUp : null);
+  const { timeLeft } = useGameTimer(roomData?.gameData?.timerEnd, isHost ? handleTimeUp : null);
 
-  // Skip turn if current player left the room
   useEffect(() => {
-    if (!isHost || gameStatus !== 'playing') return;
-    const playerOrder = gameData.playerOrder || [];
-    const current = playerOrder[currentPlayerIndex];
-    if (current && !players[current]) {
-      const nextIndex = (currentPlayerIndex + 1) % playerOrder.length;
-      safeUpdate(`rooms/${roomId}/gameData`, { 
-        currentPlayerIndex: nextIndex,
-        timerEnd: Date.now() + (TURN_TIME * 1000)
-      });
-    }
-  }, [isHost, gameStatus, currentPlayerIndex, gameData.playerOrder, players, roomId]);
+    advancingRef.current = false;
+  }, [roomData?.gameData?.roundNumber, roomData?.gameData?.gameStatus]);
 
-  const startGameRef = useRef(false);
+  useEffect(() => {
+    if (roomData?.gameData?.gameStatus === 'waiting' || roomData?.gameData?.gameStatus === 'playing') personalRecordedRef.current = false;
+  }, [roomData?.gameData?.gameStatus]);
+
+  useEffect(() => {
+    if (roomData?.gameData?.gameStatus !== 'finished' || personalRecordedRef.current) return;
+    personalRecordedRef.current = true;
+    recordPersonalGame('target');
+    const loser = roomData?.gameData?.loser;
+    if (loser && loser !== userNickname) recordPersonalWin('target');
+  }, [roomData?.gameData?.gameStatus, roomData?.gameData?.loser, userNickname]);
+
+  useEffect(() => {
+    if (!isHost || roomData?.gameData?.gameStatus !== 'playing') return;
+    const playerOrder = roomData?.gameData?.playerOrder || [];
+    const currentPlayerIndex = roomData?.gameData?.currentPlayerIndex ?? null;
+    const current = playerOrder[currentPlayerIndex];
+    if (current && !roomData?.players?.[current]) {
+      const nextIndex = (currentPlayerIndex + 1) % playerOrder.length;
+      setTimeout(() => {
+        safeUpdate(`rooms/${roomId}/gameData`, { 
+          currentPlayerIndex: nextIndex,
+          timerEnd: Date.now() + (TURN_TIME * 1000)
+        });
+      }, 0);
+    }
+  }, [isHost, roomData?.gameData?.gameStatus, roomData?.gameData?.currentPlayerIndex, roomData?.gameData?.playerOrder, roomData?.players, roomId]);
+
+  if (!roomData) return null;
+
+  const gameData = roomData?.gameData || {};
+  const players = roomData?.players || {};
+  const playerNames = Object.keys(players);
+  const gameStatus = gameData.gameStatus || 'waiting';
+  const targetChooser = gameData.targetChooser || null;
+  const isTargetChooser = targetChooser === userNickname;
+  const currentPlayerIndex = gameData.currentPlayerIndex ?? null;
+  const currentPlayer = gameData.playerOrder?.[currentPlayerIndex] || null;
+  const isMyTurn = currentPlayer === userNickname;
+
   const startGame = async () => {
     if (!isHost) return;
     if (playerNames.length < 2) return;
@@ -215,7 +225,7 @@ const TargetNumber = () => {
     setSelectedTarget('');
   };
 
-  const handleMove = async (increment) => {
+  const handleMove = async (increment: number) => {
     if (!isMyTurn) return;
     if (gameStatus !== 'playing') return;
     if (advancingRef.current) return;
@@ -266,8 +276,8 @@ const TargetNumber = () => {
     try {
       await safeUpdate(`rooms/${roomId}/gameData`, updates);
       if (loser) {
-        const newScores = updates.scores;
-        const topWinner = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0];
+        const newScores = (updates as any).scores;
+        const topWinner = Object.entries(newScores).sort((a: any, b: any) => b[1] - a[1])[0];
         if (topWinner) await recordWin(roomId, topWinner[0], 'target');
       }
     } finally {
@@ -279,17 +289,11 @@ const TargetNumber = () => {
     startGame();
   };
 
-  const ErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
-      {errorMsg}
-    </div>
-  ) : null;
-
   // Waiting screen
   if (gameStatus === 'waiting') {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <div className="glass-panel p-xl text-center">
           <div className="flex-center mb-md">
             <div className="p-lg bg-primary/20 rounded-full text-primary shadow-lg shadow-primary/10">
@@ -330,7 +334,7 @@ const TargetNumber = () => {
   if (gameStatus === 'choosing_target') {
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         <div className="glass-panel p-xl text-center">
           <div className="flex-center mb-md">
             <div className="p-lg bg-warning/20 rounded-full text-warning shadow-lg shadow-warning/10">
@@ -393,7 +397,7 @@ const TargetNumber = () => {
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
-        <ErrorToast />
+        {renderErrorToast()}
         {/* Header */}
         <div className="glass-panel p-md flex justify-between items-center border-primary/20">
           <div className="flex items-center gap-sm">
@@ -542,7 +546,7 @@ const TargetNumber = () => {
 
     return (
       <div className="flex flex-col gap-lg w-full animate-fade-in">
-        <ErrorToast />
+        {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -584,13 +588,13 @@ const TargetNumber = () => {
           {/* Scores */}
           <div className="space-y-sm">
             <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">{t('taboo.totalScores')}</p>
-            {Object.entries(gameData.scores || {}).sort((a, b) => b[1] - a[1]).map(([name, score]) => (
+            {Object.entries(gameData.scores || {}).sort((a: any, b: any) => b[1] - a[1]).map(([name, score]) => (
               <div key={name} className="flex justify-between items-center p-md bg-glass-dark/30 rounded-xl border border-glass">
                 <div className="flex items-center gap-sm">
                   {name === loser ? <Skull size={16} className="text-danger" /> : <Crown size={16} className="text-warning" />}
                   <span className="font-bold">{name}</span>
                 </div>
-                <span className="font-black text-primary">{score} {t('taboo.pointsGuesser').split(' ')[1]}</span>
+                <span className="font-black text-primary">{score as number} {t('taboo.pointsGuesser').split(' ')[1]}</span>
               </div>
             ))}
           </div>
