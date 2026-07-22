@@ -18,6 +18,9 @@ export function useHostPromotedToast(): boolean {
 export function usePresence(roomId: string, nickname: string, isHost: boolean): void {
   const visibilityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasOfflineDueToVisibilityRef = useRef(false);
+  const kickedRef = useRef(false);
+  const onDisconnectRefs = useRef<any[]>([]);
+  const cleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!roomId || !nickname) return;
