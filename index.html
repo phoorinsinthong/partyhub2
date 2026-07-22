@@ -38,13 +38,16 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
-    // Migration: clear old SW caches & unregister stale Service Workers on new build
+    // Force unregister stale Service Workers and purge old caches
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      });
+    }
     if ('caches' in window) {
       caches.keys().then(function(names) {
         names.forEach(function(name) {
-          if (name.indexOf('partyhub-') === 0) {
-            caches.delete(name);
-          }
+          caches.delete(name);
         });
       });
     }
