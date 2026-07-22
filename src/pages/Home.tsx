@@ -11,6 +11,7 @@ import SoundToggle from '../components/SoundToggle';
 import ReconnectBanner from '../components/ReconnectBanner';
 import { loadAvatar, getAvatarColor, getRandomAvatar, getRandomColor, saveAvatar } from '../utils/avatars';
 import { rateLimitCreateRoom, rateLimitJoinRoom } from '../utils/rateLimit';
+import { useGame } from '../contexts/GameContext';
 
 interface Room {
   code: string;

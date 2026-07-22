@@ -31,9 +31,25 @@ class ErrorBoundary extends React.Component {
           <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#2f2a22', marginBottom: '8px' }}>
             อุ๊ปส์! เกิดข้อผิดพลาด
           </h2>
-          <p style={{ fontSize: '14px', color: '#8a7e6a', marginBottom: '24px', maxWidth: '300px' }}>
+          <p style={{ fontSize: '14px', color: '#8a7e6a', marginBottom: '16px', maxWidth: '340px' }}>
             มีบางอย่างผิดพลาด ลองรีเฟรชหน้านี้อีกครั้งนะ
           </p>
+          {this.state.error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              fontSize: '12px',
+              color: '#b91c1c',
+              marginBottom: '20px',
+              maxWidth: '360px',
+              wordBreak: 'break-word',
+              fontFamily: 'monospace',
+            }}>
+              {this.state.error.toString()}
+            </div>
+          )}
           <button
             onClick={() => { localStorage.removeItem('partyhub_session'); window.location.reload(); }}
             style={{

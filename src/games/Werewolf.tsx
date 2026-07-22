@@ -7,6 +7,7 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGameTimer } from '../hooks/useGameTimer';
+import { useGame } from '../contexts/GameContext';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { useTranslation } from 'react-i18next';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
