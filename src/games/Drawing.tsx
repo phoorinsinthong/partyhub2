@@ -516,6 +516,7 @@ const Drawing: React.FC = () => {
 
   useEffect(() => {
     if (phase !== 'playing') return;
+    const nonDrawers = players.filter(p => p !== currentDrawer);
     const allCorrect = nonDrawers.every((p) => guesses[p]?.correct);
     if (allCorrect && nonDrawers.length > 0 && isHost) {
       if (allCorrectTimerRef.current) clearTimeout(allCorrectTimerRef.current);
@@ -530,7 +531,8 @@ const Drawing: React.FC = () => {
         allCorrectTimerRef.current = null;
       }
     };
-  }, [guesses, phase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guesses, phase, currentDrawer, isHost]);
 
   if (!roomData) return null;
 
