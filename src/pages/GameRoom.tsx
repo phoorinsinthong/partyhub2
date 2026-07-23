@@ -20,7 +20,7 @@ const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wou
 const DrinkingGame = lazy(() => import('../games/drinkingGame'));
 const Spyfall = lazy(() => import('../games/spyfall'));
 const TargetNumber = lazy(() => import('../games/targetNumber'));
-const Werewolf = lazy(() => import('../games/Werewolf'));
+const Werewolf = lazy(() => import('../games/werewolf'));
 const TruthOrDare = lazy(() => import('../games/truthOrDare'));
 const Quiz = lazy(() => import('../games/quiz'));
 const Drawing = lazy(() => import('../games/drawing'));

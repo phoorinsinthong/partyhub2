@@ -13,7 +13,7 @@ import { useKeyboardResize } from './hooks/useKeyboardResize';
 import { useSessionRecovery } from './hooks/useSessionRecovery';
 import './index.css';
 
-import WerewolfModerator from './games/WerewolfModerator';
+import WerewolfModerator from './games/werewolf/WerewolfModerator';
 
 // Wrapper component to use router hooks
 function SessionManager() {

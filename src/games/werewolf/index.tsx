@@ -1,10 +1,10 @@
 // @ts-nocheck
 import React from 'react';
-import { WerewolfProvider, useWerewolf } from './werewolf/WerewolfContext';
-import { WerewolfSetupPhase } from './werewolf/WerewolfSetupPhase';
-import { WerewolfPhysicalMode } from './werewolf/WerewolfPhysicalMode';
-import { WerewolfDigitalMode } from './werewolf/WerewolfDigitalMode';
-import { WerewolfResultPhase } from './werewolf/WerewolfResultPhase';
+import { WerewolfProvider, useWerewolf } from './WerewolfContext';
+import { WerewolfSetupPhase } from './WerewolfSetupPhase';
+import { WerewolfPhysicalMode } from './WerewolfPhysicalMode';
+import { WerewolfDigitalMode } from './WerewolfDigitalMode';
+import { WerewolfResultPhase } from './WerewolfResultPhase';
 
 const WerewolfContent: React.FC = () => {
   const { phase, gameMode, wwData } = useWerewolf();
