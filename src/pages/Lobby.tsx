@@ -152,6 +152,10 @@ const Lobby: React.FC = () => {
         currentGame: selectedGame, 
         gameData: { status: 'waiting', startTime: now } 
       });
+    } catch (error: any) {
+      console.error("Start Game Error:", error);
+      setLeaveError(`Start failed: ${error.message}`);
+      setTimeout(() => setLeaveError(''), 5000);
     } finally {
       startingRef.current = false;
     }
