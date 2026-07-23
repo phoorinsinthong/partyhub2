@@ -70,7 +70,14 @@ export const WerewolfProvider: React.FC<{ children: ReactNode }> = ({ children }
       // This will use updateRoom implicitly if targeting rooms
       if (refPath.startsWith(`rooms/${roomId}`)) {
          const relPath = refPath.replace(`rooms/${roomId}/`, '');
-         updates[relPath] = data;
+         if (data && typeof data === 'object' && !Array.isArray(data)) {
+           for (const key of Object.keys(data)) {
+             const newKey = relPath ? `${relPath}/${key}` : key;
+             updates[newKey] = data[key];
+           }
+         } else {
+           if (relPath) updates[relPath] = data;
+         }
          await updateRoom(updates);
       }
     } catch {
