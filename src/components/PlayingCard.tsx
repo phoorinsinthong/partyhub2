@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { motion } from 'framer-motion';
-import { getSuitInfo } from "../games/logic/cards";
+import { getSuitInfo } from "../utils/cards";
 
 const PlayingCard = ({ 
   card, 

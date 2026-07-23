@@ -7,7 +7,7 @@ import {
   RotateCcw, Skull, Play, ChevronRight, ChevronLeft, 
   UserCheck, Shuffle, Home, Info
 } from 'lucide-react';
-import { ROLES, VOICE_SCRIPTS } from './logic/werewolfData';
+import { ROLES, VOICE_SCRIPTS } from './werewolf/werewolfData';
 
 interface PlayerSetup {
   id: string;

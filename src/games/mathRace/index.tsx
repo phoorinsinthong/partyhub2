@@ -40,15 +40,7 @@ const MathRace = () => {
   const lastCountdownRef = useRef<number | null>(null);
   const personalRecordedRef = useRef(false);
 
-  const safeUpdate = useCallback(async (path: string, data: any) => {
-    try {
-      await update(ref(db, path), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  }, [t]);
-
+  
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
     feedback('timeUp');

@@ -152,14 +152,6 @@ const WordBomb: React.FC = () => {
   const advancingRef = useRef(false);
   const personalRecordedRef = useRef(false);
 
-  const safeUpdate = useCallback(async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  }, [t]);
 
   // ── Reset personal stats flag when new game starts ──────────────────────────
   useEffect(() => {

@@ -2,7 +2,7 @@ import React from 'react';
 import NeonCard from '../../../components/NeonCard';
 import GiantButton from '../../../components/GiantButton';
 import { Pencil } from 'lucide-react';
-import { WORD_CATEGORIES, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from './fakeArtistData';
+import { WORD_CATEGORIES, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from '../fakeArtistData';
 
 export const WaitingPhase = ({
   players, selectedRounds, selectedTurnTime, isHost,

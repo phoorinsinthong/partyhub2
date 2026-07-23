@@ -5,10 +5,10 @@ import { PlayingPhase } from './PlayingPhase';
 import { VotingPhase } from './VotingPhase';
 import { FinishedPhase } from './FinishedPhase';
 import { ref, update } from 'firebase/database';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { useTranslation } from 'react-i18next';
-import { generateInitialState, checkVoteResult } from './logic/spyfallLogic';
-import { TimerDisplay } from '../components/game-ui/TimerDisplay';
+import { generateInitialState, checkVoteResult } from './spyfallLogic';
+import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 import { CAT_META } from './logic/spyfallCats';
 import {
   MapPin, User, Timer, AlertCircle, CheckCircle2, XCircle,
@@ -16,19 +16,19 @@ import {
   Users, Shield, Clock, LogOut, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TIMER_PRESETS } from '../hooks/useGameTimer';
-import { feedback } from '../utils/feedback';
-import { recordWin } from '../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
-import { useGameLeave } from '../hooks/useGameLeave';
-import { useGame } from '../contexts/GameContext';
-import { useGameUpdate } from '../hooks/useGameUpdate';
-import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import EpicPopup from '../components/EpicPopup';
-import GiantButton from '../components/GiantButton';
-import NeonCard from '../components/NeonCard';
-import HoldToRevealCard from '../components/HoldToRevealCard';
-import { useHaptics } from '../hooks/useHaptics';
+import { TIMER_PRESETS } from '../../hooks/useGameTimer';
+import { feedback } from '../../utils/feedback';
+import { recordWin } from '../../components/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
+import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import EpicPopup from '../../components/EpicPopup';
+import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/NeonCard';
+import HoldToRevealCard from '../../components/HoldToRevealCard';
+import { useHaptics } from '../../hooks/useHaptics';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -93,102 +93,7 @@ const Spyfall: React.FC = () => {
 
   // ─── Timer ───────────────────────────────────────────────────────────────────
 
-  const safeUpdate = useCallback(async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      vibrateHeavy();
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  }, [t, vibrateHeavy]);
-
-  useEffect(() => {
-    if (roomData?.status === 'playing' && gameData.timerEnd && gameData.status === 'playing') {
-      let transitioned = false;
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const diff = Math.max(0, Math.floor((gameData.timerEnd - now) / 1000));
-        if (diff !== timeLeft) setTimeLeft(diff);
-
-        // Auto-transition to voting when timer reaches 0
-        if (diff === 0 && isHostActually && !transitioned && !voteResultRef.current) {
-          transitioned = true;
-          clearInterval(interval);
-          const snap = roomData.gameData || {};
-          if (snap.status === 'playing') {
-            safeUpdate(`rooms/${roomId}/gameData`, {
-              status: 'voting',
-              timerEnd: null
-            });
-          }
-        }
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [roomData?.status, gameData.timerEnd, isHostActually, gameData.status, roomId, timeLeft, safeUpdate]);
-
-  // ─── Sound on spy reveal (notify other players after spy confirmed guess) ───
-
-  const prevSpyRevealingRef = useRef<string | null>(null);
-  useEffect(() => {
-    const newVal = gameData.spyRevealing || null;
-    if (newVal !== prevSpyRevealingRef.current) {
-      if (newVal && newVal !== nickname) {
-        feedback('spyReveal');
-        vibrateHeavy();
-      }
-      prevSpyRevealingRef.current = newVal;
-    }
-  }, [gameData.spyRevealing, nickname, vibrateHeavy]);
-
-  // ─── Show guess modal for spy when forced ───────────────────────────────────
-
-  useEffect(() => {
-    if (gameData.spyForced && gameData.spyRevealing === nickname && myGameData.isSpy && gameData.status !== 'finished') {
-      setTimeout(() => setShowGuessModal(true), 0);
-    }
-  }, [gameData.spyForced, gameData.spyRevealing, nickname, myGameData.isSpy, gameData.status]);
-
-  // ─── Check voting results (host only) ────────────────────────────────────────
-
-  useEffect(() => {
-    if (!isHostActually || gameData.status !== 'voting') return;
-
-    const gamePlayers = gameData.players || {};
-    const result = checkVoteResult(gamePlayers, gamePlayerCount);
-    
-    if (!result) return;
-    if (voteResultRef.current) return;
-    voteResultRef.current = true;
-
-    if (result.winner) {
-      (async () => {
-        try {
-          await safeUpdate(`rooms/${roomId}/gameData`, { status: 'finished', winner: result.winner });
-          await safeUpdate(`rooms/${roomId}`, { status: 'finished' });
-          const civilianWinner = gamePlayerList.find(p => !gamePlayers[p].isSpy) || roomData.host;
-          await recordWin(roomId || '', civilianWinner, 'spyfall');
-        } catch (_) {
-          voteResultRef.current = false;
-        }
-      })();
-    } else if (result.forcedSpy) {
-      const spyName = gamePlayerList.find(p => gamePlayers[p].isSpy);
-      (async () => {
-        try {
-          await safeUpdate(`rooms/${roomId}/gameData`, {
-            spyRevealing: spyName,
-            spyForced: true,
-            timerEnd: null
-          });
-        } catch (_) {
-          voteResultRef.current = false;
-        }
-      })();
-    }
-  }, [gameData.players, gameData.status, isHostActually, gamePlayerCount, gamePlayerList, roomId, roomData.host, safeUpdate]);
-
+  
   // ─── Check vote request threshold ───────────────────────────────────────────
 
   useEffect(() => {
@@ -225,7 +130,7 @@ const Spyfall: React.FC = () => {
     advancingRef.current = true;
     vibrateSuccess();
 
-    const { CATS, DEFAULT_LOCATIONS, NON_STANDARD_LOCATIONS } = await import('./logic/spyfallData');
+    const { CATS, DEFAULT_LOCATIONS, NON_STANDARD_LOCATIONS } = await import('./spyfallData');
 
     let pool = [];
 

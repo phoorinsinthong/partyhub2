@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameTimer } from '../../hooks/useGameTimer';
-import { getRandomCards } from './logic/tabooData';
+import { getRandomCards } from './tabooData';
 import { recordWin } from '../../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
@@ -57,15 +57,7 @@ const Taboo = () => {
     );
   };
 
-  const safeUpdate = useCallback(async (path: string, data: any) => {
-    try {
-      await update(ref(db, path), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  }, [t]);
-
+  
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
     feedback('timeUp');
