@@ -122,19 +122,15 @@ const Lobby: React.FC = () => {
       }
       
       if (roomData.status === 'playing' || roomData.status === 'finished') {
-        if (!isHost && !startingPopup) {
-          const timer = setTimeout(() => {
+        if (!isHost) {
+          if (!startingPopup) {
             setStartingPopup(true);
             vibrateSuccess();
-          }, 0);
-          const navTimer = setTimeout(() => {
-            navigate(`/game/${roomId}`);
-          }, 1500);
-          return () => {
-            clearTimeout(timer);
-            clearTimeout(navTimer);
-          };
-        } else if (isHost) {
+            setTimeout(() => {
+              navigate(`/game/${roomId}`);
+            }, 1500);
+          }
+        } else {
           navigate(`/game/${roomId}`);
         }
       }
