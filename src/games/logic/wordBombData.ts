@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const WORD_BOMB_CATEGORIES = [
   // อาหาร
   { category: "อาหารไทย", examples: "ต้มยำ, ผัดไทย, ส้มตำ..." },

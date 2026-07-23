@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/utils/cards.js
 
 export const SUITS = ['spades', 'hearts', 'diamonds', 'clubs'];

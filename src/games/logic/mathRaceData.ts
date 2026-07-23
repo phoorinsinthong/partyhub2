@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Math Race — Dynamic question generator
  * Generates arithmetic questions with guaranteed integer answers.

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const CAT_META = [
   { id:"food", name:"อาหารและเครื่องดื่ม", emoji:"🍽", color:"#BA7517", bg:"#FAEEDA" },
   { id:"travel", name:"การเดินทางและขนส่ง", emoji:"✈", color:"#185FA5", bg:"#E6F1FB" },

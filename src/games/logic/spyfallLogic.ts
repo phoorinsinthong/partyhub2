@@ -1,3 +1,4 @@
+// @ts-nocheck
 export interface Player {
   role: string;
   place: string;

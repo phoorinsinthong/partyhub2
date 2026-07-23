@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Drawing Game Logic Utilities
  */

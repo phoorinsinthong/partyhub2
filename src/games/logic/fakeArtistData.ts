@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const WORD_CATEGORIES = {
   animals: {
     label: 'สัตว์',

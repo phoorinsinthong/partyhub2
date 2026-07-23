@@ -1,0 +1,118 @@
+      startVotingRef.current = false;
+    }
+  };
+
+  const castVote = async (targetName) => {
+    if (!myIsAlive || myPlayerData?.status?.silenced || myPlayerData?.status?.banned) return;
+    if (castVoteRef.current) return;
+    castVoteRef.current = true;
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData/wwData/players/${userNickname}`, { vote: targetName });
+    } finally {
+      castVoteRef.current = false;
+    }
+  };
+
+  const resolveVotes = async () => {
+    if (!isHost || resolvingRef.current) return;
+    resolvingRef.current = true;
+    const wwPlayers = wwData.players || {};
+    const voteTally = {};
+    Object.entries(wwPlayers).forEach(([name, p]) => {
+      if (p.isAlive && p.role !== 'gm' && p.vote) {
+        const weight = p.role === 'mayor' ? 2 : 1;
+        voteTally[p.vote] = (voteTally[p.vote] || 0) + weight;
+      }
+    });
+
+    let topName = null;
+    let topVotes = 0;
+    for (const [name, count] of Object.entries(voteTally)) {
+      if (count > topVotes) { topVotes = count; topName = name; }
+    }
+    const topNames = Object.entries(voteTally).filter(([, c]) => c === topVotes).map(([n]) => n);
+    if (topNames.length > 1) topName = null;
+
+    const updates = {};
+    if (topName) {
+      const target = wwPlayers[topName];
+      if (target?.role === 'prince' && !target?.status?.princeUsed) {
+        updates[`players/${topName}/status/princeUsed`] = true;
+        updates['lastElimination'] = { playerName: topName, playerRole: target.role, reason: 'prince_saved' };
+      } else {
+        updates[`players/${topName}/isAlive`] = false;
+        updates['lastElimination'] = { playerName: topName, playerRole: target?.role, reason: 'vote' };
+        if (target?.role === 'hunter') updates['hunterPending'] = topName;
+        // Lover death
+        if (wwData.lovers) {
+          const { player1, player2 } = wwData.lovers;
+          if (topName === player1 && wwPlayers[player2]?.isAlive) updates[`players/${player2}/isAlive`] = false;
+          if (topName === player2 && wwPlayers[player1]?.isAlive) updates[`players/${player1}/isAlive`] = false;
+        }
+      }
+    } else {
+      updates['lastElimination'] = { playerName: null, reason: 'tie' };
+    }
+
+    updates['phase'] = 'standby';
+    updates['timerEnd'] = null;
+    // Clear votes
+    Object.keys(wwPlayers).forEach(name => { updates[`players/${name}/vote`] = ''; });
+    // Clear status effects
+    Object.keys(wwPlayers).forEach(name => {
+      if (wwPlayers[name]?.status?.silenced) updates[`players/${name}/status/silenced`] = null;
+      if (wwPlayers[name]?.status?.banned) updates[`players/${name}/status/banned`] = null;
+    });
+
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
+
+      // Check win condition after update
+      const snap = await get(ref(db, `rooms/${roomId}/gameData/wwData/players`));
+      const updatedPlayers = snap.val() || {};
+      const winner = checkWinCondition(updatedPlayers);
+      if (winner) {
+        await safeUpdate(`rooms/${roomId}/gameData/wwData`, { phase: 'result', winnerTeam: winner });
+      }
+    } catch (e) {
+      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
+      setTimeout(() => setErrorMsg(''), 3000);
+    } finally {
+      resolvingRef.current = false;
+    }
+  };
+
+  const gmSkipVote = async () => {
+    if (!isHost) return;
+    const updates = { phase: 'standby', timerEnd: null, lastElimination: { playerName: null, reason: 'skipped' } };
+    const wwPlayers = wwData.players || {};
+    Object.keys(wwPlayers).forEach(name => { updates[`players/${name}/vote`] = ''; });
+    await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
+  };
+
+  const startNextNight = async () => {
+    if (!isHost || startNextNightRef.current) return;
+    startNextNightRef.current = true;
+    try {
+      const wwPlayers = wwData.players || {};
+      const updates = { 
+        nightActions: {},
+        phase: 'night',
+        dayCount: dayCount + 1,
+        nightTurn: null,
+        lastElimination: null,
+        timerEnd: Date.now() + 120000,
+      };
+      
+      // Clear nightly status effects
+      Object.keys(wwPlayers).forEach(name => {
+        if (wwPlayers[name]?.status?.silenced) updates[`players/${name}/status/silenced`] = null;
+        if (wwPlayers[name]?.status?.banned) updates[`players/${name}/status/banned`] = null;
+      });
+
+      await safeUpdate(`rooms/${roomId}/gameData/wwData`, updates);
+    } finally {
+      startNextNightRef.current = false;
+    }
+  };
+

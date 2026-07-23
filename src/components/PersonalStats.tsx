@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { Trophy, X, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

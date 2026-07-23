@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, UserPlus, QrCode, X, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react';

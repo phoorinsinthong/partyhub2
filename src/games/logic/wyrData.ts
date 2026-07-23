@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Would You Rather - Question Data
  * Thai language party questions

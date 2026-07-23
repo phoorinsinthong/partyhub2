@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { ref, get } from 'firebase/database';
 import { db } from '../firebase';

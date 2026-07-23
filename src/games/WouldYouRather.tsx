@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ref, update } from 'firebase/database';

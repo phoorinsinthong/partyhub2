@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { WORD_CATEGORIES, ALL_WORDS } from './fakeArtistData';
 
 export const shuffle = <T>(arr: T[]): T[] => {

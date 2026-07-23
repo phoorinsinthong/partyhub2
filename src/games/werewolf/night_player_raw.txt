@@ -1,0 +1,107 @@
+          {phase === 'night' && (
+            <div className="space-y-4 border-t border-slate-700 pt-4">
+              <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2"><Moon size={14}/> บทบาทคืนนี้ (GM เลือกให้)</p>
+              {(() => {
+                // Only include roles where at least one alive player has that role
+                const activeRoles = Array.from(new Set(
+                  Object.values(wwPlayers)
+                    .filter((p: any) => p.isAlive && p.role !== 'gm')
+                    .map((p: any) => p.role)
+                    .filter(role => {
+                      const cfg = ROLES[role];
+                      return cfg && (cfg.actionPhase === 'nightly' || (cfg.actionPhase === 'firstNight' && dayCount === 1));
+                    })
+                ));
+
+                // Collapse alive wolf roles into one "werewolf" action key
+                const wolfPresent = activeRoles.some(r => WOLF_ROLES.includes(r));
+                const nonWolfRoles = activeRoles.filter(r => !WOLF_ROLES.includes(r));
+                const actionKeys = wolfPresent ? ['werewolf', ...nonWolfRoles] : nonWolfRoles;
+
+                // Alive non-GM players as target options
+                const targets = Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm');
+
+                return actionKeys.map(actionKey => {
+                  const cfg = ROLES[actionKey] || ROLES.villager;
+                  const isDone = !!nightActions[`${actionKey}TargetDone`];
+                  const chosenTarget = nightActions[`${actionKey}Target`];
+
+                  // Label & color per action type
+                  let actionLabel = 'เลือกเป้าหมาย';
+                  const doneLabel = `→ ${chosenTarget === 'skip' ? 'ข้าม' : chosenTarget}`;
+                  let cardBorder = 'border-indigo-500/30';
+                  let cardBg = 'bg-indigo-500/5';
+                  if (WOLF_ROLES.includes(actionKey)) { actionLabel = '🔪 ฆ่า'; cardBorder = 'border-red-500/30'; cardBg = 'bg-red-500/5'; }
+                  else if (actionKey === 'bodyguard') { actionLabel = '🛡️ ปกป้อง'; cardBorder = 'border-neon-green/30'; cardBg = 'bg-neon-green/5'; }
+                  else if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(actionKey)) { actionLabel = '🔮 ส่อง'; cardBorder = 'border-purple-500/30'; cardBg = 'bg-purple-500/5'; }
+
+                  return (
+                    <div key={actionKey} className={`rounded-xl p-3 border ${cardBorder} ${cardBg}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: cfg.color }}>
+                          {cfg.icon} {WOLF_ROLES.includes(actionKey) ? 'หมาป่า' : cfg.name} — {actionLabel}
+                        </span>
+                        {isDone && (
+                          <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">✅ {doneLabel}</span>
+                        )}
+                      </div>
+                      {!isDone ? (
+                        <div className="flex flex-wrap gap-2">
+                          {targets.map(([name]) => (
+                            <button
+                              key={name}
+                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-600 bg-slate-800 text-white active:scale-95 transition-all shadow-sm hover:border-slate-400"
+                              onClick={() => gmSubmitForRole(actionKey, name)}
+                            >
+                              {name}
+                            </button>
+                          ))}
+                          <button
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-900 text-slate-400 active:scale-95 transition-all hover:text-white"
+                            onClick={() => gmSubmitForRole(actionKey, 'skip')}
+                          >
+                            ข้าม
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="text-[10px] text-slate-400 underline hover:text-white"
+                          onClick={async () => {
+                            await safeUpdate(`rooms/${roomId}/gameData/wwData`, {
+                              [`nightActions/${actionKey}Target`]: null,
+                              [`nightActions/${actionKey}TargetDone`]: null,
+                            });
+                          }}
+                        >
+                          เปลี่ยนใจ
+                        </button>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+
+              {/* Night summary: killed / protected / seen */}
+              {(() => {
+                const killed = nightActions['werewolfTarget'];
+                const protected_ = nightActions['bodyguardTarget'];
+                const seen = nightActions['seerTarget'] || nightActions['apprentice_seerTarget'] || nightActions['mystic_wolfTarget'] || nightActions['aura_seerTarget'];
+                const seenRole = seen && seen !== 'skip' ? wwData.players?.[seen]?.role : null;
+                const isWolf = seenRole ? (WOLF_ROLES.includes(seenRole) && seenRole !== 'wolf_man') || seenRole === 'lycan' : false;
+
+                if (!killed && !protected_ && !seen) return null;
+                return (
+                  <div className="bg-slate-900/50 rounded-xl p-4 space-y-2 border border-slate-700">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">สรุปคืนนี้ (มองเห็นแค่ GM)</p>
+                    {killed && killed !== 'skip' && (
+                      <p className="text-xs font-bold text-red-500">🔪 หมาป่าฆ่า: <span className="text-white">{killed}</span>
+                        {protected_ === killed && <span className="text-neon-green ml-2">→ ถูกปกป้อง! รอด</span>}
+                      </p>
+                    )}
+                    {protected_ && protected_ !== 'skip' && (
+                      <p className="text-xs font-bold text-neon-green">🛡️ บอดี้การ์ดปกป้อง: <span className="text-white">{protected_}</span></p>
+                    )}
+                    {seen && seen !== 'skip' && seenRole && (
+                      <p className={`text-xs font-bold ${isWolf ? 'text-red-500' : 'text-neon-green'}`}>
+                        🔮 ส่อง: <span className="text-white">{seen}</span> = {isWolf ? '🐺 หมาป่า' : '✅ ไม่ใช่หมาป่า'} ({ROLES[seenRole]?.name || seenRole})
+                      </p>

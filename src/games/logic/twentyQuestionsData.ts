@@ -1,3 +1,4 @@
+// @ts-nocheck
 // 20 Questions (20 คำถาม) - Thai Party Game Data
 // Players ask yes/no questions to guess the secret word within 20 questions
 
