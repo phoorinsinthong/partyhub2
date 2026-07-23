@@ -13,7 +13,7 @@
           ".validate": "newData.isString() && (newData.val() === 'waiting' || newData.val() === 'playing' || newData.val() === 'finished')"
         },
         "createdAt": {
-          ".validate": "newData.isNumber() && newData.val() <= now && ((!data.exists() && newData.val() >= now - 30000) || (data.exists() && data.val() === newData.val()))"
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000 && ((!data.exists() && newData.val() >= now - 60000) || (data.exists() && data.val() === newData.val()))"
         },
         "players": {
           "$playerName": {
@@ -31,7 +31,7 @@
               ".validate": "newData.isString() && newData.val().length <= 10"
             },
             "avatarColor": {
-              ".validate": "newData.isString() && newData.val().length <= 20"
+              ".validate": "newData.isString() && newData.val().length <= 100"
             },
             "online": {
               ".validate": "newData.isBoolean()"
