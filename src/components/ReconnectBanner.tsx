@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { ref, get } from 'firebase/database';
-import { db } from '../firebase';
+import { db, authReady } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, X } from 'lucide-react';
@@ -41,7 +41,8 @@ const ReconnectBanner = () => {
         return;
       }
 
-      get(ref(db, `rooms/${data.roomId}`)).then((snap) => {
+      authReady.then(() => {
+        get(ref(db, `rooms/${data.roomId}`)).then((snap) => {
         if (snap.exists()) {
           const room = snap.val();
           if (room.players?.[data.nickname]) {
@@ -57,6 +58,7 @@ const ReconnectBanner = () => {
         } else {
           clearSession();
         }
+        });
       });
     } catch {
       clearSession();
