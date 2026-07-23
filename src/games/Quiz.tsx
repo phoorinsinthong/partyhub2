@@ -13,6 +13,8 @@ import { recordPersonalWin, recordPersonalGame } from '../components/PersonalSta
 import { useGameLeave } from '../hooks/useGameLeave';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
@@ -177,27 +179,27 @@ const Quiz: React.FC = () => {
   // ─── Waiting Phase ───
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 bg-slate-950 text-slate-200">
         {renderErrorToast()}
-        <div className="text-6xl animate-bounce-soft"></div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mb-1">Quiz Trivia</h2>
-          <p className="text-olive-400 text-[13px]">ตอบคำถามให้เร็วที่สุด ยิ่งเร็วยิ่งได้คะแนนเยอะ!</p>
+        <div className="text-8xl animate-bounce-soft drop-shadow-[0_0_20px_rgba(245,158,11,0.5)] text-amber-500">?</div>
+        <div className="text-center px-4">
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">Quiz Trivia</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed max-w-[280px] mx-auto">ตอบคำถามให้เร็วที่สุด ยิ่งเร็วยิ่งได้คะแนนเยอะ!</p>
         </div>
-        <div className="card p-4 w-full max-w-xs">
+        <NeonCard color="amber" className="p-4 w-full max-w-xs border-amber-500/30 bg-amber-900/10">
           <div className="text-center space-y-1">
-            <p className="text-[12px] font-bold text-olive-500">{TOTAL_QUESTIONS} คำถาม • {QUESTION_TIME} วินาที/ข้อ</p>
-            <p className="text-[12px] text-olive-400">{players.length} ผู้เล่น</p>
+            <p className="text-[12px] font-black uppercase tracking-widest text-amber-500">{TOTAL_QUESTIONS} คำถาม • {QUESTION_TIME} วินาที/ข้อ</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">{players.length} ผู้เล่น</p>
           </div>
-        </div>
+        </NeonCard>
         {isHost ? (
-          <button onClick={handleStartQuiz} className="btn btn-primary py-3.5 px-8 text-[15px]">
+          <GiantButton color="amber" onClick={handleStartQuiz} className="w-full max-w-xs mt-4">
             เริ่มเกม!
-          </button>
+          </GiantButton>
         ) : (
-          <div className="flex items-center gap-2 text-olive-400">
-            <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft"></span>
-            <span className="text-[13px] font-semibold">รอ Host เริ่มเกม...</span>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin shadow-[0_0_15px_rgba(245,158,11,0.5)]"></div>
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">รอ Host เริ่มเกม...</span>
           </div>
         )}
       </div>
@@ -210,36 +212,36 @@ const Quiz: React.FC = () => {
     const winner = sortedScores[0];
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4">
+      <div className="flex-1 flex flex-col gap-4 py-4 bg-slate-950 pb-24">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
-          <span className="text-5xl"></span>
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mt-2">จบเกม!</h2>
+          <div className="text-7xl mb-2 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">🏆</div>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mt-2 drop-shadow-md">จบเกม!</h2>
         </div>
 
         {/* Winner */}
         {winner && (
-          <div className="card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-center">
-            <Crown size={24} className="text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-[16px] text-olive-800">{winner[0]}</p>
-            <p className="text-[22px] font-black text-amber-600">{winner[1]} คะแนน</p>
-          </div>
+          <NeonCard color="amber" className="p-6 text-center border-amber-500/50 bg-amber-900/20 mx-4 shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+            <Crown size={32} className="text-amber-400 mx-auto mb-3 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+            <p className="font-black text-[18px] uppercase tracking-widest text-amber-500">{winner[0]}</p>
+            <p className="text-[32px] font-black text-white drop-shadow-md">{winner[1]} คะแนน</p>
+          </NeonCard>
         )}
 
         {/* Scoreboard */}
-        <div className="card p-4">
-          <h3 className="font-bold text-[13px] text-olive-600 mb-3">คะแนนรวม</h3>
-          <div className="space-y-2">
+        <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl backdrop-blur-sm">
+          <h3 className="font-black text-[12px] uppercase tracking-widest text-slate-400 mb-4 text-center">คะแนนรวม</h3>
+          <div className="space-y-3">
             {sortedScores.map(([name, score], idx) => (
-              <div key={name} className="flex items-center gap-3 p-2.5 rounded-xl bg-olive-50/60">
-                <span className="w-7 h-7 rounded-full bg-sage-100 flex-center text-[12px] font-black text-sage-700">
+              <div key={name} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+                <span className={`w-8 h-8 rounded-xl flex-center text-[12px] font-black shrink-0 ${idx === 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : idx === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/50' : idx === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/50' : 'bg-slate-800 text-slate-500'}`}>
                   {idx + 1}
                 </span>
-                <span className="flex-1 font-bold text-[14px] text-olive-700">{name}</span>
-                <span className="font-black text-[15px] text-sage-600">{score}</span>
+                <span className={`flex-1 font-black text-[14px] uppercase tracking-widest ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
+                <span className={`font-black text-[16px] ${idx === 0 ? 'text-white' : 'text-slate-400'}`}>{score as number}</span>
                 {name === userNickname && (
-                  <span className="text-[9px] font-extrabold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-md">คุณ</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md">คุณ</span>
                 )}
               </div>
             ))}
@@ -247,21 +249,23 @@ const Quiz: React.FC = () => {
         </div>
 
         {isHost ? (
-          <div className="space-y-2">
-            <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> เล่นอีกรอบ
-            </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
+            <GiantButton color="emerald" onClick={handlePlayAgain} className="flex-1">
+              <RotateCcw size={16} className="mr-2 inline-block" /> เล่นอีกรอบ
+            </GiantButton>
+            <button onClick={handleBackToLobby} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500">
               <LogOut size={14} /> กลับ Lobby
             </button>
           </div>
         ) : (
-          <button
-            className="btn btn-outline w-full py-3.5 text-[14px]"
-            onClick={requestLeave}
-          >
-            <LogOut size={15} /> ออกจากห้อง
-          </button>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
+            <button
+              className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20"
+              onClick={requestLeave}
+            >
+              <LogOut size={15} /> ออกจากห้อง
+            </button>
+          </div>
         )}
       </div>
     );
@@ -272,7 +276,7 @@ const Quiz: React.FC = () => {
     return (
       <div className="flex-1 flex flex-col items-center justify-center">
         {renderErrorToast()}
-        <p className="text-olive-400">{t('common.loading')}</p>
+        <p className="text-slate-400">{t('common.loading')}</p>
       </div>
     );
   }
@@ -281,15 +285,15 @@ const Quiz: React.FC = () => {
   const hasAnswered = selectedAnswer !== null || myAnswer;
 
   return (
-    <div className="flex-1 flex flex-col gap-3">
+    <div className="flex-1 flex flex-col gap-3 bg-slate-950 px-2 py-4 pb-24 h-full relative">
       {renderErrorToast()}
       {/* Header */}
-      <div className="flex-between">
-        <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
+      <div className="flex-between px-2">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
           ข้อ {currentQ + 1}/{questions.length}
         </span>
         {question.category && (
-          <span className="text-[10px] font-bold text-sage-600 bg-sage-100 px-2.5 py-1 rounded-full">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg">
             {CATEGORY_LABELS[question.category] || question.category}
           </span>
         )}
@@ -299,9 +303,9 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Timer Bar */}
-      <div className="h-1.5 rounded-full bg-olive-100 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden mx-2 shadow-inner">
         <motion.div
-          className={`h-full rounded-full ${timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400'}`}
+          className={`h-full rounded-full ${timeLeft > 10 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : timeLeft > 5 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'}`}
           initial={{ width: '100%' }}
           animate={{ width: `${(timeLeft / QUESTION_TIME) * 100}%` }}
           transition={{ duration: 1, ease: 'linear' }}
@@ -309,14 +313,14 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Question */}
-      <div className="card p-5 mt-1">
-        <p className="font-bold text-[16px] text-olive-800 leading-relaxed text-center">
+      <NeonCard color="slate" className="p-6 mt-2 mx-2 bg-slate-900 border-slate-700 min-h-[120px] flex items-center justify-center">
+        <p className="font-black text-[18px] text-white leading-relaxed text-center drop-shadow-md">
           {question.q}
         </p>
-      </div>
+      </NeonCard>
 
       {/* Choices */}
-      <div className="space-y-2.5 mt-1">
+      <div className="space-y-3 mt-4 mx-2">
         {question.choices.map((choice, idx) => {
           const isSelected = selectedAnswer === idx || answers[currentQ]?.[userNickname]?.choice === idx;
           const isCorrectAnswer = idx === question.answer;
@@ -324,10 +328,10 @@ const Quiz: React.FC = () => {
           const showWrong = showResult && isSelected && !isCorrectAnswer;
           const hasAnswered = selectedAnswer !== null || !!answers[currentQ]?.[userNickname];
 
-          let bg = 'bg-white border-2 border-olive-100';
-          if (showCorrect) bg = 'bg-green-50 border-2 border-green-300';
-          else if (showWrong) bg = 'bg-red-50 border-2 border-red-300';
-          else if (isSelected) bg = 'bg-sage-50 border-2 border-sage-300';
+          let bg = 'bg-slate-900 border border-slate-700 hover:border-slate-500';
+          if (showCorrect) bg = 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] z-10';
+          else if (showWrong) bg = 'bg-red-500/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)] z-10';
+          else if (isSelected) bg = 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)] z-10';
 
           return (
             <motion.button
@@ -335,25 +339,26 @@ const Quiz: React.FC = () => {
               whileTap={!hasAnswered && !showResult ? { scale: 0.97 } : {}}
               onClick={() => !showResult && handleAnswer(idx)}
               disabled={hasAnswered || showResult}
-              className={`w-full p-4 rounded-2xl text-left flex items-center gap-3 transition-all ${bg} ${
+              className={`w-full p-4 rounded-2xl text-left flex items-center gap-4 transition-all relative ${bg} ${
                 !hasAnswered && !showResult ? 'active:scale-[0.97]' : ''
-              }`}
+              } ${hasAnswered && !showCorrect && !showWrong && !isSelected ? 'opacity-50 grayscale' : ''}`}
               style={!showResult && !hasAnswered ? {} : { cursor: 'default' }}
             >
-              <span className={`w-8 h-8 rounded-xl flex-center text-[13px] font-black shrink-0 ${
-                showCorrect ? 'bg-green-200 text-green-700' :
-                showWrong ? 'bg-red-200 text-red-700' :
-                isSelected ? 'bg-sage-200 text-sage-700' :
-                'bg-olive-100 text-olive-600'
+              <span className={`w-10 h-10 rounded-xl flex-center text-[14px] font-black shrink-0 border ${
+                showCorrect ? 'bg-emerald-500/30 text-emerald-400 border-emerald-400/50' :
+                showWrong ? 'bg-red-500/30 text-red-400 border-red-400/50' :
+                isSelected ? 'bg-amber-500/30 text-amber-400 border-amber-400/50' :
+                'bg-slate-800 text-slate-400 border-slate-700'
               }`}>
-                {showCorrect ? <CheckCircle size={16} /> :
-                 showWrong ? <XCircle size={16} /> :
+                {showCorrect ? <CheckCircle size={18} /> :
+                 showWrong ? <XCircle size={18} /> :
                  String.fromCharCode(65 + idx)}
               </span>
-              <span className={`font-bold text-[14px] ${
-                showCorrect ? 'text-green-700' :
-                showWrong ? 'text-red-600' :
-                'text-olive-700'
+              <span className={`font-black text-[15px] ${
+                showCorrect ? 'text-emerald-400 drop-shadow-sm' :
+                showWrong ? 'text-red-400 drop-shadow-sm' :
+                isSelected ? 'text-amber-400 drop-shadow-sm' :
+                'text-slate-300'
               }`}>
                 {choice}
               </span>
@@ -363,55 +368,55 @@ const Quiz: React.FC = () => {
       </div>
 
       {/* Answered Status / Next Button */}
-      <div className="mt-auto pt-3">
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
         {showResult ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/* Who answered what */}
-            <div className="card p-3">
-              <div className="flex flex-wrap gap-2">
-                {players.map((p) => {
-                  const pa = answers?.[currentQ]?.[p];
-                  return (
-                    <div key={p} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold ${
-                      pa?.correct ? 'bg-green-50 text-green-600 border border-green-200' :
-                      pa ? 'bg-red-50 text-red-500 border border-red-200' :
-                      'bg-olive-50 text-olive-400 border border-olive-100'
-                    }`}>
-                      {pa?.correct ? <CheckCircle size={11} /> : pa ? <XCircle size={11} /> : <Clock size={11} />}
-                      {p === userNickname ? t('quiz.you') : p}
-                      {pa?.points ? <span className="ml-1 text-green-500">+{pa.points}</span> : null}
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="flex flex-wrap gap-2 justify-center max-h-[80px] overflow-y-auto hide-scrollbar">
+              {players.map((p) => {
+                const pa = answers?.[currentQ]?.[p];
+                return (
+                  <div key={p} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                    pa?.correct ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]' :
+                    pa ? 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]' :
+                    'bg-slate-800 text-slate-500 border-slate-700'
+                  }`}>
+                    {pa?.correct ? <CheckCircle size={12} /> : pa ? <XCircle size={12} /> : <Clock size={12} />}
+                    {p === userNickname ? t('quiz.you') : p}
+                    {pa?.points ? <span className="ml-1 text-emerald-400 bg-emerald-900/50 px-1 rounded">+{pa.points}</span> : null}
+                  </div>
+                );
+              })}
             </div>
 
             {isHost && (
-              <button onClick={handleNextQuestion} className="btn btn-primary w-full py-3.5 text-[15px]">
+              <GiantButton color="emerald" onClick={handleNextQuestion} className="w-full">
                 {currentQ + 1 >= questions.length ? t('quiz.viewResults') : t('quiz.nextQuestion')}
-              </button>
+              </GiantButton>
             )}
             {!isHost && (
-              <p className="text-center text-[12px] text-olive-400 font-semibold">{t('quiz.waitingNextQuestion')}</p>
+              <p className="text-center text-[11px] text-slate-500 font-black uppercase tracking-widest animate-pulse mt-2">{t('quiz.waitingNextQuestion')}</p>
             )}
           </div>
         ) : (selectedAnswer !== null || !!answers[currentQ]?.[userNickname]) ? (
-          <div className="flex-center gap-2 py-3">
-            <CheckCircle size={16} className="text-sage-500" />
-            <span className="text-[13px] font-bold text-sage-600">{t('quiz.alreadyAnswered')}</span>
+          <div className="flex-center gap-2 py-4">
+            <div className="w-6 h-6 border-2 border-slate-700 border-t-amber-500 rounded-full animate-spin"></div>
+            <span className="text-[12px] font-black text-amber-500 uppercase tracking-widest animate-pulse">{t('quiz.alreadyAnswered')}</span>
           </div>
-        ) : null}
+        ) : (
+           <div className="flex-center gap-2 py-4 opacity-0 pointer-events-none">Placeholder</div>
+        )}
       </div>
 
       {/* Live Scores (mini) */}
-      <div className="flex items-center gap-2 px-1 pb-1 overflow-x-auto">
+      <div className="flex items-center gap-2 px-2 pt-4 pb-24 overflow-x-auto hide-scrollbar mt-auto opacity-50">
         {Object.entries(scores)
           .sort((a, b) => (b[1] as number) - (a[1] as number))
           .slice(0, 5)
           .map(([name, score]) => (
-            <div key={name} className="flex items-center gap-1 bg-olive-50 px-2 py-1 rounded-lg shrink-0">
-              <span className="text-[10px] font-bold text-olive-500 truncate max-w-[60px]">{name}</span>
-              <span className="text-[11px] font-black text-sage-600">{score as number}</span>
+            <div key={name} className="flex items-center gap-1 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg shrink-0">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest truncate max-w-[60px]">{name}</span>
+              <span className="text-[11px] font-black text-slate-300">{score as number}</span>
             </div>
           ))}
       </div>

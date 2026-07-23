@@ -9,6 +9,8 @@ import { useGame } from '../contexts/GameContext';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { getRandomStatement } from './logic/neverData';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const NeverHaveIEver: React.FC = () => {
   const { t } = useTranslation();
@@ -40,13 +42,8 @@ const NeverHaveIEver: React.FC = () => {
   const renderErrorToast = () => {
     if (!errorMsg) return null;
     return (
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
-        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
-          <div className="p-1 bg-white/20 rounded-lg">
-            <LogOut size={18} className="rotate-90" />
-          </div>
-          <p className="text-[14px] font-bold">{errorMsg}</p>
-        </div>
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
+        {errorMsg}
       </div>
     );
   };
@@ -99,36 +96,40 @@ const NeverHaveIEver: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in relative z-10 px-4">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className="text-6xl animate-bounce-soft">🙋</div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('neverHaveIEver.title') || 'ไม่เคย... (Never Have I Ever)'}</h2>
-          <p className="text-olive-400 text-[13px]">{t('neverHaveIEver.description') || 'ใครเคยทำสิ่งนี้... ต้องยอมรับมาซะดีๆ!'}</p>
-        </div>
-        {isHost ? (
-          <button onClick={handleStart} className="btn btn-primary px-10 py-4 rounded-3xl text-lg shadow-lg">
-            {t('neverHaveIEver.startGame') || 'เริ่มเกมเลย!'}
-          </button>
-        ) : (
-          <p className="text-olive-400 font-bold animate-pulse">{t('neverHaveIEver.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
-        )}
+        
+        <NeonCard color="pink" className="p-8 flex flex-col items-center text-center max-w-sm w-full mx-auto">
+          <div className="text-6xl animate-pulse mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">🙋</div>
+          <h2 className="font-display font-black text-2xl text-white mb-2 uppercase tracking-widest">{t('neverHaveIEver.title') || 'ไม่เคย... (Never Have I Ever)'}</h2>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed">{t('neverHaveIEver.description') || 'ใครเคยทำสิ่งนี้... ต้องยอมรับมาซะดีๆ!'}</p>
+          
+          {isHost ? (
+            <GiantButton color="pink" onClick={handleStart} className="w-full">
+              {t('neverHaveIEver.startGame') || 'เริ่มเกมเลย!'}
+            </GiantButton>
+          ) : (
+            <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/30 text-pink-400 font-bold animate-pulse w-full">
+              {t('neverHaveIEver.waitingHost') || 'รอ Host เริ่มเกม...'}
+            </div>
+          )}
+        </NeonCard>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col py-4 animate-fade-in">
+    <div className="flex-1 flex flex-col py-4 animate-fade-in relative z-10 px-2 max-w-lg mx-auto w-full">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       
-      <div className="flex-between mb-4 px-1">
-        <span className="text-[11px] font-bold text-olive-400 uppercase tracking-widest">
+      <div className="flex justify-between items-center mb-6 bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
+        <span className="text-[11px] font-black text-pink-400 uppercase tracking-widest px-3 py-1 bg-pink-500/10 rounded-full border border-pink-500/30">
           {t('neverHaveIEver.round') || 'รอบที่'} {currentQIndex + 1}
         </span>
-        <div className="flex items-center gap-1.5 text-olive-500 font-bold text-[12px]">
-          <Users size={14} />
+        <div className="flex items-center gap-1.5 text-slate-300 font-bold text-xs bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+          <Users size={14} className="text-neon-green" />
           {hasRespondedCount}/{players.length} {t('neverHaveIEver.responded') || 'ตอบแล้ว'}
         </div>
       </div>
@@ -138,13 +139,13 @@ const NeverHaveIEver: React.FC = () => {
           key={currentQIndex}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="card p-8 flex flex-col items-center justify-center text-center gap-4 border-4 border-red-100 min-h-[220px] shadow-xl relative overflow-hidden"
+          className="p-8 flex flex-col items-center justify-center text-center gap-4 bg-slate-900/80 rounded-[32px] border border-pink-500/30 shadow-[0_0_30px_rgba(236,72,153,0.15)] min-h-[220px] relative overflow-hidden backdrop-blur-md"
         >
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-red-100" />
-          <Sparkles className="text-red-200 absolute top-4 right-4" size={24} />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 to-purple-500" />
+          <Sparkles className="text-pink-400 absolute top-4 right-4 opacity-50" size={24} />
           
-          <p className="text-[14px] font-black text-red-400 uppercase tracking-widest">NEVER HAVE I EVER</p>
-          <p className="text-[22px] font-black text-olive-800 leading-tight">
+          <p className="text-[14px] font-black text-pink-400 uppercase tracking-widest drop-shadow-md">NEVER HAVE I EVER</p>
+          <p className="text-[22px] font-black text-white leading-tight drop-shadow-md">
             {currentStatement}
           </p>
         </motion.div>
@@ -153,38 +154,54 @@ const NeverHaveIEver: React.FC = () => {
           <motion.button
             whileTap={myResponse === undefined ? { scale: 0.95 } : {}}
             onClick={() => handleResponse(true)}
-            className={`p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-2 ${
-              myResponse === true ? 'bg-red-50 border-red-300 shadow-md ring-2 ring-red-100' : 
-              myResponse !== undefined ? 'bg-white border-olive-50 opacity-40' : 'bg-white border-red-100 shadow-sm'
+            className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 relative overflow-hidden ${
+              myResponse === true 
+                ? 'bg-pink-900/40 border-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.3)]' 
+                : myResponse !== undefined 
+                  ? 'bg-slate-900 border-slate-800 opacity-50' 
+                  : 'bg-slate-800/50 border-pink-500/30 hover:border-pink-400/50 shadow-sm'
             }`}
           >
-            <span className="text-3xl">🙋‍♂️</span>
-            <span className="font-black text-red-600">{t('neverHaveIEver.ever') || 'เคยทำ'}</span>
-            {myResponse !== undefined && <span className="text-xl font-black text-red-400">{everCount}</span>}
+            {myResponse === true && <div className="absolute inset-0 bg-pink-500/10 pointer-events-none" />}
+            <span className="text-4xl drop-shadow-md z-10">🙋‍♂️</span>
+            <span className={`font-black text-lg z-10 ${myResponse === true ? 'text-pink-300' : 'text-slate-200'}`}>
+              {t('neverHaveIEver.ever') || 'เคยทำ'}
+            </span>
+            {myResponse !== undefined && (
+              <span className="text-3xl font-black text-pink-400 z-10 mt-1">{everCount}</span>
+            )}
           </motion.button>
 
           <motion.button
             whileTap={myResponse === undefined ? { scale: 0.95 } : {}}
             onClick={() => handleResponse(false)}
-            className={`p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-2 ${
-              myResponse === false ? 'bg-sage-50 border-sage-300 shadow-md ring-2 ring-sage-100' : 
-              myResponse !== undefined ? 'bg-white border-olive-50 opacity-40' : 'bg-white border-sage-100 shadow-sm'
+            className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-center gap-3 relative overflow-hidden ${
+              myResponse === false 
+                ? 'bg-neon-green/10 border-neon-green shadow-[0_0_20px_rgba(0,255,0,0.2)]' 
+                : myResponse !== undefined 
+                  ? 'bg-slate-900 border-slate-800 opacity-50' 
+                  : 'bg-slate-800/50 border-neon-green/30 hover:border-neon-green/50 shadow-sm'
             }`}
           >
-            <span className="text-3xl">🙅‍♀️</span>
-            <span className="font-black text-sage-600">{t('neverHaveIEver.never') || 'ไม่เคย'}</span>
-            {myResponse !== undefined && <span className="text-xl font-black text-sage-400">{neverCount}</span>}
+            {myResponse === false && <div className="absolute inset-0 bg-neon-green/10 pointer-events-none" />}
+            <span className="text-4xl drop-shadow-md z-10">🙅‍♀️</span>
+            <span className={`font-black text-lg z-10 ${myResponse === false ? 'text-neon-green' : 'text-slate-200'}`}>
+              {t('neverHaveIEver.never') || 'ไม่เคย'}
+            </span>
+            {myResponse !== undefined && (
+              <span className="text-3xl font-black text-neon-green z-10 mt-1">{neverCount}</span>
+            )}
           </motion.button>
         </div>
         
         {myResponse !== undefined && (
-          <div className="flex flex-wrap justify-center gap-2 mt-2">
+          <div className="flex flex-wrap justify-center gap-2 mt-4 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
             {players.map(p => {
               const res = responses[p];
               if (res === undefined) return null;
               return (
-                <div key={p} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border ${
-                  res ? 'bg-red-50 text-red-500 border-red-100' : 'bg-sage-50 text-sage-600 border-sage-100'
+                <div key={p} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border shadow-sm ${
+                  res ? 'bg-pink-500/10 text-pink-400 border-pink-500/30' : 'bg-neon-green/10 text-neon-green border-neon-green/30'
                 }`}>
                   {p === userNickname ? t('common.you') || 'คุณ' : p}
                 </div>
@@ -194,23 +211,25 @@ const NeverHaveIEver: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8 pb-10">
         {isHost && hasRespondedCount >= 1 && (
-          <button onClick={nextQuestion} className="btn btn-primary w-full py-4 rounded-3xl text-lg shadow-lg">
+          <GiantButton color="pink" onClick={nextQuestion} className="w-full">
             {t('common.next') || 'ข้อถัดไป'}
-            <ChevronRight size={20} strokeWidth={3} />
-          </button>
+            <ChevronRight size={20} strokeWidth={3} className="inline ml-1" />
+          </GiantButton>
         )}
         {!isHost && myResponse !== undefined && (
-          <p className="text-center text-[13px] font-bold text-olive-400 animate-pulse py-4">
-            {t('neverHaveIEver.waitingHostNext') || 'รอ Host ไปข้อถัดไป...'}
-          </p>
+          <div className="text-center p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
+              {t('neverHaveIEver.waitingHostNext') || 'รอ Host ไปข้อถัดไป...'}
+            </p>
+          </div>
         )}
       </div>
 
       {isHost && (
-        <div className="mt-auto pt-4 flex-center">
-          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[12px] font-bold text-olive-300 hover:text-olive-500 transition-colors">
+        <div className="mt-auto pt-4 pb-8 flex justify-center border-t border-slate-800/50">
+          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[12px] font-bold text-slate-400 hover:text-white transition-colors bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700">
             <RotateCcw size={14} /> {t('common.backToLobby') || 'กลับ Lobby'}
           </button>
         </div>

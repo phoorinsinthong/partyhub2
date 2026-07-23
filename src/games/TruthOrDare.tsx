@@ -9,6 +9,8 @@ import { useGame } from '../contexts/GameContext';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { TRUTHS, DARES } from './logic/truthData';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const TruthOrDare: React.FC = () => {
   const { t } = useTranslation();
@@ -23,7 +25,7 @@ const TruthOrDare: React.FC = () => {
   const renderErrorToast = () => {
     if (!errorMsg) return null;
     return (
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
         {errorMsg}
       </div>
     );
@@ -92,48 +94,59 @@ const TruthOrDare: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950 text-slate-200 px-4">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         
-        <div className="text-center space-y-2">
-          <h2 className="font-display font-black text-[28px] text-olive-800 tracking-tight">
+        <div className="text-center space-y-4">
+          <motion.div
+            className="text-7xl drop-shadow-[0_0_20px_rgba(244,63,94,0.5)]"
+            animate={{ scale: isMyTurn ? [1, 1.1, 1] : 1 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {isMyTurn ? '🤔' : '👀'}
+          </motion.div>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-white drop-shadow-md leading-tight">
             {isMyTurn ? t('truthOrDare.yourTurn') || 'ตาของคุณแล้ว!' : t('truthOrDare.waitTurn', { name: currentTarget }) || `ตาของ ${currentTarget}`}
           </h2>
-          <p className="text-olive-500 font-bold text-[15px]">
+          <p className="text-slate-400 font-black text-[14px] uppercase tracking-widest bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl inline-block">
             {isMyTurn ? t('truthOrDare.chooseOne') || 'เลือกมาหนึ่งอย่าง...' : t('truthOrDare.waitingChoice') || 'กำลังเลือก...'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 w-full max-w-[280px]">
+        <div className="grid grid-cols-1 gap-4 w-full max-w-[280px] mt-4">
           <motion.button
             whileTap={isMyTurn ? { scale: 0.95 } : {}}
             onClick={() => isMyTurn && drawCard('truth')}
             disabled={!isMyTurn}
-            className={`group relative overflow-hidden p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-2 ${
-              isMyTurn ? 'bg-white border-blue-100 shadow-sm active:shadow-inner' : 'bg-olive-50/50 border-transparent opacity-60'
+            className={`group relative overflow-hidden p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-3 ${
+              isMyTurn ? 'bg-blue-950/30 border-blue-500/50 hover:bg-blue-900/40 hover:border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.15)]' : 'bg-slate-900 border-slate-800 opacity-60'
             }`}
           >
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 flex-center text-blue-500 group-active:scale-90 transition-transform">
-              <Zap size={32} fill="currentColor" />
+            <div className={`w-16 h-16 rounded-2xl flex-center transition-transform group-active:scale-90 ${isMyTurn ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-slate-800 text-slate-500'}`}>
+              <Zap size={36} fill="currentColor" />
             </div>
-            <span className="font-black text-blue-600 text-lg">{t('truthOrDare.truth') || 'TRUTH'}</span>
-            <span className="text-[11px] font-bold text-blue-400/70">{t('truthOrDare.truthDesc') || 'ตอบความจริง'}</span>
+            <div className="text-center">
+              <span className={`block font-black text-[24px] uppercase tracking-widest mb-1 ${isMyTurn ? 'text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'text-slate-400'}`}>{t('truthOrDare.truth') || 'TRUTH'}</span>
+              <span className={`text-[12px] font-bold ${isMyTurn ? 'text-blue-300/70' : 'text-slate-600'}`}>{t('truthOrDare.truthDesc') || 'ตอบความจริง'}</span>
+            </div>
           </motion.button>
 
           <motion.button
             whileTap={isMyTurn ? { scale: 0.95 } : {}}
             onClick={() => isMyTurn && drawCard('dare')}
             disabled={!isMyTurn}
-            className={`group relative overflow-hidden p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-2 ${
-              isMyTurn ? 'bg-white border-rose-100 shadow-sm active:shadow-inner' : 'bg-olive-50/50 border-transparent opacity-60'
+            className={`group relative overflow-hidden p-6 rounded-[32px] border-2 transition-all flex flex-col items-center gap-3 ${
+              isMyTurn ? 'bg-rose-950/30 border-rose-500/50 hover:bg-rose-900/40 hover:border-rose-400 shadow-[0_0_20px_rgba(225,29,72,0.15)]' : 'bg-slate-900 border-slate-800 opacity-60'
             }`}
           >
-            <div className="w-14 h-14 rounded-2xl bg-rose-50 flex-center text-rose-500 group-active:scale-90 transition-transform">
-              <Heart size={32} fill="currentColor" />
+            <div className={`w-16 h-16 rounded-2xl flex-center transition-transform group-active:scale-90 ${isMyTurn ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 shadow-[0_0_15px_rgba(225,29,72,0.3)]' : 'bg-slate-800 text-slate-500'}`}>
+              <Heart size={36} fill="currentColor" />
             </div>
-            <span className="font-black text-rose-600 text-lg">{t('truthOrDare.dare') || 'DARE'}</span>
-            <span className="text-[11px] font-bold text-rose-400/70">{t('truthOrDare.dareDesc') || 'รับคำท้า'}</span>
+            <div className="text-center">
+              <span className={`block font-black text-[24px] uppercase tracking-widest mb-1 ${isMyTurn ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'text-slate-400'}`}>{t('truthOrDare.dare') || 'DARE'}</span>
+              <span className={`text-[12px] font-bold ${isMyTurn ? 'text-rose-300/70' : 'text-slate-600'}`}>{t('truthOrDare.dareDesc') || 'รับคำท้า'}</span>
+            </div>
           </motion.button>
         </div>
       </div>
@@ -141,66 +154,66 @@ const TruthOrDare: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col py-4 animate-fade-in">
+    <div className="flex-1 flex flex-col py-4 animate-fade-in bg-slate-950 text-slate-200 px-4">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       
-      <div className="flex-center flex-col gap-4 flex-1">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className={`card w-full max-w-sm p-8 flex flex-col items-center text-center gap-6 border-4 shadow-2xl relative overflow-hidden ${
-            cardType === 'truth' ? 'border-blue-200' : 'border-rose-200'
+      <div className="flex-center flex-col gap-6 flex-1">
+        <NeonCard
+          color={cardType === 'truth' ? 'blue' : 'rose'}
+          className={`w-full max-w-sm p-8 flex flex-col items-center text-center gap-6 shadow-[0_0_40px_rgba(0,0,0,0.5)] ${
+            cardType === 'truth' ? 'border-blue-500/50 bg-blue-950/20' : 'border-rose-500/50 bg-rose-950/20'
           }`}
         >
           {/* Background decoration */}
-          <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-10 ${
+          <div className={`absolute -top-10 -right-10 w-48 h-48 rounded-full blur-3xl opacity-20 ${
+            cardType === 'truth' ? 'bg-blue-500' : 'bg-rose-500'
+          }`} />
+          <div className={`absolute -bottom-10 -left-10 w-48 h-48 rounded-full blur-3xl opacity-20 ${
             cardType === 'truth' ? 'bg-blue-500' : 'bg-rose-500'
           }`} />
           
-          <div className={`px-4 py-1.5 rounded-full text-[12px] font-black tracking-widest ${
-            cardType === 'truth' ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600'
+          <div className={`relative px-4 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest border ${
+            cardType === 'truth' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_10px_rgba(225,29,72,0.3)]'
           }`}>
             {cardType === 'truth' ? 'TRUTH' : 'DARE'}
           </div>
 
-          <p className="text-[22px] font-black text-olive-800 leading-tight">
+          <p className="relative text-[24px] font-black text-white leading-tight drop-shadow-md">
             {currentCard}
           </p>
 
-          <div className="w-12 h-1 bg-olive-100 rounded-full" />
+          <div className={`relative w-16 h-1.5 rounded-full ${cardType === 'truth' ? 'bg-blue-500/50 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-rose-500/50 shadow-[0_0_10px_rgba(225,29,72,0.5)]'}`} />
           
-          <p className="text-[13px] font-bold text-olive-400">
-            {currentTarget} {t('truthOrDare.mustDoIt') || 'ต้องทำสิ่งนี้!'}
+          <p className="relative text-[14px] font-black text-slate-300 uppercase tracking-widest bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-700">
+            <span className={cardType === 'truth' ? 'text-blue-400 drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]' : 'text-rose-400 drop-shadow-[0_0_5px_rgba(225,29,72,0.5)]'}>{currentTarget}</span> <br/>
+            <span className="text-[10px] text-slate-500">{t('truthOrDare.mustDoIt') || 'ต้องทำสิ่งนี้!'}</span>
           </p>
-        </motion.div>
+        </NeonCard>
 
         {isHost && (
-          <button
+          <GiantButton
+            color={cardType === 'truth' ? 'blue' : 'rose'}
             onClick={nextTurn}
-            className="btn btn-primary w-full max-w-sm py-4 rounded-3xl text-lg mt-4 shadow-lg active:translate-y-1 transition-all"
+            className="w-full max-w-sm mt-4"
           >
             {t('truthOrDare.done') || 'เรียบร้อย! คนถัดไป'}
-            <ChevronRight size={20} strokeWidth={3} />
-          </button>
+            <ChevronRight size={20} strokeWidth={3} className="ml-2 inline-block mb-1" />
+          </GiantButton>
         )}
         
         {!isHost && (
-          <div className="mt-8 flex flex-col items-center gap-2 opacity-40">
-            <p className="text-[13px] font-bold text-olive-400">{t('truthOrDare.waitingHostNext') || 'รอ Host เปลี่ยนคน...'}</p>
-            <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-olive-300 animate-bounce" />
-              <div className="w-1.5 h-1.5 rounded-full bg-olive-300 animate-bounce [animation-delay:0.2s]" />
-              <div className="w-1.5 h-1.5 rounded-full bg-olive-300 animate-bounce [animation-delay:0.4s]" />
-            </div>
+          <div className="mt-8 flex flex-col items-center gap-4 p-6 bg-slate-900/50 border border-slate-800 rounded-3xl w-full max-w-sm">
+            <div className="w-8 h-8 border-4 border-slate-800 rounded-full animate-spin shadow-[0_0_15px_rgba(0,0,0,0.5)]" style={{ borderTopColor: cardType === 'truth' ? '#3b82f6' : '#e11d48' }} />
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('truthOrDare.waitingHostNext') || 'รอ Host เปลี่ยนคน...'}</p>
           </div>
         )}
       </div>
 
       {isHost && (
-        <div className="mt-auto pt-6 flex-center">
-          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[12px] font-bold text-olive-300 hover:text-olive-500 transition-colors">
-            <RotateCcw size={14} /> {t('common.backToLobby') || 'กลับ Lobby'}
+        <div className="mt-auto pt-8 pb-4 flex-center">
+          <button onClick={handleBackToLobby} className="flex items-center justify-center gap-2 text-[12px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800 hover:border-slate-600 active:scale-95">
+            <RotateCcw size={16} /> {t('common.backToLobby') || 'กลับ Lobby'}
           </button>
         </div>
       )}

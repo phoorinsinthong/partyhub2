@@ -1,116 +1,45 @@
 /**
- * Avatar System for Party Hub
- * Categorized emoji avatars with color/gradient backgrounds and custom border frames
+ * Avatar System for Party Hub (Neon Pixel Edition)
+ * Uses DiceBear Pixel Art for premium retro feel.
  */
 
-export const AVATAR_CATEGORIES = {
-  animals: {
-    label: 'สัตว์เลี้ยง',
-    icon: '🐱',
-    emojis: [
-      '🐱', '🐶', '🐰', '🦊', '🐼', '🐨', '🐸', '🐧', '🦄', '🐻',
-      '🐹', '🐯', '🦁', '🐮', '🐷', '🐵', '🐲', '🦋', '🐳', '🐙'
-    ]
-  },
-  party: {
-    label: 'ปาร์ตี้ & เกม',
-    icon: '🎮',
-    emojis: [
-      '🎸', '🎨', '🎭', '🎪', '🎯', '🎲', '🃏', '👑', '🦸', '🧙',
-      '🎮', '👾', '🚀', '🔮', '🏆', '💎', '🔥', '⚡', '🎉', '🍿'
-    ]
-  },
-  food: {
-    label: 'อาหาร & ขนม',
-    icon: '🍓',
-    emojis: [
-      '🍓', '🍑', '🍉', '🍍', '🥑', '🍔', '🍕', '🍩', '🍦', '🧋',
-      '🍜', '🍱', '🥐', '🍰', '🍡', '🍭', '🌮', '🥨', '🍻', '🍵'
-    ]
-  },
-  fantasy: {
-    label: 'แฟนตาซี & ธรรมชาติ',
-    icon: '✨',
-    emojis: [
-      '🌸', '🌻', '🍄', '🌈', '⭐', '🌙', '🌌', '⚡', '🌊', '❄️',
-      '🪐', '☄️', '🔮', '🧸', '🎈', '🎀', '💖', '🍀', '🕊️', '🐾'
-    ]
-  }
+// Generate a random seed for the pixel art
+export const generateRandomSeed = () => {
+  return Math.random().toString(36).substring(2, 8);
 };
 
-export const AVATARS = [
-  ...AVATAR_CATEGORIES.animals.emojis,
-  ...AVATAR_CATEGORIES.party.emojis,
-  ...AVATAR_CATEGORIES.food.emojis,
-  ...AVATAR_CATEGORIES.fantasy.emojis,
-];
+// Get the DiceBear SVG URL for a given seed
+export const getAvatarUrl = (seed) => {
+  if (!seed) return '';
+  // You can also use other styles like 'bottts' or 'adventurer'
+  return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
+};
 
-// Soft pastel & vibrant gradient background presets
-export const AVATAR_COLORS = [
-  '#f0a8a8', // soft red
-  '#f0c4a8', // soft peach
-  '#f0dda8', // soft yellow
-  '#c8e6a8', // soft green
-  '#a8d8c8', // soft teal
-  '#a8c8e6', // soft blue
-  '#b8a8e6', // soft purple
-  '#daa8e6', // soft pink
-  '#e6a8c8', // soft rose
-  '#a8c8b8', // soft mint
-  '#c8b8a8', // soft tan
-  '#e6c8a8', // soft sand
-];
-
+// Neon Gradient background presets for avatars
 export const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', // Sunset Pink
-  'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)', // Ocean Blue
-  'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)', // Fresh Mint
-  'linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)', // Magic Purple
-  'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)', // Lavender Sky
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Neon Rose
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Cyber Cyan
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', // Warm Peach
+  'linear-gradient(135deg, #b829ea 0%, #ff1493 100%)', // Neon Purple -> Pink
+  'linear-gradient(135deg, #00f0ff 0%, #b829ea 100%)', // Neon Blue -> Purple
+  'linear-gradient(135deg, #39ff14 0%, #00f0ff 100%)', // Neon Green -> Blue
+  'linear-gradient(135deg, #ff5e00 0%, #ff1493 100%)', // Neon Orange -> Pink
+  'linear-gradient(135deg, #ccff00 0%, #39ff14 100%)', // Neon Yellow -> Green
+  'linear-gradient(135deg, #ff1493 0%, #00f0ff 100%)', // Cyberpunk Pink/Blue
 ];
 
-export const AVATAR_FRAMES = [
-  { id: 'none', label: 'ปกติ', icon: '⚪' },
-  { id: 'crown', label: 'มงกุฎ', icon: '👑' },
-  { id: 'neon', label: 'นีออน', icon: '✨' },
-  { id: 'pixel', label: 'พิกเซล', icon: '👾' },
-  { id: 'star', label: 'ดาวเด่น', icon: '🌟' }
-];
-
-export const getAvatarColor = (name) => {
-  if (!name) return AVATAR_COLORS[0];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+export const getRandomGradient = () => {
+  return AVATAR_GRADIENTS[Math.floor(Math.random() * AVATAR_GRADIENTS.length)];
 };
 
-export const getRandomAvatar = (takenAvatars = []) => {
-  const available = AVATARS.filter(a => !takenAvatars.includes(a));
-  if (available.length === 0) return AVATARS[Math.floor(Math.random() * AVATARS.length)];
-  return available[Math.floor(Math.random() * available.length)];
-};
-
-export const getRandomColor = () => {
-  return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-};
-
-export const saveAvatar = (emoji, color, frame = 'none', gradient = '') => {
-  localStorage.setItem('avatar', emoji);
-  localStorage.setItem('avatarColor', color);
-  localStorage.setItem('avatarFrame', frame);
+export const saveAvatar = (seed, gradient) => {
+  localStorage.setItem('avatarSeed', seed);
   localStorage.setItem('avatarGradient', gradient);
+  // Backwards compatibility with old system so it doesn't break everything instantly
+  localStorage.setItem('avatar', seed); 
 };
 
 export const loadAvatar = () => {
+  const seed = localStorage.getItem('avatarSeed') || localStorage.getItem('avatar');
   return {
-    emoji: localStorage.getItem('avatar') || null,
-    color: localStorage.getItem('avatarColor') || null,
-    frame: localStorage.getItem('avatarFrame') || 'none',
+    seed: seed || null,
     gradient: localStorage.getItem('avatarGradient') || '',
   };
 };

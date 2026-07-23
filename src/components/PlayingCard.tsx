@@ -19,7 +19,7 @@ const PlayingCard = ({
   const cardContent = (
     <div
       className={`relative w-16 h-24 sm:w-20 sm:h-28 rounded-xl border-2 shadow-md flex flex-col justify-between p-2 select-none transition-colors
-        ${selected ? 'border-primary ring-4 ring-primary/30 -translate-y-4 shadow-xl' : 'border-stone-200'}
+        ${selected ? 'border-neon-green ring-4 ring-neon-green/30 -translate-y-4 shadow-xl' : 'border-slate-600'}
         ${disabled ? 'opacity-50 grayscale cursor-not-allowed' : onClick ? 'cursor-pointer hover:-translate-y-2' : ''}
         ${className}
       `}

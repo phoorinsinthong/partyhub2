@@ -1,255 +1,168 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  AVATARS, AVATAR_COLORS, AVATAR_CATEGORIES, AVATAR_FRAMES, AVATAR_GRADIENTS, 
+  generateRandomSeed, getAvatarUrl, AVATAR_GRADIENTS, getRandomGradient,
   saveAvatar, loadAvatar 
 } from '../utils/avatars';
-import { Shuffle, Check } from 'lucide-react';
+import { Shuffle, Check, Edit3 } from 'lucide-react';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface AvatarPickerProps {
-  onSelect: (emoji: string, color: string, frame?: string, gradient?: string) => void;
-  currentEmoji?: string;
-  currentColor?: string;
-  currentFrame?: string;
+  onSelect: (seed: string, gradient: string) => void;
+  currentSeed?: string;
   currentGradient?: string;
 }
 
 const AvatarPicker: React.FC<AvatarPickerProps> = ({ 
   onSelect, 
-  currentEmoji, 
-  currentColor, 
-  currentFrame, 
+  currentSeed, 
   currentGradient 
 }) => {
   const loaded = loadAvatar();
-  const [tab, setTab] = useState<'emoji' | 'color' | 'frame'>('emoji');
-  const [category, setCategory] = useState<keyof typeof AVATAR_CATEGORIES>('animals');
+  const [tab, setTab] = useState<'avatar' | 'color'>('avatar');
+  const { vibrateLight, vibrateMedium } = useHaptics();
   
-  const [selectedEmoji, setSelectedEmoji] = useState(currentEmoji || loaded.emoji || '🐱');
-  const [selectedColor, setSelectedColor] = useState(currentColor || loaded.color || AVATAR_COLORS[0]);
-  const [selectedFrame, setSelectedFrame] = useState(currentFrame || loaded.frame || 'none');
-  const [selectedGradient, setSelectedGradient] = useState(currentGradient || loaded.gradient || '');
+  const [selectedSeed, setSelectedSeed] = useState(currentSeed || loaded.seed || generateRandomSeed());
+  const [selectedGradient, setSelectedGradient] = useState(currentGradient || loaded.gradient || AVATAR_GRADIENTS[0]);
 
   const handleConfirm = () => {
-    saveAvatar(selectedEmoji, selectedColor, selectedFrame, selectedGradient);
-    onSelect(selectedEmoji, selectedColor, selectedFrame, selectedGradient);
+    vibrateMedium();
+    saveAvatar(selectedSeed, selectedGradient);
+    onSelect(selectedSeed, selectedGradient);
   };
 
   const handleRandom = () => {
-    const randEmoji = AVATARS[Math.floor(Math.random() * AVATARS.length)];
-    const randColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-    const randFrame = AVATAR_FRAMES[Math.floor(Math.random() * AVATAR_FRAMES.length)].id;
-    const useGrad = Math.random() > 0.5;
-    const randGrad = useGrad ? AVATAR_GRADIENTS[Math.floor(Math.random() * AVATAR_GRADIENTS.length)] : '';
-    
-    setSelectedEmoji(randEmoji);
-    setSelectedColor(randColor);
-    setSelectedFrame(randFrame);
-    setSelectedGradient(randGrad);
+    vibrateLight();
+    setSelectedSeed(generateRandomSeed());
+    setSelectedGradient(getRandomGradient());
   };
 
+  const avatarUrl = getAvatarUrl(selectedSeed);
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {/* Live Preview Box */}
       <div className="flex flex-col items-center justify-center py-2">
         <div className="relative">
           <motion.div
-            key={selectedEmoji + selectedColor + selectedFrame + selectedGradient}
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
+            key={selectedSeed + selectedGradient}
+            initial={{ scale: 0.8, rotate: -5 }}
+            animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            className={`w-20 h-20 rounded-[28px] flex-center text-4xl shadow-lg border-[3px] border-white/80 transition-all ${
-              selectedFrame === 'neon' ? 'ring-4 ring-purple-400 ring-offset-2 animate-pulse' : ''
-            } ${selectedFrame === 'star' ? 'ring-4 ring-amber-300 ring-offset-2 shadow-amber-400/40' : ''}`}
-            style={{ 
-              background: selectedGradient || selectedColor 
-            }}
+            className="w-24 h-24 rounded-[28px] shadow-neon-blue border-[3px] border-white/80 transition-all flex items-center justify-center overflow-hidden"
+            style={{ background: selectedGradient }}
           >
-            {selectedEmoji}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-[120%] h-[120%] object-cover mt-[20%]" style={{ imageRendering: 'pixelated' }} />
+            ) : (
+              <div className="text-4xl animate-bounce">👾</div>
+            )}
           </motion.div>
-
-          {/* Frame Badges */}
-          {selectedFrame === 'crown' && (
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl animate-bounce-soft">
-              👑
-            </div>
-          )}
-          {selectedFrame === 'pixel' && (
-            <div className="absolute -bottom-1 -right-1 bg-purple-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded border border-white">
-              8-BIT
-            </div>
-          )}
+          <div className="absolute -bottom-2 -right-2 bg-slate-900 text-neon-blue text-[10px] font-bold px-2 py-1 rounded border border-neon-blue shadow-neon-blue">
+            PIXEL
+          </div>
         </div>
-        <p className="text-[11px] font-bold text-olive-500 mt-2">พรีวิวโปรไฟล์</p>
+        <p className="text-[12px] font-bold text-slate-400 mt-3 uppercase tracking-wider">พรีวิวโปรไฟล์</p>
       </div>
 
       {/* Main Tab Switcher */}
-      <div className="flex bg-olive-50 rounded-2xl p-1 gap-1">
+      <div className="flex bg-slate-800 rounded-2xl p-1 gap-1 border border-slate-700">
         <button
-          className={`flex-1 py-2 rounded-xl text-[12px] font-extrabold transition-all ${
-            tab === 'emoji' ? 'bg-white text-olive-700 shadow-sm' : 'text-olive-400'
+          className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+            tab === 'avatar' ? 'bg-slate-700 text-neon-blue shadow-sm' : 'text-slate-400 hover:text-white'
           }`}
-          onClick={() => setTab('emoji')}
+          onClick={() => { vibrateLight(); setTab('avatar'); }}
         >
-          😊 อีโมจิ
+          👾 ตัวละคร
         </button>
         <button
-          className={`flex-1 py-2 rounded-xl text-[12px] font-extrabold transition-all ${
-            tab === 'color' ? 'bg-white text-olive-700 shadow-sm' : 'text-olive-400'
+          className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+            tab === 'color' ? 'bg-slate-700 text-neon-pink shadow-sm' : 'text-slate-400 hover:text-white'
           }`}
-          onClick={() => setTab('color')}
+          onClick={() => { vibrateLight(); setTab('color'); }}
         >
-          🎨 สี/การ์เดียนต์
-        </button>
-        <button
-          className={`flex-1 py-2 rounded-xl text-[12px] font-extrabold transition-all ${
-            tab === 'frame' ? 'bg-white text-olive-700 shadow-sm' : 'text-olive-400'
-          }`}
-          onClick={() => setTab('frame')}
-        >
-          🖼️ กรอบรูป
+          🎨 พื้นหลัง
         </button>
       </div>
 
-      {/* Tab 1: Emoji Categories */}
-      {tab === 'emoji' && (
-        <div className="space-y-2">
-          {/* Category Sub-tabs */}
-          <div className="flex gap-1 overflow-x-auto pb-1">
-            {Object.entries(AVATAR_CATEGORIES).map(([catKey, cat]) => (
-              <button
-                key={catKey}
-                onClick={() => setCategory(catKey as keyof typeof AVATAR_CATEGORIES)}
-                className={`px-3 py-1 rounded-xl text-[11px] font-bold shrink-0 flex items-center gap-1 transition-all ${
-                  category === catKey 
-                    ? 'bg-sage-500 text-white shadow-sm' 
-                    : 'bg-olive-50 text-olive-500'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <motion.div
-            key={category}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-6 sm:grid-cols-8 gap-1.5 max-h-[160px] overflow-y-auto p-1"
-          >
-            {AVATAR_CATEGORIES[category].emojis.map((emoji) => (
-              <button
-                key={emoji}
-                className={`w-full aspect-square rounded-xl flex-center text-xl transition-all active:scale-90 ${
-                  selectedEmoji === emoji
-                    ? 'bg-sage-100 border-2 border-sage-400 shadow-sm scale-110'
-                    : 'bg-olive-50/60 border-2 border-transparent hover:bg-olive-50'
-                }`}
-                onClick={() => setSelectedEmoji(emoji)}
-              >
-                {emoji}
-              </button>
-            ))}
-          </motion.div>
-        </div>
-      )}
-
-      {/* Tab 2: Solid Colors & Gradients */}
-      {tab === 'color' && (
-        <motion.div
-          key="color"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-3"
-        >
-          <div>
-            <span className="text-[11px] font-bold text-olive-400 block mb-1.5">สีพาสเทล</span>
-            <div className="grid grid-cols-6 gap-2">
-              {AVATAR_COLORS.map((color) => (
-                <button
-                  key={color}
-                  className={`w-full aspect-square rounded-2xl transition-all active:scale-90 flex-center ${
-                    selectedColor === color && !selectedGradient
-                      ? 'ring-[3px] ring-olive-400 ring-offset-2 scale-110'
-                      : ''
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() => {
-                    setSelectedColor(color);
-                    setSelectedGradient('');
-                  }}
-                >
-                  {selectedColor === color && !selectedGradient && (
-                    <Check size={16} color="white" strokeWidth={3} />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <span className="text-[11px] font-bold text-purple-400 block mb-1.5">การ์เดียนต์นีออน</span>
-            <div className="grid grid-cols-4 gap-2">
-              {AVATAR_GRADIENTS.map((grad, idx) => (
-                <button
-                  key={idx}
-                  className={`w-full h-9 rounded-xl transition-all active:scale-90 flex-center ${
-                    selectedGradient === grad
-                      ? 'ring-[3px] ring-purple-500 ring-offset-2 scale-105'
-                      : ''
-                  }`}
-                  style={{ background: grad }}
-                  onClick={() => setSelectedGradient(grad)}
-                >
-                  {selectedGradient === grad && (
-                    <Check size={14} color="white" strokeWidth={3} />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Tab 3: Avatar Frames */}
-      {tab === 'frame' && (
-        <motion.div
-          key="frame"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="grid grid-cols-3 gap-2"
-        >
-          {AVATAR_FRAMES.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setSelectedFrame(f.id)}
-              className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1 transition-all ${
-                selectedFrame === f.id
-                  ? 'border-purple-500 bg-purple-50 text-purple-700 font-bold shadow-md'
-                  : 'border-olive-100 bg-white text-olive-500 hover:border-olive-200'
-              }`}
+      <div className="min-h-[140px]">
+        <AnimatePresence mode="wait">
+          {/* Tab 1: Avatar Generator */}
+          {tab === 'avatar' && (
+            <motion.div
+              key="avatar"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              className="space-y-3"
             >
-              <span className="text-2xl">{f.icon}</span>
-              <span className="text-xs font-semibold">{f.label}</span>
-            </button>
-          ))}
-        </motion.div>
-      )}
+              <div className="text-center">
+                <span className="text-[12px] font-bold text-slate-400 block mb-2">โค้ดพันธุกรรมตัวละคร (Seed)</span>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      className="input-field text-lg uppercase h-[50px] min-h-[50px] py-0"
+                      value={selectedSeed}
+                      onChange={(e) => setSelectedSeed(e.target.value.toUpperCase())}
+                      maxLength={10}
+                    />
+                    <Edit3 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                  </div>
+                  <button
+                    className="w-[50px] h-[50px] bg-slate-800 rounded-2xl flex-center border-2 border-slate-700 text-neon-blue active:bg-slate-700 transition-colors"
+                    onClick={handleRandom}
+                  >
+                    <Shuffle size={18} />
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-2">พิมพ์อะไรก็ได้เพื่อสุ่มหน้าตาใหม่!</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Tab 2: Solid Colors & Gradients */}
+          {tab === 'color' && (
+            <motion.div
+              key="color"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="space-y-3"
+            >
+              <div>
+                <span className="text-[12px] font-bold text-slate-400 block mb-2">การ์เดียนต์นีออน</span>
+                <div className="grid grid-cols-3 gap-3">
+                  {AVATAR_GRADIENTS.map((grad, idx) => (
+                    <button
+                      key={idx}
+                      className={`w-full h-12 rounded-xl transition-all active:scale-90 flex-center shadow-md ${
+                        selectedGradient === grad
+                          ? 'ring-[3px] ring-white ring-offset-2 ring-offset-slate-900 scale-105'
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                      style={{ background: grad }}
+                      onClick={() => { vibrateLight(); setSelectedGradient(grad); }}
+                    >
+                      {selectedGradient === grad && (
+                        <Check size={18} color="white" strokeWidth={3} />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2 pt-2 border-t border-olive-100">
+      <div className="flex gap-3 pt-3 border-t border-slate-800 mt-2">
         <button
-          className="btn btn-outline flex-1 py-2.5 text-[12px] min-h-[44px]"
-          onClick={handleRandom}
-        >
-          <Shuffle size={14} /> สุ่ม
-        </button>
-        <button
-          className="btn btn-primary flex-[2] py-2.5 text-[13px] min-h-[44px]"
+          className="w-full bg-neon-blue text-white font-bold rounded-xl py-3 text-[15px] flex justify-center items-center gap-2"
           onClick={handleConfirm}
         >
-          <Check size={14} /> ใช้อวาตาร์นี้
+          <Check size={18} /> ยืนยันตัวละคร
         </button>
       </div>
     </div>

@@ -44,10 +44,10 @@ const PersonalStats = () => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 bg-sage-50 border-2 border-sage-100 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
+        className="flex items-center gap-1.5 bg-slate-800 border-2 border-slate-700 px-3 py-1.5 rounded-full active:scale-95 transition-transform"
       >
-        <BarChart3 size={13} className="text-sage-500" />
-        <span className="text-[11px] font-bold text-sage-700">{stats.totalWins} ชนะ</span>
+        <BarChart3 size={13} className="text-neon-green" />
+        <span className="text-[11px] font-bold text-slate-200">{stats.totalWins} ชนะ</span>
       </button>
 
       <AnimatePresence>
@@ -57,8 +57,7 @@ const PersonalStats = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-50 flex-center p-6"
-            style={{ background: 'rgba(47,42,34,0.4)' }}
+            className="fixed inset-0 z-50 flex-center p-6 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => setIsOpen(false)}
           >
             <motion.div
@@ -66,17 +65,17 @@ const PersonalStats = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.92, y: 20 }}
               transition={{ duration: 0.15 }}
-              className="card p-5 w-full max-w-[340px] max-h-[70vh] flex flex-col"
+              className="bg-slate-900 border border-slate-700 rounded-2xl p-5 w-full max-w-[340px] max-h-[70vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex-between mb-4">
                 <div className="flex items-center gap-2">
                   <Trophy size={18} className="text-amber-500" />
-                  <span className="font-display font-bold text-[16px] text-olive-800">สถิติของคุณ</span>
+                  <span className="font-display font-bold text-[16px] text-white">สถิติของคุณ</span>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-xl bg-olive-50 flex-center text-olive-400 active:bg-olive-100"
+                  className="w-8 h-8 rounded-xl bg-slate-800 flex-center text-slate-400 active:bg-slate-700"
                 >
                   <X size={15} />
                 </button>
@@ -84,33 +83,33 @@ const PersonalStats = () => {
 
               {/* Summary */}
               <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="bg-sage-50 border-2 border-sage-100 rounded-2xl p-3 text-center">
-                  <span className="font-black text-[20px] text-sage-600 block">{stats.totalGames || 0}</span>
-                  <span className="text-[10px] font-bold text-olive-400">เล่นทั้งหมด</span>
+                <div className="bg-slate-800/50 border-2 border-slate-700 rounded-2xl p-3 text-center">
+                  <span className="font-black text-[20px] text-neon-green block">{stats.totalGames || 0}</span>
+                  <span className="text-[10px] font-bold text-slate-400">เล่นทั้งหมด</span>
                 </div>
-                <div className="bg-amber-50 border-2 border-amber-100 rounded-2xl p-3 text-center">
-                  <span className="font-black text-[20px] text-amber-600 block">{stats.totalWins || 0}</span>
-                  <span className="text-[10px] font-bold text-olive-400">ชนะ</span>
+                <div className="bg-slate-800/50 border-2 border-amber-500/30 rounded-2xl p-3 text-center">
+                  <span className="font-black text-[20px] text-amber-400 block">{stats.totalWins || 0}</span>
+                  <span className="text-[10px] font-bold text-slate-400">ชนะ</span>
                 </div>
-                <div className="bg-warm-50 border-2 border-warm-100 rounded-2xl p-3 text-center">
-                  <span className="font-black text-[20px] text-warm-600 block">{winRate}%</span>
-                  <span className="text-[10px] font-bold text-olive-400">อัตราชนะ</span>
+                <div className="bg-slate-800/50 border-2 border-neon-blue/30 rounded-2xl p-3 text-center">
+                  <span className="font-black text-[20px] text-neon-blue block">{winRate}%</span>
+                  <span className="text-[10px] font-bold text-slate-400">อัตราชนะ</span>
                 </div>
               </div>
 
               {/* Per-game breakdown */}
               {Object.keys(stats.gamesPlayed || {}).length > 0 && (
                 <div className="flex-1 overflow-y-auto space-y-2">
-                  <span className="text-[11px] font-bold text-olive-400 uppercase tracking-wider">แยกตามเกม</span>
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">แยกตามเกม</span>
                   {Object.entries(stats.gamesPlayed || {}).map(([game, played]) => (
-                    <div key={game} className="flex items-center gap-3 p-3 rounded-2xl bg-olive-50/60 border-2 border-olive-50">
+                    <div key={game} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-800 border-2 border-slate-700">
                       <span className="text-xl">{GAME_ICONS[game] || '🎮'}</span>
                       <div className="flex-1">
-                        <span className="font-bold text-[13px] text-olive-700">{GAME_NAMES[game] || game}</span>
+                        <span className="font-bold text-[13px] text-slate-200">{GAME_NAMES[game] || game}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[12px] font-bold text-sage-600">{stats.games?.[game] || 0}/{played}</span>
-                        <span className="text-[9px] text-olive-400 block">ชนะ/เล่น</span>
+                        <span className="text-[12px] font-bold text-neon-green">{stats.games?.[game] || 0}/{played}</span>
+                        <span className="text-[9px] text-slate-400 block">ชนะ/เล่น</span>
                       </div>
                     </div>
                   ))}

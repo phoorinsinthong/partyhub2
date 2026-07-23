@@ -77,10 +77,10 @@ const InstallPrompt = () => {
           style={{
             maxWidth: '460px',
             margin: '0 auto',
-            background: '#fff',
+            background: '#0f172a',
             borderRadius: '20px',
             padding: '16px',
-            boxShadow: '0 -4px 30px rgba(50,60,30,0.12), 0 0 0 1px rgba(50,60,30,0.04)',
+            boxShadow: '0 -4px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)',
             display: 'flex',
             alignItems: 'center',
             gap: '14px',
@@ -92,7 +92,7 @@ const InstallPrompt = () => {
               width: '48px',
               height: '48px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #6a9e5a, #4d7a3f)',
+              background: 'linear-gradient(135deg, #0ea5e9, #ec4899)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -107,7 +107,7 @@ const InstallPrompt = () => {
             <p style={{
               fontWeight: 800,
               fontSize: '14px',
-              color: '#2f2a22',
+              color: '#f1f5f9',
               fontFamily: "'Nunito', sans-serif",
               marginBottom: '2px',
             }}>
@@ -115,7 +115,7 @@ const InstallPrompt = () => {
             </p>
             <p style={{
               fontSize: '12px',
-              color: '#8a7e6a',
+              color: '#94a3b8',
               fontFamily: "'Nunito', sans-serif",
               fontWeight: 600,
             }}>
@@ -130,14 +130,14 @@ const InstallPrompt = () => {
               padding: '10px 18px',
               borderRadius: '14px',
               border: 'none',
-              background: 'linear-gradient(160deg, #6a9e5a, #4d7a3f)',
+              background: 'linear-gradient(160deg, #0ea5e9, #ec4899)',
               color: 'white',
               fontWeight: 800,
               fontSize: '13px',
               fontFamily: "'Nunito', sans-serif",
               cursor: 'pointer',
               flexShrink: 0,
-              boxShadow: '0 3px 0 #3d6333',
+              boxShadow: '0 3px 0 rgba(236,72,153,0.5)',
             }}
           >
             ติดตั้ง
@@ -151,13 +151,13 @@ const InstallPrompt = () => {
               height: '28px',
               borderRadius: '10px',
               border: 'none',
-              background: '#f4f5ee',
+              background: '#1e293b',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               flexShrink: 0,
-              color: '#8a7e6a',
+              color: '#94a3b8',
             }}
           >
             <X size={14} />

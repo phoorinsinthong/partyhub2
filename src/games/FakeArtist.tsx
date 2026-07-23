@@ -13,6 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { useGame } from '../contexts/GameContext';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 import { WORD_CATEGORIES, ALL_WORDS, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from './logic/fakeArtistData';
 import { shuffle, getRandomWord } from './logic/fakeArtistLogic';
 
@@ -460,12 +462,12 @@ const FakeArtist: React.FC = () => {
         {showFullCanvas && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-white flex flex-col"
+            className="fixed inset-0 z-[60] bg-slate-950 flex flex-col"
           >
-            <div className="flex-between p-3 border-b border-olive-100">
-              <span className="text-[13px] font-bold text-olive-600">ดูรูปเต็มจอ</span>
-              <button className="w-9 h-9 rounded-xl bg-olive-100 flex-center" onClick={() => setShowFullCanvas(false)}>
-                <X size={18} className="text-olive-500" />
+            <div className="flex-between p-4 border-b border-slate-800 bg-slate-900">
+              <span className="text-[14px] font-black uppercase tracking-widest text-slate-300">ดูรูปเต็มจอ</span>
+              <button className="w-10 h-10 rounded-2xl bg-slate-800 flex-center border border-slate-700 active:scale-95 transition-all" onClick={() => setShowFullCanvas(false)}>
+                <X size={20} className="text-slate-400" />
               </button>
             </div>
             <div className="flex-1 flex flex-col items-center justify-center p-4">
@@ -474,15 +476,15 @@ const FakeArtist: React.FC = () => {
                   ref={fullCanvasRef}
                   width={canvasSize.w}
                   height={canvasSize.h}
-                  className="w-full bg-white border-2 border-olive-100 rounded-xl"
-                  style={{ height: `${canvasSize.h}px` }}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-3xl shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+                  style={{ height: `${canvasSize.h}px`, backgroundColor: '#ffffff' }}
                 />
               </div>
-              <div className="flex flex-wrap gap-2 justify-center mt-4">
+              <div className="flex flex-wrap gap-2 justify-center mt-6">
                 {players.map((p) => (
-                  <div key={p} className="flex items-center gap-1 text-[12px] text-olive-600">
-                    <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: colorMap[p] }} />
-                    <span className={p === fakeArtist && phase === 'finished' ? 'font-bold text-red-500' : ''}>{p}</span>
+                  <div key={p} className="flex items-center gap-2 text-[12px] font-bold text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-slate-800">
+                    <div className="w-4 h-4 rounded-full border border-slate-700" style={{ backgroundColor: colorMap[p] }} />
+                    <span className={p === fakeArtist && phase === 'finished' ? 'font-black text-red-500 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]' : ''}>{p}</span>
                   </div>
                 ))}
               </div>
@@ -492,26 +494,32 @@ const FakeArtist: React.FC = () => {
       </AnimatePresence>
 
       {phase === 'waiting' && (
-        <div className="flex flex-col gap-4">
-          <div className="card p-6 text-center">
-            <div className="text-5xl mb-3">🎨</div>
-            <h2 className="font-display font-bold text-xl text-olive-800 mb-2">ศิลปินปลอม</h2>
-            <p className="text-olive-500 text-sm mb-4">
+        <div className="flex flex-col gap-4 flex-1 items-center justify-center py-6 bg-slate-950">
+          <div className="text-center">
+            <div className="text-6xl mb-4 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] animate-bounce-soft">🎨</div>
+            <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">ศิลปิน<span className="text-amber-500">ปลอม</span></h2>
+            <p className="text-slate-400 text-xs font-bold leading-relaxed px-4">
               ทุกคนวาดรูปตามคำ แต่มี 1 คนที่ไม่รู้คำ!<br />
               หาให้เจอว่าใครคือศิลปินปลอม
             </p>
-            <div className="text-[12px] text-olive-400 mb-4">
+          </div>
+          
+          <NeonCard color="amber" className="p-4 w-full max-w-xs text-center border-amber-500/30 bg-amber-900/10 mt-4">
+            <div className="text-[12px] font-black text-amber-500 uppercase tracking-widest">
               ผู้เล่น {players.length} คน • วาด {selectedRounds} รอบ • {selectedTurnTime} วิ/ตา
             </div>
+          </NeonCard>
+
+          <div className="w-full max-w-xs px-2">
             {isHost ? (
-              <div className="space-y-3">
+              <div className="space-y-6 mt-4">
                 <div className="flex items-center justify-center gap-2 flex-wrap">
                   {['random', 'category', 'custom'].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => setWordMode(mode)}
-                      className={`px-3 py-1.5 rounded-full text-[12px] font-bold border-2 transition-all ${
-                        wordMode === mode ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
+                      className={`px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest border transition-all ${
+                        wordMode === mode ? 'border-amber-500 bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500'
                       }`}
                     >
                       {{ random: 'สุ่มคำ', category: 'เลือกหมวด', custom: 'ตั้งคำเอง' }[mode as 'random'|'category'|'custom']}
@@ -524,8 +532,8 @@ const FakeArtist: React.FC = () => {
                       <button
                         key={key}
                         onClick={() => setSelectedCategory(key)}
-                        className={`px-2 py-2 rounded-xl text-[11px] font-bold border-2 transition-all ${
-                          selectedCategory === key ? 'border-sage-400 bg-sage-50 text-sage-700' : 'border-olive-100 text-olive-400'
+                        className={`px-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                          selectedCategory === key ? 'border-amber-500 bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500'
                         }`}
                       >
                         {cat.label}
@@ -539,102 +547,106 @@ const FakeArtist: React.FC = () => {
                     value={customWord}
                     onChange={(e) => setCustomWord(e.target.value)}
                     placeholder="พิมพ์คำที่ต้องการ..."
-                    className="w-full px-4 py-3 rounded-xl border-2 border-olive-200 text-center font-bold text-[15px] focus:border-sage-400 outline-none"
+                    className="w-full px-4 py-3 rounded-2xl border border-slate-700 bg-slate-900 text-center font-black text-[14px] text-white focus:border-amber-500 outline-none transition-colors placeholder:text-slate-600"
                   />
                 )}
-                <div>
-                  <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">เวลาวาดต่อตา</p>
-                  <div className="flex gap-2 justify-center">
-                    {TURN_TIME_OPTIONS.map(opt => (
-                      <button
-                        key={opt.seconds}
-                        onClick={() => setSelectedTurnTime(opt.seconds)}
-                        className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
-                          selectedTurnTime === opt.seconds
-                            ? 'bg-sage-500 border-sage-500 text-white'
-                            : 'bg-white border-olive-100 text-olive-600'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
+                <div className="flex gap-4">
+                   <div className="flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 text-center">เวลาวาดต่อตา</p>
+                    <div className="flex flex-col gap-2">
+                      {TURN_TIME_OPTIONS.map(opt => (
+                        <button
+                          key={opt.seconds}
+                          onClick={() => setSelectedTurnTime(opt.seconds)}
+                          className={`w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest border transition-colors ${
+                            selectedTurnTime === opt.seconds
+                              ? 'bg-amber-500 border-amber-500 text-slate-900 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                              : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 text-center">จำนวนรอบวาด</p>
+                    <div className="flex flex-col gap-2">
+                      {ROUNDS_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setSelectedRounds(opt.value)}
+                          className={`w-full py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest border transition-colors ${
+                            selectedRounds === opt.value
+                              ? 'bg-amber-500 border-amber-500 text-slate-900 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                              : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">จำนวนรอบวาด</p>
-                  <div className="flex gap-2 justify-center">
-                    {ROUNDS_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => setSelectedRounds(opt.value)}
-                        className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
-                          selectedRounds === opt.value
-                            ? 'bg-sage-500 border-sage-500 text-white'
-                            : 'bg-white border-olive-100 text-olive-600'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <button
+                <GiantButton
+                  color="amber"
                   onClick={handleStartGame}
                   disabled={wordMode === 'custom' && !customWord.trim()}
-                  className="btn btn-primary w-full py-3.5 text-[15px]"
+                  className="w-full mt-4"
                 >
-                  <Pencil size={16} /> เริ่มเกม
-                </button>
+                  <Pencil size={18} className="mr-2 inline-block" /> เริ่มเกม
+                </GiantButton>
               </div>
             ) : (
-              <p className="text-olive-400 text-sm font-semibold">รอ Host เริ่มเกม...</p>
+              <p className="text-slate-500 font-black uppercase tracking-widest text-xs mt-8 text-center animate-pulse">รอ Host เริ่มเกม...</p>
             )}
           </div>
         </div>
       )}
 
       {phase === 'reveal' && (
-        <div className="card p-6 text-center">
-          <h2 className="font-display font-bold text-lg text-olive-800 mb-4">บทบาทของคุณ</h2>
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-slate-950 text-slate-200 animate-fade-in">
+          <h2 className="font-black text-[22px] uppercase tracking-widest text-slate-300 mb-6 drop-shadow-md">บทบาทของคุณ</h2>
           {iAmFakeArtist ? (
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-5 mb-4">
-              <div className="text-4xl mb-2">🎭</div>
-              <p className="font-bold text-red-600 text-lg">คุณคือศิลปินปลอม!</p>
-              <p className="text-red-400 text-sm mt-1">คุณไม่รู้คำ — วาดตามคนอื่นไป อย่าให้ใครจับได้!</p>
-              <p className="text-[12px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1 rounded-full mt-3">
+            <NeonCard color="red" className="w-full max-w-sm p-8 text-center bg-red-900/20 border-red-500/50">
+              <div className="text-6xl mb-4 drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]">🎭</div>
+              <p className="font-black text-red-500 text-[24px] uppercase tracking-widest drop-shadow-md">คุณคือศิลปินปลอม!</p>
+              <p className="text-red-400 text-sm font-bold mt-3 leading-relaxed">คุณไม่รู้คำ — วาดตามคนอื่นไป อย่าให้ใครจับได้!</p>
+              <p className="text-[12px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 inline-block px-4 py-2 rounded-xl mt-6 uppercase tracking-widest shadow-[0_0_10px_rgba(245,158,11,0.3)]">
                 💡 ใบ้: {secretSyllables} พยางค์
               </p>
-            </div>
+            </NeonCard>
           ) : (
-            <div className="bg-sage-50 border-2 border-sage-200 rounded-2xl p-5 mb-4">
-              <div className="text-4xl mb-2">🎨</div>
-              <p className="font-bold text-sage-700 text-lg">คุณคือศิลปินตัวจริง</p>
-              <p className="text-sage-600 text-[15px] mt-2">คำที่ต้องวาด:</p>
-              <p className="font-black text-2xl text-olive-800 mt-1">{secretWord}</p>
-            </div>
+            <NeonCard color="emerald" className="w-full max-w-sm p-8 text-center bg-emerald-900/20 border-emerald-500/50">
+              <div className="text-6xl mb-4 drop-shadow-[0_0_15px_rgba(16,185,129,0.6)]">🎨</div>
+              <p className="font-black text-emerald-400 text-[20px] uppercase tracking-widest drop-shadow-md">คุณคือศิลปินตัวจริง</p>
+              <p className="text-emerald-500/70 text-[12px] font-black uppercase tracking-widest mt-6">คำที่ต้องวาด:</p>
+              <p className="font-black text-[36px] text-white mt-1 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">{secretWord}</p>
+            </NeonCard>
           )}
-          <div className="flex items-center gap-2 justify-center mb-4">
-            <div className="w-5 h-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[userNickname || ''] }} />
-            <span className="text-sm text-olive-600">สีของคุณ</span>
+          <div className="flex items-center gap-3 justify-center mt-8 p-3 bg-slate-900 rounded-2xl border border-slate-800">
+            <div className="w-6 h-6 rounded-full border-2 border-slate-300 shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ backgroundColor: colorMap[userNickname || ''] }} />
+            <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest">สีของคุณ</span>
           </div>
-          {isHost && (
-            <button onClick={handleStartDrawing} className="btn btn-primary w-full py-3 text-[14px]">
+          {isHost ? (
+            <GiantButton color="amber" onClick={handleStartDrawing} className="w-full max-w-xs mt-8">
               เริ่มวาด!
-            </button>
+            </GiantButton>
+          ) : (
+            <p className="text-slate-500 font-black uppercase tracking-widest text-xs mt-8 animate-pulse">รอ Host กดเริ่มวาด...</p>
           )}
-          {!isHost && <p className="text-olive-400 text-sm">รอ Host กดเริ่มวาด...</p>}
         </div>
       )}
 
       {phase === 'drawing' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 flex-1 bg-slate-950 p-2">
           <AnimatePresence>
             {skippedPlayer && (
               <motion.div
                 initial={{ opacity: 0, y: -16 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
-                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-white px-4 py-2 rounded-2xl font-bold text-[12px] shadow-xl"
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-900 px-5 py-3 rounded-2xl font-black text-[13px] uppercase tracking-widest shadow-[0_0_20px_rgba(245,158,11,0.5)]"
               >
                 {skippedPlayer} หมดเวลา! ข้ามตา
               </motion.div>
@@ -644,63 +656,63 @@ const FakeArtist: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sage-600 text-white px-5 py-2.5 rounded-2xl font-bold text-[13px] shadow-xl flex items-center gap-2"
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-slate-900 px-6 py-3 rounded-2xl font-black text-[14px] uppercase tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.5)] flex items-center gap-2"
               >
-                <Pencil size={14} />
+                <Pencil size={16} />
                 {turnAnnounce === userNickname ? 'ถึงตาคุณวาด!' : `ถึงตา ${turnAnnounce} วาด`}
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="card p-3">
-            <div className="flex-between mb-2">
-              <span className="text-[12px] font-bold text-olive-500">รอบ {currentRound}/{totalRounds}</span>
+          <NeonCard color="slate" className="p-3 bg-slate-900/50 border-slate-800 rounded-3xl mx-1">
+            <div className="flex-between mb-3">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest bg-slate-800 px-2 py-1 rounded-lg">รอบ {currentRound}/{totalRounds}</span>
               <div className="flex items-center gap-1.5">
                 <TimerDisplay timeLeft={timeLeft} />
               </div>
               {!iAmFakeArtist && (
-                <span className="text-[12px] font-bold text-olive-600">คำ: <span className="text-sage-600">{secretWord}</span></span>
+                <span className="text-[11px] font-black text-slate-400">คำ: <span className="text-emerald-400 ml-1 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">{secretWord}</span></span>
               )}
               {iAmFakeArtist && (
-                <span className="text-[12px] font-bold text-red-400">คำ: ??? <span className="text-amber-600">({secretSyllables} พยางค์)</span></span>
+                <span className="text-[11px] font-black text-red-500">คำ: ??? <span className="text-amber-500 ml-1 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">{secretSyllables} พยางค์</span></span>
               )}
             </div>
-            <div className="h-1 bg-olive-100 rounded-full mb-2 overflow-hidden">
+            <div className="h-1.5 bg-slate-800 rounded-full mb-3 overflow-hidden shadow-inner">
               <motion.div
-                className={`h-full rounded-full ${timeLeft <= 5 ? 'bg-red-400' : timeLeft <= 10 ? 'bg-amber-400' : 'bg-sage-400'}`}
+                className={`h-full rounded-full ${timeLeft <= 5 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : timeLeft <= 10 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'}`}
                 animate={{ width: `${(timeLeft / turnTime) * 100}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: colorMap[currentPlayer] }} />
-              <span className="text-[13px] font-bold text-olive-700">
+            <div className="flex items-center gap-2 px-1">
+              <div className="w-5 h-5 rounded-full border-2 border-slate-300 shadow-[0_0_10px_rgba(255,255,255,0.2)]" style={{ backgroundColor: colorMap[currentPlayer] }} />
+              <span className={`text-[12px] font-black uppercase tracking-widest ${isMyTurn ? 'text-emerald-400 animate-pulse' : 'text-slate-300'}`}>
                 {isMyTurn ? 'ถึงตาคุณวาด!' : `${currentPlayer} กำลังวาด...`}
               </span>
             </div>
-          </div>
+          </NeonCard>
 
-          <div className="flex gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+          <div className="flex gap-2 overflow-x-auto px-2 pb-2 hide-scrollbar">
             {turnOrder.map((p: string, i: number) => (
               <div
                 key={p}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${
-                  i === currentTurnIndex ? 'bg-sage-100 border-2 border-sage-300' : 'bg-olive-50 border border-olive-100'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${
+                  i === currentTurnIndex ? 'bg-emerald-500/20 border border-emerald-500 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)] scale-105' : 'bg-slate-900 border border-slate-800 text-slate-500'
                 }`}
               >
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorMap[p] }} />
+                <div className="w-3 h-3 rounded-full border border-slate-700" style={{ backgroundColor: colorMap[p] }} />
                 {p === userNickname ? 'คุณ' : p}
               </div>
             ))}
           </div>
 
-          <div ref={containerRef} className="card overflow-hidden">
+          <div ref={containerRef} className="flex-1 min-h-[300px] relative rounded-3xl overflow-hidden border-2 border-slate-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] mx-1">
             <canvas
               ref={canvasRef}
               width={canvasSize.w}
               height={canvasSize.h}
-              className={`w-full bg-white ${isMyTurn ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
-              style={{ touchAction: 'none', height: `${canvasSize.h}px` }}
+              className={`absolute inset-0 w-full h-full bg-slate-900 ${isMyTurn ? 'cursor-crosshair' : 'cursor-not-allowed'}`}
+              style={{ touchAction: 'none', backgroundColor: '#ffffff' }}
               onMouseDown={startDraw}
               onMouseMove={moveDraw}
               onMouseUp={endDraw}
@@ -709,7 +721,7 @@ const FakeArtist: React.FC = () => {
           </div>
 
           {isMyTurn && (
-            <p className="text-center text-[12px] font-bold text-sage-600 bg-sage-50 rounded-xl p-2">
+            <p className="text-center text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mx-1 mt-1 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
               วาดเส้นเดียว แล้วยกนิ้วเพื่อจบตา
             </p>
           )}
@@ -717,11 +729,11 @@ const FakeArtist: React.FC = () => {
       )}
 
       {phase === 'voting' && (
-        <div className="card p-5">
-          <h2 className="font-display font-bold text-lg text-olive-800 mb-1 text-center">โหวตหาศิลปินปลอม!</h2>
-          <p className="text-olive-400 text-[12px] text-center mb-4">โหวตแล้ว {Object.keys(votes || {}).length}/{players.length}</p>
+        <div className="flex-1 flex flex-col p-4 bg-slate-950 text-slate-200 animate-fade-in">
+          <h2 className="font-black text-[22px] uppercase tracking-widest text-amber-500 mb-1 text-center drop-shadow-md">โหวตหาศิลปินปลอม!</h2>
+          <p className="text-slate-500 font-bold text-[11px] uppercase tracking-widest text-center mb-4">โหวตแล้ว {Object.keys(votes || {}).length}/{players.length}</p>
 
-          <div ref={containerRef} className="relative rounded-xl overflow-hidden mb-4 border-2 border-olive-100">
+          <div ref={containerRef} className="relative rounded-3xl overflow-hidden mb-6 border-2 border-slate-800 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <canvas
               ref={canvasRef}
               width={canvasSize.w}
@@ -731,103 +743,116 @@ const FakeArtist: React.FC = () => {
             />
             <button
               onClick={() => setShowFullCanvas(true)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 backdrop-blur-sm flex-center text-white active:bg-black/50"
+              className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-slate-900/80 backdrop-blur-md flex-center border border-slate-700 text-white active:scale-95 transition-all shadow-lg hover:bg-slate-800"
             >
-              <Maximize2 size={14} />
+              <Maximize2 size={16} />
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3 flex-1 overflow-y-auto hide-scrollbar pb-24">
             {players.map((p) => (
               <button
                 key={p}
                 disabled={!!(votes && votes[userNickname || '']) || p === userNickname}
                 onClick={() => setVoteTarget(p)}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-                  voteTarget === p || (votes && votes[userNickname || ''] === p) ? 'border-sage-400 bg-sage-50' : 'border-olive-100 bg-white'
-                } ${p === userNickname ? 'opacity-40' : ''}`}
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                  voteTarget === p || (votes && votes[userNickname || ''] === p) ? 'border-amber-500 bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.3)] scale-[1.02]' : 'border-slate-800 bg-slate-900 hover:border-slate-600'
+                } ${p === userNickname ? 'opacity-40 grayscale' : ''}`}
               >
-                <div className="w-5 h-5 rounded-full" style={{ backgroundColor: colorMap[p] }} />
-                <span className="font-bold text-[14px] text-olive-700">{p}</span>
-                {p === userNickname && <span className="text-[10px] text-olive-400 ml-auto">(คุณ)</span>}
+                <div className="w-6 h-6 rounded-full border border-slate-700 shadow-sm" style={{ backgroundColor: colorMap[p] }} />
+                <span className={`font-black text-[14px] uppercase tracking-widest ${voteTarget === p ? 'text-amber-400' : 'text-slate-300'}`}>{p}</span>
+                {p === userNickname && <span className="text-[10px] font-bold text-slate-500 ml-auto uppercase tracking-widest bg-slate-800 px-2 py-1 rounded-md">(คุณ)</span>}
               </button>
             ))}
           </div>
 
-          {!(votes && votes[userNickname || '']) && voteTarget && (
-            <button onClick={handleVote} className="btn btn-primary w-full py-3 mt-4 text-[14px]">
-              ยืนยันโหวต
-            </button>
-          )}
-          {(votes && votes[userNickname || '']) && (
-            <p className="text-center text-sage-600 font-bold text-[13px] mt-4">โหวตแล้ว — รอคนอื่น...</p>
-          )}
+          <div className="absolute bottom-4 left-4 right-4 z-10">
+            {!(votes && votes[userNickname || '']) && voteTarget && (
+              <GiantButton color="amber" onClick={handleVote} className="w-full shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+                ยืนยันโหวต
+              </GiantButton>
+            )}
+            {(votes && votes[userNickname || '']) && (
+              <div className="bg-slate-900 border border-slate-800 p-4 rounded-3xl shadow-[0_-10px_30px_rgba(0,0,0,0.8)] text-center">
+                 <p className="text-amber-500 font-black text-[12px] uppercase tracking-widest animate-pulse">โหวตแล้ว — รอคนอื่น...</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {phase === 'fake_guess' && (
-        <div className="card p-6 text-center">
-          <div className="text-4xl mb-3">🎯</div>
-          <h2 className="font-display font-bold text-lg text-olive-800 mb-2">จับศิลปินปลอมได้!</h2>
-          <p className="text-olive-500 text-sm mb-2">
-            <span className="font-bold text-red-500">{fakeArtist}</span> คือศิลปินปลอม!<br />
-            แต่ถ้าเดาคำถูก ก็ยังชนะได้...
-          </p>
-          <p className="text-[13px] font-bold text-amber-600 bg-amber-50 inline-block px-3 py-1.5 rounded-full mb-4">
-            💡 ใบ้: {secretSyllables} พยางค์
-          </p>
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-slate-950 text-slate-200 animate-fade-in">
+          <div className="text-6xl mb-4 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]">🎯</div>
+          <h2 className="font-black text-[24px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">จับศิลปินปลอมได้!</h2>
+          <NeonCard color="red" className="p-6 w-full max-w-sm text-center bg-red-900/10 border-red-500/30">
+            <p className="text-slate-300 text-[13px] font-bold leading-relaxed mb-4">
+              <span className="font-black text-[18px] text-red-500 block mb-1">{fakeArtist}</span> คือศิลปินปลอม!<br />
+              <span className="text-slate-400">แต่ถ้าเดาคำถูก ก็ยังชนะได้...</span>
+            </p>
+            <p className="text-[12px] font-black text-amber-400 bg-amber-500/10 border border-amber-500/30 inline-block px-4 py-2 rounded-xl uppercase tracking-widest shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+              💡 ใบ้: {secretSyllables} พยางค์
+            </p>
+          </NeonCard>
 
-          {iAmFakeArtist ? (
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={guessInput}
-                onChange={(e) => setGuessInput(e.target.value)}
-                placeholder="พิมพ์คำที่คิดว่าถูก..."
-                className="w-full px-4 py-3 rounded-xl border-2 border-olive-200 text-center font-bold text-[15px]"
-              />
-              <button
-                onClick={handleFakeGuess}
-                disabled={!guessInput.trim()}
-                className="btn btn-primary w-full py-3 text-[14px]"
-              >
-                ยืนยันคำตอบ
-              </button>
-            </div>
-          ) : (
-            <p className="text-olive-400 text-sm font-semibold">รอศิลปินปลอมเดาคำ...</p>
-          )}
+          <div className="w-full max-w-sm mt-8">
+            {iAmFakeArtist ? (
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  value={guessInput}
+                  onChange={(e) => setGuessInput(e.target.value)}
+                  placeholder="พิมพ์คำที่คิดว่าถูก..."
+                  className="w-full px-6 py-4 rounded-2xl border border-slate-700 bg-slate-900 text-center font-black text-[16px] text-white focus:border-red-500 outline-none transition-colors placeholder:text-slate-600 shadow-inner"
+                />
+                <GiantButton
+                  color="red"
+                  onClick={handleFakeGuess}
+                  disabled={!guessInput.trim()}
+                  className="w-full"
+                >
+                  ยืนยันคำตอบ
+                </GiantButton>
+              </div>
+            ) : (
+              <p className="text-slate-500 text-xs font-black uppercase tracking-widest text-center animate-pulse mt-4">รอศิลปินปลอมเดาคำ...</p>
+            )}
+          </div>
         </div>
       )}
 
       {phase === 'finished' && (
-        <div className="card p-6 text-center">
-          <div className="text-5xl mb-3">{voteResult === 'artists_win' ? '🎨' : '🎭'}</div>
-          <h2 className="font-display font-bold text-xl text-olive-800 mb-2">
+        <div className="flex-1 flex flex-col items-center justify-center p-4 bg-slate-950 text-slate-200 animate-fade-in pb-24">
+          <div className={`text-7xl mb-4 drop-shadow-[0_0_20px_rgba(${voteResult === 'artists_win' ? '16,185,129' : '239,68,68'},0.5)]`}>
+             {voteResult === 'artists_win' ? '🎨' : '🎭'}
+          </div>
+          <h2 className={`font-black text-[28px] uppercase tracking-widest mb-6 drop-shadow-md ${voteResult === 'artists_win' ? 'text-emerald-400' : 'text-red-500'}`}>
             {voteResult === 'artists_win' ? 'ศิลปินตัวจริงชนะ!' : 'ศิลปินปลอมชนะ!'}
           </h2>
 
-          <div className="bg-olive-50 rounded-2xl p-4 mb-4 space-y-2">
-            <p className="text-sm text-olive-600">
-              ศิลปินปลอม: <span className="font-bold text-red-500">{fakeArtist}</span>
-            </p>
-            <p className="text-sm text-olive-600">
-              คำที่ต้องวาด: <span className="font-bold text-olive-800">{secretWord}</span>
-            </p>
+          <NeonCard color={voteResult === 'artists_win' ? 'emerald' : 'red'} className={`w-full max-w-sm p-6 mb-6 text-center ${voteResult === 'artists_win' ? 'bg-emerald-900/10 border-emerald-500/30' : 'bg-red-900/10 border-red-500/30'}`}>
+            <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-1">ศิลปินปลอม</p>
+            <p className="font-black text-[20px] text-red-400 mb-4">{fakeArtist}</p>
+            
+            <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">คำที่ต้องวาด</p>
+            <p className="font-black text-[24px] text-white mb-4 drop-shadow-md">{secretWord}</p>
+            
             {fakeGuess && (
-              <p className="text-sm text-olive-600">
-                ศิลปินปลอมเดา: <span className={`font-bold ${fakeGuess.toLowerCase() === secretWord.toLowerCase() ? 'text-green-600' : 'text-red-500'}`}>{fakeGuess}</span>
-              </p>
+              <div className="mt-2 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ศิลปินปลอมเดา</p>
+                <p className={`font-black text-[18px] ${fakeGuess.toLowerCase() === secretWord.toLowerCase() ? 'text-emerald-400' : 'text-red-500'}`}>{fakeGuess}</p>
+              </div>
             )}
+            
             {voteResult === 'fake_wins' && (
-              <p className="text-[12px] text-olive-400 mt-1">โหวตผิดคน — ศิลปินปลอมรอดไป!</p>
+              <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mt-4 bg-amber-500/10 px-3 py-1.5 rounded-lg inline-block border border-amber-500/30">โหวตผิดคน — ศิลปินปลอมรอดไป!</p>
             )}
             {voteResult === 'fake_guessed' && (
-              <p className="text-[12px] text-olive-400 mt-1">โดนจับได้แต่เดาคำถูก!</p>
+              <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mt-4 bg-amber-500/10 px-3 py-1.5 rounded-lg inline-block border border-amber-500/30">โดนจับได้แต่เดาคำถูก!</p>
             )}
-          </div>
+          </NeonCard>
 
-          <div ref={containerRef} className="relative rounded-xl overflow-hidden mb-4 border-2 border-olive-100">
+          <div ref={containerRef} className="relative w-full max-w-[280px] rounded-3xl overflow-hidden mb-6 border-2 border-slate-800 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <canvas
               ref={canvasRef}
               width={canvasSize.w}
@@ -837,35 +862,37 @@ const FakeArtist: React.FC = () => {
             />
             <button
               onClick={() => setShowFullCanvas(true)}
-              className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/30 backdrop-blur-sm flex-center text-white active:bg-black/50"
+              className="absolute top-3 right-3 w-10 h-10 rounded-2xl bg-slate-900/80 backdrop-blur-md flex-center border border-slate-700 text-white active:scale-95 transition-all shadow-lg hover:bg-slate-800"
             >
-              <Maximize2 size={14} />
+              <Maximize2 size={16} />
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 justify-center mb-4">
+          <div className="flex flex-wrap gap-2 justify-center mb-6 max-w-sm">
             {players.map((p) => (
-              <div key={p} className="flex items-center gap-1 text-[11px] text-olive-600">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorMap[p] }} />
-                <span className={p === fakeArtist ? 'font-bold text-red-500' : ''}>{p}</span>
+              <div key={p} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                <div className="w-3.5 h-3.5 rounded-full border border-slate-700" style={{ backgroundColor: colorMap[p] }} />
+                <span className={p === fakeArtist ? 'text-red-400' : ''}>{p}</span>
               </div>
             ))}
           </div>
 
-          {isHost ? (
-            <div className="space-y-2">
-              <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-                <RotateCcw size={16} /> เล่นอีกรอบ
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
+            {isHost ? (
+              <div className="flex gap-3 max-w-sm mx-auto">
+                <GiantButton color="emerald" onClick={handlePlayAgain} className="flex-1">
+                   เล่นอีกรอบ
+                </GiantButton>
+                <button onClick={handleBackToLobby} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500">
+                  กลับ Lobby
+                </button>
+              </div>
+            ) : (
+              <button onClick={requestLeave} className="w-full max-w-sm mx-auto py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20">
+                <LogOut size={16} /> ออกจากห้อง
               </button>
-              <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
-                <LogOut size={14} /> กลับ Lobby
-              </button>
-            </div>
-          ) : (
-            <button onClick={requestLeave} className="btn btn-outline w-full py-3.5 text-[14px]">
-              <LogOut size={15} /> ออกจากห้อง
-            </button>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

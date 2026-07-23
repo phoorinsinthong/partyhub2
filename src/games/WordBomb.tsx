@@ -14,6 +14,8 @@ import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const MAX_LIVES = 3;
 
@@ -96,13 +98,13 @@ function TimerArc({ timeLeft, bombTime }: { timeLeft: number, bombTime: number }
   const offset = circ * (1 - progress);
 
   const color =
-    progress > 0.5 ? '#5f8252' :
-    progress > 0.25 ? '#e48c3a' :
-    '#d45b5b';
+    progress > 0.5 ? '#10b981' : // emerald-500
+    progress > 0.25 ? '#f59e0b' : // amber-500
+    '#ef4444'; // red-500
 
   return (
     <svg width="96" height="96" className="absolute inset-0 m-auto" style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx="48" cy="48" r={radius} fill="none" stroke="var(--border-outline)" strokeWidth="5" />
+      <circle cx="48" cy="48" r={radius} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="5" />
       <motion.circle
         cx="48" cy="48" r={radius}
         fill="none"
@@ -112,6 +114,7 @@ function TimerArc({ timeLeft, bombTime }: { timeLeft: number, bombTime: number }
         strokeDasharray={circ}
         animate={{ strokeDashoffset: offset }}
         transition={{ duration: 0.25, ease: 'linear' }}
+        style={{ filter: `drop-shadow(0 0 8px ${color})` }}
       />
     </svg>
   );
@@ -338,32 +341,32 @@ const WordBomb: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <motion.div
-          animate={{ y: [0, -6, 0] }}
+          animate={{ y: [0, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="text-7xl select-none"
+          className="text-8xl select-none drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]"
         >
           💣
         </motion.div>
 
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('wordBomb.title') || 'บอมบ์คำ'}</h2>
-          <p className="text-olive-400 text-[13px] leading-relaxed px-4">
+        <div className="text-center px-4">
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">{t('wordBomb.title') || 'บอมบ์คำ'}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed px-4 max-w-[280px] mx-auto">
             {t('wordBomb.description') || 'พูดคำตามหมวดก่อนบอมบ์ระเบิด! Host เป็นกรรมการตัดสิน'}
           </p>
         </div>
 
         {isHost ? (
-          <button onClick={handleStartGame} className="btn btn-primary px-10 py-4 rounded-3xl text-lg shadow-lg">
+          <GiantButton color="amber" onClick={handleStartGame} className="w-full max-w-xs mt-4">
             {t('wordBomb.startGame') || 'เริ่มเกมเลย!'}
-          </button>
+          </GiantButton>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-6 h-6 border-2 border-sage-200 border-t-sage-500 rounded-full animate-spin" />
-            <p className="text-olive-400 font-bold animate-pulse">{t('wordBomb.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+            <p className="text-slate-500 font-black uppercase tracking-widest text-xs animate-pulse">{t('wordBomb.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
           </div>
         )}
       </div>
@@ -375,20 +378,20 @@ const WordBomb: React.FC = () => {
     const winner = survivors[0] || '???';
 
     return (
-      <div className="flex-1 flex flex-center flex-col gap-6 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in bg-slate-950 p-6">
         {renderErrorToast()}
-        <div className="text-7xl">🏆</div>
+        <div className="text-8xl drop-shadow-[0_0_30px_rgba(245,158,11,0.6)]">🏆</div>
         <div className="text-center">
-          <h2 className="font-display font-bold text-2xl text-olive-800">{t('common.finished') || 'จบเกม!'}</h2>
-          <p className="text-olive-500 font-bold mt-1">{t('wordBomb.winnerIs', { name: winner }) || `ผู้ชนะคือ ${winner}`}</p>
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-slate-200 drop-shadow-md mb-2">{t('common.finished') || 'จบเกม!'}</h2>
+          <p className="text-amber-500 font-black text-[18px] uppercase tracking-widest bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-500/30 inline-block shadow-[0_0_15px_rgba(245,158,11,0.2)]">{t('wordBomb.winnerIs', { name: winner }) || `ผู้ชนะคือ ${winner}`}</p>
         </div>
         {isHost && (
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button onClick={handleStartGame} className="btn btn-primary py-4 rounded-2xl">
-              <RotateCcw size={18} /> {t('common.playAgain') || 'เล่นอีกรอบ'}
-            </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline py-4 rounded-2xl">
-              <LogOut size={18} /> {t('common.backToLobby') || 'กลับ Lobby'}
+          <div className="flex flex-col gap-3 w-full max-w-xs mt-8">
+            <GiantButton color="amber" onClick={handleStartGame}>
+               เล่นอีกรอบ
+            </GiantButton>
+            <button onClick={handleBackToLobby} className="py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500">
+               กลับ Lobby
             </button>
           </div>
         )}
@@ -397,17 +400,17 @@ const WordBomb: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col py-2 animate-fade-in">
+    <div className="flex-1 flex flex-col py-2 animate-fade-in bg-slate-950">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       
-      <div className="flex-between mb-4 px-1">
+      <div className="flex-between mb-4 px-4 pt-2">
         <div className="flex flex-col">
-          <span className="text-[11px] font-black text-olive-300 uppercase tracking-widest leading-none mb-1">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1.5">
             ROUND {roundNumber}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[13px] font-bold text-olive-700">{category}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-black uppercase tracking-widest text-slate-300 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">{category}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -415,33 +418,34 @@ const WordBomb: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 py-4 relative">
+      <div className="flex-1 flex flex-col items-center justify-center gap-10 py-6 relative">
         <div className="relative w-full flex-center perspective-1000">
           <TimerArc timeLeft={timeLeft} bombTime={bombTime} />
           <BombDisplay timeLeft={timeLeft} bombTime={bombTime} exploding={exploding} />
         </div>
 
         <div className="text-center px-6">
-          <p className="text-[11px] font-bold text-olive-400 uppercase tracking-widest mb-1">{t('wordBomb.activePlayer') || 'ตาของ'}</p>
-          <h3 className={`text-2xl font-black ${isMyTurn ? 'text-red-500 animate-pulse' : 'text-olive-800'}`}>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('wordBomb.activePlayer') || 'ตาของ'}</p>
+          <h3 className={`text-[28px] font-black uppercase tracking-widest drop-shadow-md ${isMyTurn ? 'text-red-500 animate-pulse' : 'text-slate-200'}`}>
             {isMyTurn ? t('common.you') || 'คุณเอง!' : activePlayer}
           </h3>
-          <p className="text-[12px] text-olive-400 mt-2 font-semibold">
-            {t('wordBomb.examples') || 'เช่น'}: {categoryExamples}
+          <p className="text-[11px] font-bold text-slate-400 mt-3 bg-slate-900 px-4 py-2 rounded-xl inline-block border border-slate-800">
+            {t('wordBomb.examples') || 'เช่น'}: <span className="text-slate-300">{categoryExamples}</span>
           </p>
         </div>
 
         {isHost && (
-          <div className="flex flex-col gap-3 w-full max-w-sm px-4">
-            <button
+          <div className="flex flex-col gap-3 w-full max-w-sm px-6">
+            <GiantButton
+              color="emerald"
               onClick={handleCorrectAnswer}
-              className="btn btn-primary w-full py-4 rounded-3xl text-lg shadow-lg bg-green-500 border-green-500 active:bg-green-600"
+              className="w-full"
             >
               ✅ {t('wordBomb.correct') || 'ตอบถูก! (เปลี่ยนคน)'}
-            </button>
+            </GiantButton>
             <button
               onClick={handleNextCategory}
-              className="btn btn-outline w-full py-3 rounded-2xl text-[13px] font-bold"
+              className="w-full py-4 rounded-2xl text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 active:scale-95 transition-all hover:border-slate-500 flex items-center justify-center gap-2"
             >
               🔄 {t('wordBomb.changeCategory') || 'เปลี่ยนหมวดใหม่'}
             </button>
@@ -449,13 +453,13 @@ const WordBomb: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-auto card p-4 bg-white/50 backdrop-blur-sm border-olive-50">
+      <div className="mt-auto p-4 bg-slate-900/80 backdrop-blur-md border-t border-slate-800">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4">
           {turnOrder.map((p: string) => (
-            <div key={p} className={`flex items-center justify-between gap-2 ${eliminated.includes(p) ? 'opacity-30 grayscale' : ''}`}>
+            <div key={p} className={`flex items-center justify-between gap-2 p-2 rounded-xl border ${activePlayer === p ? 'bg-slate-800 border-slate-700' : 'border-transparent'} ${eliminated.includes(p) ? 'opacity-30 grayscale' : ''}`}>
               <div className="flex items-center gap-2 min-w-0">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${activePlayer === p ? 'bg-red-500 animate-pulse' : 'bg-olive-200'}`} />
-                <span className="text-[12px] font-bold text-olive-700 truncate">{p === userNickname ? t('common.you') || 'คุณ' : p}</span>
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 border border-slate-900 ${activePlayer === p ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-slate-600'}`} />
+                <span className={`text-[11px] font-black uppercase tracking-widest truncate ${activePlayer === p ? 'text-slate-200' : 'text-slate-400'}`}>{p === userNickname ? t('common.you') || 'คุณ' : p}</span>
               </div>
               <LivesRow count={lives[p] ?? MAX_LIVES} />
             </div>
@@ -464,8 +468,8 @@ const WordBomb: React.FC = () => {
       </div>
 
       {isHost && (
-        <div className="mt-4 flex-center">
-          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[12px] font-bold text-olive-300 hover:text-olive-500 transition-colors">
+        <div className="flex-center bg-slate-950 pb-6 pt-2">
+          <button onClick={handleBackToLobby} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors">
             <RotateCcw size={14} /> {t('common.backToLobby') || 'กลับ Lobby'}
           </button>
         </div>

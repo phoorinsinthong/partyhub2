@@ -8,7 +8,7 @@ import { CAT_META } from './logic/spyfallCats';
 import {
   MapPin, User, Timer, AlertCircle, CheckCircle2, XCircle,
   Search, Info, ChevronDown, Vote, Eye,
-  Users, Shield, Clock, LogOut
+  Users, Shield, Clock, LogOut, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TIMER_PRESETS } from '../hooks/useGameTimer';
@@ -18,12 +18,18 @@ import { recordPersonalWin, recordPersonalGame } from '../components/PersonalSta
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import EpicPopup from '../components/EpicPopup';
+import GiantButton from '../components/GiantButton';
+import NeonCard from '../components/NeonCard';
+import HoldToRevealCard from '../components/HoldToRevealCard';
+import { useHaptics } from '../hooks/useHaptics';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 const Spyfall: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { vibrateLight, vibrateMedium, vibrateSuccess, vibrateHeavy } = useHaptics();
   
   const nickname = userNickname || '';
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, nickname);
@@ -43,7 +49,6 @@ const Spyfall: React.FC = () => {
   const [useNonStandardPack, setUseNonStandardPack] = useState(false);
   const [enableAccomplice, setEnableAccomplice] = useState(true);
   const [voteTarget, setVoteTarget] = useState('');
-  const [prevSpyRevealing, setPrevSpyRevealing] = useState(null);
   const [timerMinutes, setTimerMinutes] = useState(8);
 
   const [errorMsg, setErrorMsg] = useState('');
@@ -87,9 +92,10 @@ const Spyfall: React.FC = () => {
       await update(ref(db, refPath), data);
     } catch {
       setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
+      vibrateHeavy();
       setTimeout(() => setErrorMsg(''), 3000);
     }
-  }, [t]);
+  }, [t, vibrateHeavy]);
 
   useEffect(() => {
     if (roomData?.status === 'playing' && gameData.timerEnd && gameData.status === 'playing') {
@@ -124,10 +130,11 @@ const Spyfall: React.FC = () => {
     if (newVal !== prevSpyRevealingRef.current) {
       if (newVal && newVal !== nickname) {
         feedback('spyReveal');
+        vibrateHeavy();
       }
       prevSpyRevealingRef.current = newVal;
     }
-  }, [gameData.spyRevealing, nickname]);
+  }, [gameData.spyRevealing, nickname, vibrateHeavy]);
 
   // ─── Show guess modal for spy when forced ───────────────────────────────────
 
@@ -186,26 +193,22 @@ const Spyfall: React.FC = () => {
     const threshold = Math.ceil(gamePlayerCount * 2 / 3);
 
     if (wantsCount >= threshold && gamePlayerCount > 0) {
-      // Transition to voting
       setTimeout(() => {
         safeUpdate(`rooms/${roomId}/gameData`, {
           status: 'voting',
-          timerEnd: null,
-          ...resetUpdates
+          timerEnd: null
         });
       }, 0);
     }
   }, [gameData.players, gameData.status, isHostActually, gamePlayerCount, gamePlayerList, roomId, safeUpdate]);
 
   const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
       {errorMsg}
     </div>
   ) : null;
 
   if (!roomData) return null;
-
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   // ─── Game Actions ────────────────────────────────────────────────────────────
 
@@ -214,10 +217,10 @@ const Spyfall: React.FC = () => {
     if (playerCount < 3) return;
     if (advancingRef.current) return;
     advancingRef.current = true;
+    vibrateSuccess();
 
     const { CATS, DEFAULT_LOCATIONS, NON_STANDARD_LOCATIONS } = await import('./logic/spyfallData');
 
-    // Build location pool
     let pool = [];
 
     selectedCats.forEach(catId => {
@@ -273,11 +276,13 @@ const Spyfall: React.FC = () => {
 
   const handleReveal = () => {
     if (!myGameData.isSpy) return;
+    vibrateLight();
     setShowGuessModal(true);
   };
 
   const handleCancelReveal = () => {
     if (gameData.spyForced) return;
+    vibrateLight();
     setShowGuessModal(false);
     setSelectedGuess('');
   };
@@ -286,6 +291,7 @@ const Spyfall: React.FC = () => {
     if (!selectedGuess) return;
     if (guessRef.current) return;
     guessRef.current = true;
+    vibrateMedium();
 
     const isCorrect = selectedGuess === gameData.targetPlace;
     const gamePlayers = gameData.players || {};
@@ -300,7 +306,7 @@ const Spyfall: React.FC = () => {
         guess: selectedGuess
       });
       await safeUpdate(`rooms/${roomId}`, { status: 'finished' });
-      await recordWin(roomId, winnerName, 'spyfall');
+      await recordWin(roomId || '', winnerName, 'spyfall');
       setShowGuessModal(false);
     } finally {
       guessRef.current = false;
@@ -308,31 +314,29 @@ const Spyfall: React.FC = () => {
   };
 
   const requestVote = async () => {
-    await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, {
-      wantsToVote: true
-    });
+    vibrateLight();
+    await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, { wantsToVote: true });
   };
 
   const cancelVoteRequest = async () => {
-    await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, {
-      wantsToVote: false
-    });
+    vibrateLight();
+    await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, { wantsToVote: false });
   };
 
   const submitVote = async () => {
     if (!voteTarget) return;
     if (submitVoteRef.current) return;
     submitVoteRef.current = true;
+    vibrateMedium();
     try {
-      await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, {
-        votedFor: voteTarget
-      });
+      await safeUpdate(`rooms/${roomId}/gameData/players/${nickname}`, { votedFor: voteTarget });
     } finally {
       submitVoteRef.current = false;
     }
   };
 
-  const toggleCategory = (id) => {
+  const toggleCategory = (id: string) => {
+    vibrateLight();
     if (selectedCats.includes(id)) {
       if (selectedCats.length > 1 || useDefaultPack || useNonStandardPack) {
         setSelectedCats(selectedCats.filter(c => c !== id));
@@ -343,6 +347,7 @@ const Spyfall: React.FC = () => {
   };
 
   const resetToLobby = () => {
+    vibrateMedium();
     personalRecordedRef.current = false;
     safeUpdate(`rooms/${roomId}`, { status: 'waiting', gameData: null });
   };
@@ -350,6 +355,7 @@ const Spyfall: React.FC = () => {
   const handlePlayAgain = async () => {
     if (!isHostActually || advancingRef.current) return;
     advancingRef.current = true;
+    vibrateMedium();
     personalRecordedRef.current = false;
     try {
       await safeUpdate(`rooms/${roomId}/gameData`, { status: 'waiting' });
@@ -357,8 +363,6 @@ const Spyfall: React.FC = () => {
       advancingRef.current = false;
     }
   };
-
-  // ─── Vote Request Info ───────────────────────────────────────────────────────
 
   const getVoteRequestInfo = () => {
     const gamePlayers = gameData.players || {};
@@ -373,147 +377,102 @@ const Spyfall: React.FC = () => {
 
   if (roomData.status === 'waiting' || gameData.status === 'waiting') {
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in relative z-10 px-2 py-4">
         {renderErrorToast()}
-        <div className="glass-panel p-lg">
-          <div className="flex items-center gap-md mb-md">
-            <div className="p-sm bg-primary/20 rounded-lg text-primary">
-              <Info size={24} />
+        
+        <div className="flex-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-800 flex-center shadow-[0_0_15px_rgba(0,240,255,0.3)] border border-neon-blue">
+              <Search size={20} className="text-neon-blue" />
             </div>
             <div>
-              <h3 className="text-xl font-bold">{t('spyfall.title')}</h3>
-              <p className="text-secondary text-sm">{t('spyfall.description')}</p>
+              <h1 className="font-display text-[18px] font-black text-white tracking-wider uppercase">Spyfall</h1>
+              <p className="text-neon-blue text-[11px] font-bold tracking-widest uppercase">Find the imposter</p>
             </div>
           </div>
+          <button onClick={requestLeave} className="w-10 h-10 rounded-xl bg-slate-800 flex-center text-slate-400 hover:text-white border border-slate-700 active:scale-95">
+            <LogOut size={18} />
+          </button>
+        </div>
 
-          <div style={{ height: '1px', background: 'var(--glass-border)', margin: '16px 0' }}></div>
+        <NeonCard color="slate" className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-3 mb-2">
+            <MapPin size={18} className="text-neon-pink" />
+            <h4 className="text-[12px] font-black uppercase tracking-widest text-white">Select Places ({selectedCats.length})</h4>
+          </div>
 
-          {/* Category Selection */}
-          <h4 className="text-sm font-bold mb-md flex items-center gap-sm">
-            <MapPin size={16} /> {t('spyfall.categoryTitle')} ({selectedCats.length} หมวด)
-          </h4>
-
-          <div className="grid grid-cols-2 gap-sm mb-md">
+          <div className="grid grid-cols-2 gap-3">
             {CAT_META.map(cat => (
               <button
                 key={cat.id}
                 onClick={() => isHostActually && toggleCategory(cat.id)}
-                className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
+                className={`p-3 rounded-2xl border-2 transition-all text-left flex items-center gap-2 ${
                   selectedCats.includes(cat.id)
-                    ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
-                    : 'border-glass text-secondary opacity-60'
-                } ${!isHostActually && 'cursor-default'}`}
+                    ? 'border-neon-pink bg-neon-pink/10 shadow-[0_0_10px_rgba(255,20,147,0.3)]'
+                    : 'border-slate-700 bg-slate-800/50 opacity-60'
+                } ${!isHostActually && 'cursor-default pointer-events-none'}`}
               >
-                <span className="text-2xl">{cat.emoji}</span>
-                <span className="text-sm font-bold">{cat.name}</span>
+                <span className="text-xl">{cat.emoji}</span>
+                <span className={`text-[12px] font-bold ${selectedCats.includes(cat.id) ? 'text-white' : 'text-slate-400'}`}>{cat.name}</span>
               </button>
             ))}
           </div>
 
-          {/* Additional Packs */}
-          <div style={{ height: '1px', background: 'var(--glass-border)', margin: '16px 0' }}></div>
+          <div className="h-[1px] bg-slate-700 my-2" />
 
-          <h4 className="text-sm font-bold mb-md flex items-center gap-sm">
-            <MapPin size={16} /> แพ็คเสริม
-          </h4>
-
-          <div className="flex flex-col gap-sm mb-md">
-            <button
-              onClick={() => isHostActually && setUseDefaultPack(!useDefaultPack)}
-              className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
-                useDefaultPack
-                  ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
-                  : 'border-glass text-secondary opacity-60'
-              } ${!isHostActually && 'cursor-default'}`}
-            >
-              <span className="text-2xl">🎭</span>
-              <div>
-                <span className="text-sm font-bold">สถานที่ดั้งเดิม</span>
-                <p className="text-xs opacity-60">20 สถานที่</p>
-              </div>
-            </button>
-
-            <button
-              onClick={() => isHostActually && setUseNonStandardPack(!useNonStandardPack)}
-              className={`p-md rounded-xl border flex items-center gap-md transition-all text-left ${
-                useNonStandardPack
-                  ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/5'
-                  : 'border-glass text-secondary opacity-60'
-              } ${!isHostActually && 'cursor-default'}`}
-            >
-              <span className="text-2xl">🏢</span>
-              <div>
-                <span className="text-sm font-bold">สถานที่พิเศษ</span>
-                <p className="text-xs opacity-60">2 สถานที่</p>
-              </div>
-            </button>
+          <div className="flex items-center gap-3 mb-2">
+            <Clock size={18} className="text-neon-blue" />
+            <h4 className="text-[12px] font-black uppercase tracking-widest text-white">Timer</h4>
           </div>
 
-          {/* Timer Setting */}
-          <div style={{ height: '1px', background: 'var(--glass-border)', margin: '16px 0' }}></div>
-
-          <h4 className="text-sm font-bold mb-md flex items-center gap-sm">
-            <Clock size={16} /> เวลาในเกม
-          </h4>
-
-          <div className="flex gap-xs flex-wrap mb-md">
+          <div className="flex gap-2 flex-wrap mb-2">
             {TIMER_PRESETS.spyfall.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => isHostActually && setTimerMinutes(opt.value)}
-                className={`px-md py-xs rounded-xl text-xs font-bold border-2 transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-black border-2 transition-all uppercase tracking-widest ${
                   timerMinutes === opt.value
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-glass text-secondary opacity-60'
-                } ${!isHostActually && 'cursor-default'}`}
+                    ? 'border-neon-blue bg-neon-blue/10 text-neon-blue shadow-[0_0_10px_rgba(0,240,255,0.3)]'
+                    : 'border-slate-700 bg-slate-800/50 text-slate-400'
+                } ${!isHostActually && 'cursor-default pointer-events-none'}`}
               >
                 {opt.label}
               </button>
             ))}
           </div>
 
-          {/* Accomplice Toggle */}
-          <div style={{ height: '1px', background: 'var(--glass-border)', margin: '16px 0' }}></div>
-
+          <div className="h-[1px] bg-slate-700 my-2" />
+          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-md">
-              <Shield size={16} className="text-secondary" />
+            <div className="flex items-center gap-3">
+              <Shield size={18} className="text-purple-500" />
               <div>
-                <span className="text-sm font-bold">ผู้สมรู้ร่วมคิด</span>
-                <p className="text-xs text-secondary">เปิดใช้เมื่อมี 4+ คน</p>
+                <span className="text-[12px] font-black text-white uppercase tracking-widest">Accomplice Role</span>
+                <p className="text-[10px] text-slate-400">ผู้สมรู้ร่วมคิด (4+ คน)</p>
               </div>
             </div>
             {isHostActually && (
               <button
-                onClick={() => setEnableAccomplice(!enableAccomplice)}
-                className={`w-12 h-6 rounded-full transition-all relative ${
-                  enableAccomplice ? 'bg-primary' : 'bg-glass-dark'
+                onClick={() => { vibrateLight(); setEnableAccomplice(!enableAccomplice); }}
+                className={`w-12 h-6 rounded-full transition-all relative border-2 ${
+                  enableAccomplice ? 'bg-purple-600/30 border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-slate-800 border-slate-600'
                 }`}
               >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${
-                  enableAccomplice ? 'left-7' : 'left-1'
+                <div className={`absolute top-[2px] w-4 h-4 rounded-full bg-white transition-all ${
+                  enableAccomplice ? 'left-[24px]' : 'left-[2px]'
                 }`} />
               </button>
             )}
           </div>
-        </div>
+        </NeonCard>
 
-        {isHostActually && selectedCats.includes('funny') && playerCount >= 3 && playerCount < 5 && (
-          <div className="w-full bg-pink-500/10 border border-pink-300/30 rounded-xl p-md text-center">
-            <p className="text-xs font-bold text-pink-300">🤪 หมวดปั่นๆ ฮาๆ เล่น 5+ คนจะสนุกกว่า!</p>
-          </div>
-        )}
         {isHostActually ? (
-          <button
-            className="btn btn-primary w-full py-xl text-xl font-black shadow-xl shadow-primary/20"
-            onClick={startGame}
-            disabled={playerCount < 3}
-          >
-            {playerCount < 3 ? 'รอผู้เล่น (ขั้นต่ำ 3 คน)' : `เริ่มเกม! (${playerCount} คน)`}
-          </button>
+          <GiantButton color="pink" className="mt-4" onClick={startGame} disabled={playerCount < 3}>
+            {playerCount < 3 ? 'รอผู้เล่น (ขั้นต่ำ 3)' : `เริ่มเกม! (${playerCount} คน)`}
+          </GiantButton>
         ) : (
-          <div className="glass-panel p-md text-center border-primary/30">
-            <p className="animate-pulse text-primary font-bold">รอโฮสต์เริ่มเกม...</p>
+          <div className="mt-4 p-4 rounded-2xl border border-neon-blue/30 bg-neon-blue/10 text-center shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+            <p className="animate-pulse text-neon-blue font-bold uppercase tracking-widest text-[12px]">Waiting for Host to start...</p>
           </div>
         )}
       </div>
@@ -526,64 +485,86 @@ const Spyfall: React.FC = () => {
 
   if (roomData.status === 'playing' && gameData.status === 'playing') {
     const { wantsCount, threshold } = getVoteRequestInfo();
+    const isSpy = myGameData.isSpy;
+    const isAccomplice = myGameData.isAccomplice;
 
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in relative z-10 p-4">
         {renderErrorToast()}
-        {/* Timer */}
-        <TimerDisplay timeLeft={timeLeft} />
+        
+        <EpicPopup
+          isOpen={!!gameData.spyRevealing}
+          title="SPY REVEALED"
+          subtitle={`"${gameData.spyRevealing}" กำลังทายสถานที่...`}
+          type="danger"
+          icon="🚨"
+        />
 
-        {/* Category Hint */}
+        <div className="flex justify-center mb-2">
+          <div className="bg-slate-900 border border-neon-blue shadow-[0_0_15px_rgba(0,240,255,0.2)] rounded-3xl px-6 py-3 flex items-center gap-3">
+            <Timer size={20} className="text-neon-blue" />
+            <span className="font-display font-black text-3xl text-white tracking-widest">
+              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+            </span>
+          </div>
+        </div>
+
         {gameData.placeCategory && (
-          <div className="glass-panel px-lg py-md flex items-center gap-md border-accent/30 w-full">
-            <MapPin size={18} className="text-accent" />
-            <span className="text-sm font-bold text-secondary">หมวดหมู่หลัก:</span>
-            <span className="text-sm font-black text-white">{gameData.placeCategory}</span>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">หมวดหมู่:</span>
+            <span className="text-[12px] font-black text-neon-pink uppercase tracking-widest bg-neon-pink/10 px-3 py-1 rounded-full border border-neon-pink/30">{gameData.placeCategory}</span>
           </div>
         )}
 
-        {/* Spy Reveal Banner */}
-        <AnimatePresence>
-          {gameData.spyRevealing && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full bg-danger/20 border-2 border-danger p-lg rounded-2xl animate-pulse text-center"
-            >
-              <h4 className="text-danger font-black text-lg mb-xs">SPY REVEALED!</h4>
-              <p className="font-bold">
-                "{gameData.spyRevealing}" กำลังทายสถานที่...
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <HoldToRevealCard placeholderText="กดค้างไว้เพื่อดูบทบาท" className="mb-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+          <h2 className={`font-display font-black text-4xl uppercase tracking-widest mb-2 ${
+            isSpy ? 'text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]' 
+              : isAccomplice ? 'text-purple-500 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]' 
+              : 'text-neon-blue drop-shadow-[0_0_15px_rgba(0,240,255,0.8)]'
+          }`}>
+            {isSpy ? 'SPY' : isAccomplice ? 'ACCOMPLICE' : 'CITIZEN'}
+          </h2>
+          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 w-full max-w-[200px] text-center mb-2">
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">สถานที่</p>
+            <p className="text-xl font-bold text-white">
+              {isSpy || isAccomplice ? '???' : myGameData.place}
+            </p>
+          </div>
+          <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 w-full max-w-[200px] text-center">
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">อาชีพ/บทบาท</p>
+            <p className="text-xl font-bold text-white">
+              {isSpy ? 'สายลับ' : myGameData.role}
+            </p>
+          </div>
+          
+          {isSpy && <p className="text-red-400 text-xs mt-4 font-bold animate-pulse text-center">หาที่นี่ให้เจอจากคำพูดคนอื่น!</p>}
+          {isAccomplice && <p className="text-purple-400 text-xs mt-4 font-bold text-center">ช่วยปกป้องสายลับ: {myGameData.spyName}</p>}
+        </HoldToRevealCard>
 
-        {/* Location List Toggle */}
+        {isSpy && !gameData.spyRevealing && (
+          <GiantButton color="pink" onClick={handleReveal} className="mb-4 shadow-[0_0_30px_rgba(255,20,147,0.3)]">
+            ประกาศตัวทายสถานที่!
+          </GiantButton>
+        )}
+
         <button
-          className={`glass-panel px-lg py-md flex items-center gap-md transition-all w-full justify-center ${showLocations ? 'bg-primary/20 border-primary' : ''}`}
+          className="w-full py-3 rounded-xl border border-slate-700 bg-slate-800 flex items-center justify-center gap-2 text-[12px] font-bold text-slate-300 hover:text-white transition-colors"
           onClick={() => setShowLocations(!showLocations)}
         >
-          <Search size={20} />
-          <span className="font-bold">{showLocations ? 'ซ่อนโพยสถานที่' : 'ดูโพยสถานที่'}</span>
+          <Search size={16} /> {showLocations ? 'ซ่อนโพยสถานที่' : 'ดูโพยสถานที่'}
         </button>
 
         <AnimatePresence>
           {showLocations && (
             <motion.div
-              initial={{ height: 0, opacity: 0, y: -20 }}
-              animate={{ height: 'auto', opacity: 1, y: 0 }}
-              exit={{ height: 0, opacity: 0, y: -20 }}
-              className="glass-panel p-lg w-full overflow-hidden border-primary/20"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
             >
-              <div className="flex justify-between items-center mb-md">
-                <h4 className="text-sm font-bold opacity-60 flex items-center gap-sm">
-                  <MapPin size={14} /> สถานที่ที่เป็นไปได้ ({gameData.allPlaces?.length || 0})
-                </h4>
-              </div>
-              <div className="grid grid-cols-2 gap-sm max-h-60 overflow-y-auto pr-sm">
+              <div className="grid grid-cols-2 gap-2 mt-4 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
                 {gameData.allPlaces?.map(p => (
-                  <div key={p} className="text-xs p-md rounded-lg border border-glass bg-glass-dark/30 hover:border-primary/50 transition-colors">
+                  <div key={p} className="text-[11px] p-3 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 font-bold text-center">
                     {p}
                   </div>
                 ))}
@@ -592,150 +573,36 @@ const Spyfall: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Identity Card */}
-        <div className="relative w-full">
-          <motion.div
-            className="w-full rounded-3xl glass-panel flex flex-col p-xl border-t-2 border-l-2 border-white/20 shadow-2xl relative overflow-hidden"
-            style={{
-              background: myGameData.isSpy
-                ? 'linear-gradient(135deg, rgba(220, 38, 38, 0.3) 0%, rgba(127, 29, 29, 0.1) 100%)'
-                : myGameData.isAccomplice
-                  ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(88, 28, 135, 0.1) 100%)'
-                  : 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(30, 58, 138, 0.1) 100%)'
-            }}
-          >
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl"></div>
+        <div className="h-[1px] bg-slate-700 my-2" />
 
-            <div className="flex justify-between items-start mb-xl relative z-10">
-              <div>
-                <p className="text-secondary uppercase tracking-[4px] text-[10px] font-black mb-xs">
-                  IDENTITY CARD
-                </p>
-                <h2 className={`text-4xl font-black filter drop-shadow-md ${
-                  myGameData.isSpy ? 'text-danger' : myGameData.isAccomplice ? 'text-purple-400' : 'text-primary'
-                }`}>
-                  {myGameData.isSpy ? 'SPY' : myGameData.isAccomplice ? 'ACCOMPLICE' : 'CITIZEN'}
-                </h2>
-              </div>
-              <div className={`p-md rounded-2xl shadow-inner ${
-                myGameData.isSpy ? 'bg-danger/20 text-danger' : myGameData.isAccomplice ? 'bg-purple-500/20 text-purple-400' : 'bg-primary/20 text-primary'
-              }`}>
-                {myGameData.isSpy ? <AlertCircle size={32} /> : myGameData.isAccomplice ? <Eye size={32} /> : <User size={32} />}
-              </div>
-            </div>
-
-            <div className="space-y-lg relative z-10">
-              <div className="bg-glass-dark/50 p-lg rounded-2xl border border-glass backdrop-blur-md">
-                <p className="text-secondary text-[10px] uppercase font-bold mb-sm tracking-widest flex items-center gap-xs">
-                  <User size={12} /> บทบาทของคุณ
-                </p>
-                <p className="text-2xl font-black">
-                  {myGameData.isSpy ? 'สายลับปริศนา' : myGameData.role}
-                </p>
-              </div>
-
-              <div className="bg-glass-dark/50 p-lg rounded-2xl border border-glass backdrop-blur-md">
-                <p className="text-secondary text-[10px] uppercase font-bold mb-sm tracking-widest flex items-center gap-xs">
-                  <MapPin size={12} /> สถานที่
-                </p>
-                <p className="text-2xl font-black">
-                  {myGameData.isSpy || myGameData.isAccomplice ? '???' : myGameData.place}
-                </p>
-                {myGameData.isSpy && (
-                  <p className="text-danger text-xs mt-sm font-bold animate-pulse">หาที่นี่ให้เจอจากคำพูดคนอื่น!</p>
-                )}
-                {myGameData.isAccomplice && (
-                  <p className="text-purple-400 text-xs mt-sm font-bold">
-                    คุณเป็นผู้สมรู้ร่วมคิด — ช่วยปกป้องสายลับ
-                  </p>
-                )}
-                {myGameData.isAccomplice && (
-                  <p className="text-purple-400 text-xs mt-sm font-bold">
-                    สายลับคือ: {myGameData.spyName}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Spy action button */}
-            {myGameData.isSpy && !gameData.spyRevealing && (
-              <button
-                className="mt-xl btn btn-danger w-full py-xl text-lg font-black shadow-xl shadow-danger/20 z-10"
-                onClick={handleReveal}
-              >
-                ประกาศตัวและทายสถานที่!
-              </button>
-            )}
-          </motion.div>
-        </div>
-
-        {/* Vote Request Section */}
-        <div className="glass-panel p-md">
-          <div className="flex items-center justify-between mb-sm">
-            <div className="flex items-center gap-sm">
-              <Vote size={16} className="text-secondary" />
-              <span className="text-sm font-bold">ขอเปิดโหวต</span>
-            </div>
-            <span className="text-xs text-secondary">{wantsCount}/{threshold} คน</span>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-bold text-slate-400 uppercase">ขอโหวต: {wantsCount}/{threshold} คน</span>
           </div>
-
-          {/* Progress bar */}
-          <div className="w-full h-2 bg-glass-dark/50 rounded-full mb-md overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all"
-              style={{ width: `${Math.min(100, (wantsCount / threshold) * 100)}%` }}
-            />
+          <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-full bg-neon-blue transition-all duration-300" style={{ width: `${Math.min(100, (wantsCount / threshold) * 100)}%` }} />
           </div>
-
           {myGameData.wantsToVote ? (
-            <button
-              className="btn btn-glass w-full py-sm text-sm"
-              onClick={cancelVoteRequest}
-            >
+            <button className="py-2.5 rounded-xl border border-neon-blue bg-neon-blue/10 text-neon-blue font-bold text-[12px]" onClick={cancelVoteRequest}>
               ยกเลิกคำขอโหวต
             </button>
           ) : (
-            <button
-              className="btn btn-primary w-full py-sm text-sm font-bold"
-              onClick={requestVote}
-            >
-              ขอเปิดการโหวต ({wantsCount}/{threshold})
+            <button className="py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-[12px]" onClick={requestVote}>
+              โหวตจับสายลับ
             </button>
           )}
         </div>
 
-        {/* Guess Modal (for spy) */}
+        {/* Guess Modal for Spy */}
         <AnimatePresence>
           {showGuessModal && myGameData.isSpy && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex-center p-md bg-black/90 backdrop-blur-md"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 50 }}
-                animate={{ scale: 1, y: 0 }}
-                className="glass-panel p-xl w-full max-w-sm flex flex-col gap-lg border-danger/30"
-              >
-                <div className="flex items-center gap-md">
-                  <div className="p-sm bg-danger/20 rounded-lg text-danger">
-                    <Search size={24} />
-                  </div>
-                  <h3 className="text-2xl font-black">ทายสถานที่</h3>
-                </div>
-
-                <p className="text-secondary text-sm leading-relaxed">
-                  {gameData.spyForced
-                    ? 'คุณถูกบังคับให้ทาย! เลือกสถานที่ที่คุณคิดว่าถูกต้อง'
-                    : 'คุณกำลังจะเปิดเผยตัวตน! เลือกสถานที่ที่คุณคิดว่าพลเมืองอยู่ หากทายถูกคุณจะชนะทันที'
-                  }
-                </p>
-
-                <div className="relative">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex-center p-4 bg-slate-950/90 backdrop-blur-md">
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="glass-panel p-6 w-full max-w-sm flex flex-col gap-4 border-neon-pink shadow-neon-pink">
+                <h3 className="font-display font-black text-2xl text-neon-pink uppercase tracking-widest text-center">ทายสถานที่</h3>
+                <p className="text-slate-300 text-sm text-center">เลือกสถานที่ที่คุณคิดว่าถูกต้อง หากทายถูกคุณจะชนะทันที!</p>
+                <div className="relative mt-2">
                   <select
-                    className="input-field w-full py-xl px-lg appearance-none font-bold"
+                    className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:border-neon-pink outline-none appearance-none"
                     value={selectedGuess}
                     onChange={(e) => setSelectedGuess(e.target.value)}
                   >
@@ -744,32 +611,24 @@ const Spyfall: React.FC = () => {
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
-                  <div className="absolute right-md top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-                    <ChevronDown size={24} />
-                  </div>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                 </div>
-
-                <div className="flex gap-md mt-md">
+                <div className="flex gap-3 mt-4">
                   {!gameData.spyForced && (
-                    <button
-                      className="btn btn-glass flex-1 py-md font-bold"
-                      onClick={handleCancelReveal}
-                    >
-                      ยกเลิก
-                    </button>
+                    <button className="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold" onClick={handleCancelReveal}>ยกเลิก</button>
                   )}
-                  <button
-                    className={`btn btn-danger py-md font-black shadow-lg shadow-danger/20 ${gameData.spyForced ? 'w-full' : 'flex-1'}`}
-                    onClick={handleGuess}
-                    disabled={!selectedGuess}
+                  <button 
+                    className={`flex-1 py-3 rounded-xl font-black shadow-[0_0_15px_rgba(255,20,147,0.4)] ${selectedGuess ? 'bg-neon-pink text-white' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
+                    onClick={handleGuess} disabled={!selectedGuess}
                   >
-                    ยืนยันการทาย
+                    ยืนยัน
                   </button>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
     );
   }
@@ -784,105 +643,69 @@ const Spyfall: React.FC = () => {
     const votedCount = gamePlayerList.filter(p => gamePlayers[p]?.votedFor).length;
 
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in relative z-10 p-4">
         {renderErrorToast()}
-        {/* Spy Reveal Banner (if spy is forced to guess after vote) */}
-        <AnimatePresence>
-          {gameData.spyRevealing && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full bg-danger/20 border-2 border-danger p-lg rounded-2xl animate-pulse text-center"
-            >
-              <h4 className="text-danger font-black text-lg mb-xs">SPY REVEALED!</h4>
-              <p className="font-bold">
-                "{gameData.spyRevealing}" กำลังทายสถานที่...
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        <div className="glass-panel p-xl text-center border-warning/30">
-          <div className="flex-center mb-md">
-            <div className="p-md bg-warning/20 rounded-full">
-              <Vote size={40} className="text-warning" />
-            </div>
+        <EpicPopup
+          isOpen={!!gameData.spyRevealing}
+          title="SPY REVEALED"
+          subtitle={`"${gameData.spyRevealing}" กำลังทายสถานที่...`}
+          type="danger"
+          icon="🚨"
+        />
+        
+        <NeonCard color="amber" className="text-center py-6">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-500 flex-center mx-auto mb-4 shadow-[0_0_20px_rgba(251,191,36,0.5)]">
+            <Vote size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-2xl font-black mb-sm">โหวตหาสายลับ!</h2>
-          <p className="text-secondary text-sm">เลือกคนที่คุณคิดว่าเป็นสายลับ</p>
-          <p className="text-xs text-secondary mt-sm">โหวตแล้ว {votedCount}/{gamePlayerCount} คน</p>
-        </div>
+          <h2 className="font-display font-black text-2xl text-amber-500 uppercase tracking-widest mb-1">VOTE TIME</h2>
+          <p className="text-[12px] font-bold text-slate-300">เลือกคนที่คุณคิดว่าเป็นสายลับ</p>
+          <p className="text-[10px] text-amber-500/70 font-bold uppercase mt-2">โหวตแล้ว {votedCount}/{gamePlayerCount} คน</p>
+        </NeonCard>
 
-        {/* Voting list */}
         {!myVote ? (
-          <div className="glass-panel p-lg space-y-sm">
-            <h4 className="text-sm font-bold mb-md">เลือกผู้ต้องสงสัย:</h4>
-            {gamePlayerList
-              .filter(p => p !== nickname)
-              .map(p => (
-                <button
-                  key={p}
-                  onClick={() => setVoteTarget(p)}
-                  className={`w-full p-md rounded-xl border flex items-center gap-md transition-all text-left ${
-                    voteTarget === p
-                      ? 'border-danger bg-danger/10 text-danger'
-                      : 'border-glass text-secondary hover:border-primary/50'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-full flex-center bg-glass-dark/50 text-sm font-bold">
-                    {p.charAt(0)}
-                  </div>
-                  <span className="font-bold">{p}</span>
-                  {voteTarget === p && <CheckCircle2 size={18} className="ml-auto text-danger" />}
-                </button>
-              ))}
+          <div className="flex flex-col gap-3 mt-4">
+            {gamePlayerList.filter(p => p !== nickname).map(p => (
+              <button
+                key={p}
+                onClick={() => { vibrateLight(); setVoteTarget(p); }}
+                className={`w-full p-4 rounded-2xl border-2 flex items-center gap-3 transition-all text-left ${
+                  voteTarget === p
+                    ? 'border-neon-pink bg-neon-pink/10 text-white shadow-[0_0_15px_rgba(255,20,147,0.3)]'
+                    : 'border-slate-700 bg-slate-800/50 text-slate-300'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-full flex-center bg-slate-900 border border-slate-600 font-bold text-[14px]">
+                  {p.charAt(0)}
+                </div>
+                <span className="font-bold flex-1">{p}</span>
+                {voteTarget === p && <CheckCircle2 size={20} className="text-neon-pink" />}
+              </button>
+            ))}
 
-            <button
-              className="btn btn-danger w-full py-lg mt-md font-black"
-              onClick={submitVote}
-              disabled={!voteTarget}
-            >
+            <GiantButton color="pink" className="mt-4" onClick={submitVote} disabled={!voteTarget}>
               ยืนยันโหวต
-            </button>
+            </GiantButton>
           </div>
         ) : (
-          <div className="glass-panel p-lg text-center">
-            <CheckCircle2 size={40} className="text-success mx-auto mb-md" />
-            <p className="font-bold">คุณโหวตให้ "{myVote}" แล้ว</p>
-            <p className="text-secondary text-sm mt-sm">รอผู้เล่นคนอื่น...</p>
+          <div className="mt-8 p-6 text-center">
+            <div className="w-20 h-20 bg-neon-green/20 rounded-full flex-center mx-auto mb-4 border border-neon-green shadow-[0_0_20px_rgba(57,255,20,0.3)]">
+              <CheckCircle2 size={40} className="text-neon-green" />
+            </div>
+            <p className="font-bold text-white text-lg">คุณโหวตให้ "{myVote}" แล้ว</p>
+            <p className="text-slate-400 text-sm mt-2">รอผู้เล่นคนอื่น...</p>
           </div>
         )}
 
-
-        {/* Guess Modal for forced spy */}
         <AnimatePresence>
           {showGuessModal && myGameData.isSpy && gameData.spyRevealing === nickname && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex-center p-md bg-black/90 backdrop-blur-md"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 50 }}
-                animate={{ scale: 1, y: 0 }}
-                className="glass-panel p-xl w-full max-w-sm flex flex-col gap-lg border-danger/30"
-              >
-                <div className="flex items-center gap-md">
-                  <div className="p-sm bg-danger/20 rounded-lg text-danger">
-                    <Search size={24} />
-                  </div>
-                  <h3 className="text-2xl font-black">ทายสถานที่</h3>
-                </div>
-
-                <p className="text-secondary text-sm leading-relaxed">
-                  ชาวบ้านโหวตผิดคน! คุณได้โอกาสทายสถานที่ หากทายถูกคุณจะชนะ!
-                </p>
-
-                <div className="relative">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] flex-center p-4 bg-slate-950/90 backdrop-blur-md">
+              <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="glass-panel p-6 w-full max-w-sm flex flex-col gap-4 border-neon-pink shadow-neon-pink">
+                <h3 className="font-display font-black text-2xl text-neon-pink uppercase tracking-widest text-center">ทายสถานที่</h3>
+                <p className="text-slate-300 text-sm text-center">ชาวบ้านโหวตผิดคน! คุณได้โอกาสทายสถานที่ หากทายถูกคุณจะชนะ!</p>
+                <div className="relative mt-2">
                   <select
-                    className="input-field w-full py-xl px-lg appearance-none font-bold"
+                    className="w-full bg-slate-900 border-2 border-slate-700 rounded-xl px-4 py-3 text-white font-bold focus:border-neon-pink outline-none appearance-none"
                     value={selectedGuess}
                     onChange={(e) => setSelectedGuess(e.target.value)}
                   >
@@ -891,18 +714,11 @@ const Spyfall: React.FC = () => {
                       <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
-                  <div className="absolute right-md top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
-                    <ChevronDown size={24} />
-                  </div>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
                 </div>
-
-                <button
-                  className="btn btn-danger w-full py-md font-black shadow-lg shadow-danger/20"
-                  onClick={handleGuess}
-                  disabled={!selectedGuess}
-                >
-                  ยืนยันการทาย
-                </button>
+                <GiantButton color="pink" className="mt-4" onClick={handleGuess} disabled={!selectedGuess}>
+                  ยืนยันทาย
+                </GiantButton>
               </motion.div>
             </motion.div>
           )}
@@ -917,122 +733,84 @@ const Spyfall: React.FC = () => {
 
   if (roomData.status === 'finished' || gameData.status === 'finished') {
     const gamePlayers = gameData.players || {};
-    const myData = gamePlayers[nickname] || {};
-    const iSpy = myData.isSpy || myData.isAccomplice;
-    const iWon = (gameData.winner === 'Spy' && iSpy) || (gameData.winner === 'Civilians' && !iSpy);
+    const spyWon = gameData.winner === 'Spy';
+    const accentColor = spyWon ? 'pink' : 'blue';
 
     return (
-      <div className="flex flex-col gap-lg w-full text-center animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in relative z-10 p-4">
         {renderErrorToast()}
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className={`glass-panel p-xl w-full border-2 shadow-2xl relative overflow-hidden ${
-          gameData.winner === 'Spy' ? 'border-danger' : 'border-success'
-        }`}>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
-
-          <div className="flex-center mb-lg">
-            {gameData.winner === 'Spy' ? (
-              <div className="bg-danger/20 p-xl rounded-full shadow-lg shadow-danger/20">
-                <XCircle size={80} className="text-danger" />
-              </div>
-            ) : (
-              <div className="bg-success/20 p-xl rounded-full shadow-lg shadow-success/20">
-                <CheckCircle2 size={80} className="text-success" />
-              </div>
-            )}
+        
+        <NeonCard color={accentColor} className="text-center py-8">
+          <div className="flex-center mb-6">
+            <div className={`w-24 h-24 rounded-full flex-center shadow-lg border-2 ${
+              spyWon ? 'bg-red-500/20 border-red-500 text-red-500 shadow-red-500/50' : 'bg-neon-blue/20 border-neon-blue text-neon-blue shadow-neon-blue/50'
+            }`}>
+              {spyWon ? <XCircle size={48} /> : <CheckCircle2 size={48} />}
+            </div>
           </div>
-
-          <h2 className={`text-5xl font-black mb-md ${gameData.winner === 'Spy' ? 'text-danger' : 'text-success'}`}>
-            {gameData.winner === 'Spy' ? 'สายลับชนะ!' : 'พลเมืองชนะ!'}
+          
+          <h2 className={`font-display font-black text-4xl uppercase tracking-widest mb-6 ${
+            spyWon ? 'text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]' : 'text-neon-blue drop-shadow-[0_0_10px_rgba(0,240,255,0.8)]'
+          }`}>
+            {spyWon ? 'SPY WINS!' : 'CITIZENS WIN!'}
           </h2>
 
-          <div className="bg-glass-dark/30 p-lg rounded-2xl border border-glass mb-xl">
-            <p className="text-secondary text-sm mb-xs">สถานที่จริงคือ</p>
-            <p className="text-2xl font-black text-white">{gameData.targetPlace}</p>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-4 mb-6">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">สถานที่จริง</p>
+            <p className="text-2xl font-bold text-white mb-2">{gameData.targetPlace}</p>
             {gameData.guess && (
-              <p className="mt-sm text-sm">
-                สายลับทายว่า: <span className={gameData.winner === 'Spy' ? 'text-success font-bold' : 'text-danger font-bold'}>"{gameData.guess}"</span>
+              <p className="text-sm">
+                สายลับทายว่า: <span className={`font-bold ${spyWon ? 'text-neon-green' : 'text-red-500'}`}>"{gameData.guess}"</span>
               </p>
             )}
           </div>
 
-          {/* Vote results if voting happened */}
-          {Object.values(gamePlayers).some(p => p.votedFor) && (
-            <div className="bg-glass-dark/30 p-lg rounded-2xl border border-glass mb-xl text-left">
-              <p className="text-xs font-bold opacity-40 uppercase tracking-widest mb-md">ผลการโหวต</p>
-              {gamePlayerList.map(name => (
-                <div key={name} className="flex justify-between items-center text-sm py-xs">
-                  <span className="font-bold">{name}</span>
-                  <span className="text-secondary">
-                    {gamePlayers[name]?.votedFor ? `โหวต: ${gamePlayers[name].votedFor}` : '-'}
+          <div className="text-left space-y-2">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-700 pb-1">สรุปบทบาท</p>
+            {gamePlayerList.map(name => {
+              const pData = gamePlayers[name];
+              const isP_Spy = pData?.isSpy;
+              const isP_Acc = pData?.isAccomplice;
+              return (
+                <div key={name} className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                  <span className={`font-bold ${isP_Spy ? 'text-red-400' : isP_Acc ? 'text-purple-400' : 'text-white'}`}>{name}</span>
+                  <span className={`text-[11px] font-bold px-2 py-1 rounded-md ${
+                    isP_Spy ? 'bg-red-500/20 text-red-400' : isP_Acc ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {isP_Spy ? 'สายลับ' : isP_Acc ? 'ผู้สมรู้ร่วมคิด' : pData?.role || 'ชาวบ้าน'}
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          <div className="space-y-sm text-left">
-            <p className="text-xs font-bold opacity-40 uppercase tracking-widest mb-md">สรุปบทบาทผู้เล่น</p>
-            {Object.entries(gamePlayers).map(([name, data]) => (
-              <div key={name} className="flex justify-between items-center p-md bg-glass-dark/20 rounded-xl border border-glass/30">
-                <div className="flex items-center gap-md">
-                  <div className={`w-8 h-8 rounded-full flex-center text-xs font-bold ${
-                    data.isSpy ? 'bg-danger/20 text-danger' : data.isAccomplice ? 'bg-purple-500/20 text-purple-400' : 'bg-primary/20 text-primary'
-                  }`}>
-                    {name.charAt(0)}
-                  </div>
-                  <span className="font-bold">{name}</span>
-                </div>
-                <span className={`text-sm px-md py-xs rounded-full ${
-                  data.isSpy ? 'bg-danger/20 text-danger font-black'
-                    : data.isAccomplice ? 'bg-purple-500/20 text-purple-400 font-black'
-                    : 'bg-glass text-secondary font-medium'
-                }`}>
-                  {data.isSpy ? 'สายลับ' : data.isAccomplice ? 'ผู้สมรู้ร่วมคิด' : data.role}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
-
+        </NeonCard>
 
         {isHostActually ? (
-          <div className="flex flex-col gap-md w-full">
-            <button
-              className="btn btn-primary py-3 px-6 text-[14px] w-full"
-              onClick={handlePlayAgain}
-            >
-              🔄 เล่นอีกครั้ง
-            </button>
-            <button
-              className="btn btn-outline w-full py-lg font-black"
-              onClick={resetToLobby}
-            >
-              กลับไปล็อบบี้
+          <div className="flex flex-col gap-3 mt-4">
+            <GiantButton color="blue" onClick={handlePlayAgain}>
+              เล่นอีกครั้ง
+            </GiantButton>
+            <button className="py-4 font-bold text-slate-400 hover:text-white uppercase tracking-widest text-[12px]" onClick={resetToLobby}>
+              กลับ Lobby
             </button>
           </div>
         ) : (
-          <button
-            className="btn btn-outline w-full py-lg font-black"
-            onClick={requestLeave}
-          >
-            <LogOut size={18} /> ออกจากห้อง
-          </button>
+          <GiantButton color="slate" onClick={requestLeave} className="mt-4">
+            กลับ Lobby (ขอลา)
+          </GiantButton>
         )}
       </div>
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════════
-  // RENDER: FALLBACK (should not happen normally)
+  // RENDER: FALLBACK
   // ═══════════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="w-full flex-center">
+    <div className="w-full flex-center flex-1">
       {renderErrorToast()}
-      <div className="glass-panel p-lg text-center">
-        <p className="text-secondary">กำลังโหลด...</p>
-      </div>
+      <div className="w-8 h-8 border-[3px] border-neon-blue/30 border-t-neon-blue rounded-full animate-spin"></div>
     </div>
   );
 };

@@ -36,9 +36,9 @@ const Poker = lazy(() => import('../games/Poker'));
 const PokDeng = lazy(() => import('../games/PokDeng'));
 
 const GameLoadingFallback = () => (
-  <div className="flex-center flex-1 flex-col gap-3 py-20">
-    <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-    <p className="text-olive-400 text-[13px] font-semibold">กำลังโหลดเกม...</p>
+  <div className="flex items-center justify-center flex-1 flex-col gap-3 py-20">
+    <div className="w-7 h-7 border-[3px] border-slate-700 border-t-neon-blue rounded-full animate-spin"></div>
+    <p className="text-slate-400 text-[13px] font-semibold">กำลังโหลดเกม...</p>
   </div>
 );
 
@@ -51,20 +51,19 @@ interface ConfirmModalProps {
 const ConfirmModal: React.FC<ConfirmModalProps> = ({ message, onConfirm, onCancel }) => (
   <motion.div
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-    className="fixed inset-0 z-50 flex-center p-6"
-    style={{ background: 'rgba(47,42,34,0.5)' }}
+    className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm"
     onClick={onCancel}
   >
     <motion.div
       initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }}
       transition={{ duration: 0.15 }}
-      className="card p-6 w-full max-w-[300px] flex flex-col gap-4"
+      className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-[300px] flex flex-col gap-4"
       onClick={e => e.stopPropagation()}
     >
-      <p className="font-bold text-[15px] text-olive-800 text-center leading-relaxed">{message}</p>
+      <p className="font-bold text-[15px] text-white text-center leading-relaxed">{message}</p>
       <div className="flex gap-3">
-        <button className="btn btn-outline flex-1 py-3 text-[14px]" onClick={onCancel}>ยกเลิก</button>
-        <button className="btn btn-primary flex-1 py-3 text-[14px] bg-red-500 border-red-500" onClick={onConfirm}>ยืนยัน</button>
+        <button className="bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-xl py-3 flex-1 text-[14px]" onClick={onCancel}>ยกเลิก</button>
+        <button className="bg-neon-pink text-white font-bold rounded-xl py-3 shadow-[0_0_15px_rgba(255,0,128,0.3)] border border-neon-pink flex-1 text-[14px]" onClick={onConfirm}>ยืนยัน</button>
       </div>
     </motion.div>
   </motion.div>
@@ -206,9 +205,9 @@ const GameRoom: React.FC = () => {
   }, [isHost, roomId, showActionError]);
 
   if (!roomData) return (
-    <div className="flex-center flex-1 flex-col gap-3">
-      <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-      <p className="text-olive-400 text-[13px]">กำลังโหลด...</p>
+    <div className="flex items-center justify-center flex-1 flex-col gap-3">
+      <div className="w-7 h-7 border-[3px] border-slate-700 border-t-neon-blue rounded-full animate-spin"></div>
+      <p className="text-slate-400 text-[13px]">กำลังโหลด...</p>
     </div>
   );
 
@@ -240,10 +239,10 @@ const GameRoom: React.FC = () => {
       case 'poker': return <Poker {...props} />;
       case 'pokdeng': return <PokDeng {...props} />;
       default: return (
-        <div className="card flex-center flex-col p-8 text-center flex-1 gap-3">
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl flex items-center justify-center flex-col p-8 text-center flex-1 gap-3">
           <span className="text-4xl">🔨</span>
-          <p className="font-bold text-olive-700">กำลังรอสักครู่...</p>
-          <p className="text-olive-400 text-sm">รอหัวห้องเลือกเกม!</p>
+          <p className="font-bold text-slate-200">กำลังรอสักครู่...</p>
+          <p className="text-slate-400 text-sm">รอหัวห้องเลือกเกม!</p>
         </div>
       );
     }
@@ -263,7 +262,7 @@ const GameRoom: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-sage-500 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-[13px] font-bold"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-neon-green text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-[13px] font-bold"
           >
             <Crown size={16} /> คุณเป็น Host ห้องนี้แล้ว!
           </motion.div>
@@ -286,10 +285,10 @@ const GameRoom: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex-center flex-col gap-3 bg-white/80 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center flex-col gap-3 bg-slate-900/80 backdrop-blur-sm"
           >
-            <div className="w-8 h-8 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin" />
-            <p className="font-bold text-[15px] text-olive-700">กำลังเริ่มเกมใหม่...</p>
+            <div className="w-8 h-8 border-[3px] border-slate-700 border-t-neon-blue rounded-full animate-spin" />
+            <p className="font-bold text-[15px] text-slate-200">กำลังเริ่มเกมใหม่...</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -299,26 +298,25 @@ const GameRoom: React.FC = () => {
         {showGameSwitcher && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center p-0"
-            style={{ background: 'rgba(47,42,34,0.4)' }}
+            className="fixed inset-0 z-50 flex items-end justify-center p-0 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => setShowGameSwitcher(false)}
           >
             <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="bg-white rounded-t-3xl w-full max-w-[460px] p-5"
+              className="bg-slate-900 rounded-t-3xl border-t border-slate-700 w-full max-w-[460px] p-5"
               onClick={e => e.stopPropagation()}
             >
-              <h3 className="font-display font-bold text-[14px] text-olive-700 mb-3">เปลี่ยนเกม</h3>
+              <h3 className="font-display font-bold text-[14px] text-slate-200 mb-3">เปลี่ยนเกม</h3>
               <div className="grid grid-cols-2 gap-2">
                 {PARTY_GAMES.filter(id => id !== roomData.currentGame).map((id) => (
                   <button
                     key={id}
                     onClick={() => handleSwitchGame(id)}
-                    className="flex items-center gap-2 p-3 rounded-2xl border-2 border-olive-100 active:bg-sage-50 active:border-sage-200 transition-all"
+                    className="flex items-center gap-2 p-3 rounded-2xl border-2 border-slate-700 active:bg-slate-800 active:border-slate-600 transition-all"
                   >
                     <span className="text-xl">{GAME_ICONS[id]}</span>
-                    <span className="font-bold text-[12px] text-olive-700">{GAME_NAMES[id]}</span>
+                    <span className="font-bold text-[12px] text-slate-200">{GAME_NAMES[id]}</span>
                   </button>
                 ))}
               </div>
@@ -327,26 +325,26 @@ const GameRoom: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex-between py-2 mb-3">
+      <div className="flex justify-between items-center py-2 mb-3">
         <div className="flex items-center gap-2.5">
           <span className="text-xl">{meta.icon}</span>
-          <span className="font-display font-bold text-[15px] text-olive-800">{meta.name}</span>
+          <span className="font-display font-bold text-[15px] text-white">{meta.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <Scoreboard roomId={roomId || ''} isHost={isHost} />
           <ConnectionIndicator />
           {isHost && PARTY_GAMES.includes(roomData.currentGame) && (
-            <button className="btn btn-outline py-2 px-3 text-[12px] min-h-[42px]" onClick={() => setShowGameSwitcher(true)}>
+            <button className="bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-xl py-2 px-3 text-[12px] min-h-[42px]" onClick={() => setShowGameSwitcher(true)}>
               <ArrowLeftRight size={13} /> เปลี่ยน
             </button>
           )}
           <GameGuide gameId={roomData.currentGame} />
           {isHost ? (
-            <button className="btn btn-outline py-2 px-3 text-[12px] min-h-[42px]" onClick={handleBack}>
+            <button className="bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-xl py-2 px-3 text-[12px] min-h-[42px]" onClick={handleBack}>
               <RefreshCw size={13} /> จบเกม
             </button>
           ) : (
-            <button className="btn btn-outline py-2 px-3 text-[12px] min-h-[42px]" onClick={handleLeaveGame}>
+            <button className="bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-xl py-2 px-3 text-[12px] min-h-[42px]" onClick={handleLeaveGame}>
               <LogOut size={13} /> ออก
             </button>
           )}

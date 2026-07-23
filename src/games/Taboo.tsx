@@ -14,6 +14,8 @@ import { useGameLeave } from '../hooks/useGameLeave';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const ROUND_TIME = 60;
 const MAX_SKIPS = 2;
@@ -319,46 +321,46 @@ const Taboo = () => {
   // ──────────────────────────────────────────────
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 bg-slate-950 text-slate-200">
         {renderErrorToast()}
         <motion.div
-          className="text-6xl"
+          className="text-8xl drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]"
           animate={{ rotate: [0, -10, 10, -10, 0] }}
           transition={{ duration: 1.2, repeat: Infinity, repeatDelay: 2 }}
         >
           🤫
         </motion.div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('taboo.title')}</h2>
-          <p className="text-olive-400 text-[13px] max-w-xs leading-relaxed">
+        <div className="text-center px-4">
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">{t('taboo.title')}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed max-w-xs mx-auto">
             {t('taboo.description')}
           </p>
         </div>
 
-        <div className="card p-4 w-full max-w-xs space-y-2">
-          <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">{t('taboo.players')}</span>
-            <span className="font-bold text-olive-700">{players.length} {t('common.people') || 'คน'}</span>
+        <NeonCard color="amber" className="p-4 w-full max-w-xs space-y-2 border-amber-500/30 bg-amber-900/10">
+          <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
+            <span className="text-slate-500">{t('taboo.players')}</span>
+            <span className="text-amber-500">{players.length} {t('common.people') || 'คน'}</span>
           </div>
-          <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">{t('taboo.roundTime')}</span>
-            <span className="font-bold text-olive-700">{ROUND_TIME} {t('common.seconds') || 'วินาที'}</span>
+          <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
+            <span className="text-slate-500">{t('taboo.roundTime')}</span>
+            <span className="text-amber-500">{ROUND_TIME} {t('common.seconds') || 'วินาที'}</span>
           </div>
-          <div className="flex justify-between text-[12px]">
-            <span className="text-olive-400 font-semibold">{t('taboo.maxSkips')}</span>
-            <span className="font-bold text-olive-700">{MAX_SKIPS} {t('common.times') || 'ครั้ง'}/{t('common.round') || 'รอบ'}</span>
+          <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
+            <span className="text-slate-500">{t('taboo.maxSkips')}</span>
+            <span className="text-amber-500">{MAX_SKIPS} {t('common.times') || 'ครั้ง'}/{t('common.round') || 'รอบ'}</span>
           </div>
-          <hr className="border-olive-100" />
-          <div className="text-[11px] text-olive-400 space-y-0.5">
-            <p>🎯 {t('taboo.pointsDescriber')}</p>
-            <p>✅ {t('taboo.pointsGuesser')}</p>
+          <hr className="border-slate-800" />
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 space-y-1 mt-2">
+            <p className="flex items-center gap-2"><span className="text-emerald-500 text-[14px]">🎯</span> {t('taboo.pointsDescriber')}</p>
+            <p className="flex items-center gap-2"><span className="text-amber-500 text-[14px]">✅</span> {t('taboo.pointsGuesser')}</p>
           </div>
-        </div>
+        </NeonCard>
 
         {isHost ? (
           <>
-            <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('taboo.cardPack')}</p>
+            <div className="w-full max-w-xs px-2 mt-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 text-center">{t('taboo.cardPack')}</p>
               <div className="flex gap-2">
                 {[
                   { id: 'all', label: t('taboo.cardPackAll') },
@@ -368,10 +370,10 @@ const Taboo = () => {
                   <button
                     key={opt.id}
                     onClick={() => setCardMode(opt.id)}
-                    className={`flex-1 py-2.5 rounded-2xl text-[12px] font-bold border-2 transition-colors ${
+                    className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                       cardMode === opt.id
-                        ? 'bg-sage-500 border-sage-500 text-white'
-                        : 'bg-white border-olive-100 text-olive-600'
+                        ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)] text-amber-400'
+                        : 'bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-500'
                     }`}
                   >
                     {opt.label}
@@ -379,23 +381,24 @@ const Taboo = () => {
                 ))}
               </div>
             </div>
-            <button
+            <GiantButton
+              color="emerald"
               onClick={handleStartGame}
-              className="btn btn-primary py-3.5 px-8 text-[15px]"
+              className="w-full max-w-xs mt-4"
               disabled={players.length < 2}
             >
               {t('taboo.startGame')}
-            </button>
+            </GiantButton>
             {players.length < 2 && (
-              <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl">
+              <p className="text-center text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-950/50 border border-red-500/30 p-2.5 rounded-xl w-full max-w-xs mt-2">
                 {t('taboo.minPlayers')}
               </p>
             )}
           </>
         ) : (
-          <div className="flex items-center gap-2 text-olive-400">
-            <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[13px] font-semibold">{t('taboo.waitingHost')}</span>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-amber-500 rounded-full animate-spin shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('taboo.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -408,44 +411,44 @@ const Taboo = () => {
   if (phase === 'finished') {
     const winner = sortedScores[0];
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4">
+      <div className="flex-1 flex flex-col gap-4 py-4 bg-slate-950 pb-24 text-slate-200">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
-          <span className="text-5xl">🏆</span>
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mt-2">{t('common.finished') || 'จบเกม!'}</h2>
+          <div className="text-7xl mb-2 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">🏆</div>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mt-2 drop-shadow-md">{t('common.finished') || 'จบเกม!'}</h2>
         </div>
 
         {winner && (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-center"
+            className="p-6 text-center border-amber-500/50 bg-amber-900/20 mx-4 shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl border"
           >
-            <Crown size={26} className="text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-[17px] text-olive-800">{winner[0]}</p>
-            <p className="text-[24px] font-black text-amber-600">{winner[1]} {t('common.points') || 'คะแนน'}</p>
+            <Crown size={32} className="text-amber-400 mx-auto mb-3 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+            <p className="font-black text-[18px] uppercase tracking-widest text-amber-500">{winner[0]}</p>
+            <p className="text-[32px] font-black text-white drop-shadow-md">{winner[1]} {t('common.points') || 'คะแนน'}</p>
           </motion.div>
         )}
 
-        <div className="card p-4">
-          <h3 className="font-bold text-[13px] text-olive-600 mb-3">📊 {t('taboo.totalScores')}</h3>
-          <div className="space-y-2">
+        <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl backdrop-blur-sm">
+          <h3 className="font-black text-[12px] uppercase tracking-widest text-slate-400 mb-4 text-center">📊 {t('taboo.totalScores')}</h3>
+          <div className="space-y-3">
             {sortedScores.map(([name, score], idx) => (
               <motion.div
                 key={name}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.07 }}
-                className="flex items-center gap-3 p-2.5 rounded-xl bg-olive-50/60"
+                className="flex items-center gap-4 p-3 rounded-2xl bg-slate-900 border border-slate-800"
               >
-                <span className="w-7 h-7 rounded-full bg-sage-100 flex-center text-[12px] font-black text-sage-700">
+                <span className={`w-8 h-8 rounded-xl flex-center text-[12px] font-black shrink-0 ${idx === 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : idx === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/50' : idx === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/50' : 'bg-slate-800 text-slate-500'}`}>
                   {idx + 1}
                 </span>
-                <span className="flex-1 font-bold text-[14px] text-olive-700">{name}</span>
-                <span className="font-black text-[15px] text-sage-600">{score}</span>
+                <span className={`flex-1 font-black text-[14px] uppercase tracking-widest ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
+                <span className={`font-black text-[16px] ${idx === 0 ? 'text-white' : 'text-slate-400'}`}>{score as number}</span>
                 {name === userNickname && (
-                  <span className="text-[9px] font-extrabold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-md">{t('taboo.you')}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md">{t('taboo.you')}</span>
                 )}
               </motion.div>
             ))}
@@ -453,21 +456,23 @@ const Taboo = () => {
         </div>
 
         {isHost ? (
-          <div className="space-y-2">
-            <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> {t('taboo.playAgain')}
-            </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
+            <GiantButton color="emerald" onClick={handlePlayAgain} className="flex-1">
+              <RotateCcw size={16} className="mr-2 inline-block" /> {t('taboo.playAgain')}
+            </GiantButton>
+            <button onClick={handleBackToLobby} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500">
               <LogOut size={14} /> {t('taboo.backToLobby')}
             </button>
           </div>
         ) : (
-          <button
-            className="btn btn-outline w-full py-3.5 text-[14px]"
-            onClick={requestLeave}
-          >
-            <LogOut size={15} /> {t('taboo.leaveRoom')}
-          </button>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
+            <button
+              className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20"
+              onClick={requestLeave}
+            >
+              <LogOut size={15} /> {t('taboo.leaveRoom')}
+            </button>
+          </div>
         )}
       </div>
     );
@@ -482,21 +487,21 @@ const Taboo = () => {
 
     if (isDescriber) {
       return (
-        <div className="flex-1 flex flex-col gap-4 py-2">
+        <div className="flex-1 flex flex-col gap-4 py-4 px-2 bg-slate-950 text-slate-200">
           {renderErrorToast()}
           {/* Round info */}
-          <div className="flex-between">
-            <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
+          <div className="flex-between px-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
               {t('taboo.round')} {round}/{totalRounds}
             </span>
-            <span className="text-[11px] font-bold text-sage-600 bg-sage-100 px-3 py-1.5 rounded-full">
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-lg shadow-[0_0_10px_rgba(245,158,11,0.2)]">
               {t('taboo.youAreDescriber')}
             </span>
           </div>
 
-          <div className="text-center mb-1">
-            <p className="text-[14px] text-olive-500 font-semibold">{t('taboo.chooseYourCard')}</p>
-            <p className="text-[11px] text-olive-400 mt-0.5">{t('taboo.skipsLeft', { count: skipsLeft })}</p>
+          <div className="text-center mb-2 mt-4">
+            <p className="text-[20px] font-black uppercase tracking-widest text-white drop-shadow-md">{t('taboo.chooseYourCard')}</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 mt-2">{t('taboo.skipsLeft', { count: skipsLeft })}</p>
           </div>
 
           {/* Card preview */}
@@ -508,22 +513,22 @@ const Taboo = () => {
                 animate={{ rotateY: 0, opacity: 1 }}
                 exit={{ rotateY: -90, opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="card p-6 text-center"
+                className="p-8 text-center bg-slate-900 border border-slate-700 rounded-3xl mx-2 shadow-[0_0_30px_rgba(0,0,0,0.5)]"
                 style={{ perspective: 600 }}
               >
                 {/* Secret word */}
-                <p className="text-[11px] font-bold text-olive-400 mb-3 uppercase tracking-widest">{t('taboo.secretWord')}</p>
-                <p className="font-display font-black text-[36px] text-olive-800 mb-5">
+                <p className="text-[10px] font-black text-slate-500 mb-4 uppercase tracking-widest">{t('taboo.secretWord')}</p>
+                <p className="font-black text-[42px] text-white mb-6 uppercase tracking-widest drop-shadow-lg">
                   {card.word}
                 </p>
 
                 {/* Taboo words */}
-                <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
-                <div className="flex flex-wrap gap-2 justify-center">
+                <p className="text-[10px] font-black text-red-500/70 mb-3 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
+                <div className="flex flex-col gap-2 justify-center max-w-[200px] mx-auto">
                   {(card.taboo || card.examples || []).map((w: string) => (
                     <span
                       key={w}
-                      className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1.5 rounded-full"
+                      className="bg-red-500/10 border border-red-500/30 text-red-400 text-[14px] font-black uppercase tracking-widest px-4 py-2 rounded-xl"
                     >
                       {w}
                     </span>
@@ -534,21 +539,22 @@ const Taboo = () => {
           </AnimatePresence>
 
           {/* Actions */}
-          <div className="flex gap-3 mt-auto">
+          <div className="flex gap-3 mt-auto mb-4 mx-2">
             <button
               onClick={handleSkip}
               disabled={skipsLeft <= 0}
-              className="btn btn-outline flex-1 py-3 text-[14px] flex items-center justify-center gap-2 disabled:opacity-40"
+              className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500 disabled:opacity-30 disabled:grayscale"
             >
               <SkipForward size={16} />
               {t('taboo.skip')} ({skipsLeft})
             </button>
-            <button
+            <GiantButton
+              color="emerald"
               onClick={handleConfirmCard}
-              className="btn btn-primary flex-[2] py-3 text-[14px]"
+              className="flex-[2]"
             >
               {t('taboo.startNow')}
-            </button>
+            </GiantButton>
           </div>
         </div>
       );
@@ -556,31 +562,31 @@ const Taboo = () => {
 
     // Non-describer waiting view
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-5 py-6">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6 bg-slate-950 text-slate-200">
         {renderErrorToast()}
         <motion.div
-          className="text-5xl"
+          className="text-7xl drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]"
           animate={{ scale: [1, 1.12, 1] }}
           transition={{ duration: 1.4, repeat: Infinity }}
         >
           🤔
         </motion.div>
-        <div className="text-center">
-          <p className="text-[13px] text-olive-400 font-semibold mb-1">{t('taboo.round')} {round}/{totalRounds}</p>
-          <p className="font-bold text-[17px] text-olive-800">
+        <div className="text-center px-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">{t('taboo.round')} {round}/{totalRounds}</p>
+          <p className="font-black text-[22px] uppercase tracking-widest text-white drop-shadow-md">
             {t('taboo.isChoosing', { name: currentDescriber })}
           </p>
         </div>
 
         {/* Mini scores */}
         {Object.keys(scores).length > 0 && (
-          <div className="card p-3 w-full max-w-xs">
-            <p className="text-[10px] font-bold text-olive-400 mb-2 text-center">{t('taboo.currentScores')}</p>
+          <div className="p-4 w-full max-w-xs mt-6 bg-slate-900/50 border border-slate-800 rounded-3xl">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 text-center">{t('taboo.currentScores')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {sortedScores.map(([name, score]) => (
-                <div key={name} className="flex items-center gap-1.5 bg-olive-50 px-2.5 py-1 rounded-lg">
-                  <span className="text-[11px] font-bold text-olive-600 max-w-[70px] truncate">{name}</span>
-                  <span className="text-[12px] font-black text-sage-600">{score as number}</span>
+                <div key={name} className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 max-w-[70px] truncate">{name}</span>
+                  <span className="text-[12px] font-black text-emerald-400">{score as number}</span>
                 </div>
               ))}
             </div>
@@ -598,20 +604,20 @@ const Taboo = () => {
     const correctGuesser = gameData.correctGuesser || null;
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4">
+      <div className="flex-1 flex flex-col gap-4 py-6 bg-slate-950 pb-24 text-slate-200">
         {renderErrorToast()}
         <motion.div
           initial={{ scale: 0.7, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
+          className="text-center px-4"
         >
-          <span className="text-5xl">{correct ? '🎉' : '⏰'}</span>
-          <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">
+          <span className="text-7xl drop-shadow-[0_0_20px_rgba(255,255,255,0.2)]">{correct ? '🎉' : '⏰'}</span>
+          <h3 className="font-black text-[28px] uppercase tracking-widest text-white mt-4 drop-shadow-md">
             {correct ? t('taboo.correct') : t('taboo.timeUp')}
           </h3>
           {correct && correctGuesser && (
-            <p className="text-[13px] text-olive-500 mt-1">
-              <span className="font-bold text-sage-600">{correctGuesser}</span> {t('taboo.correct')}
+            <p className="text-[12px] font-black uppercase tracking-widest text-slate-400 mt-2 bg-emerald-500/10 border border-emerald-500/30 inline-block px-4 py-2 rounded-xl">
+              <span className="text-emerald-400">{correctGuesser}</span> {t('taboo.correct')}
             </p>
           )}
         </motion.div>
@@ -622,16 +628,16 @@ const Taboo = () => {
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="card p-5 text-center"
+            className="p-6 text-center bg-slate-900 border border-slate-700 rounded-3xl mx-4 mt-4 shadow-[0_0_20px_rgba(0,0,0,0.5)]"
           >
-            <p className="text-[11px] font-bold text-olive-400 mb-2 uppercase tracking-widest">{t('taboo.secretWordWas')}</p>
-            <p className="font-display font-black text-[32px] text-olive-800 mb-4">
+            <p className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest">{t('taboo.secretWordWas')}</p>
+            <p className="font-black text-[36px] uppercase tracking-widest text-white mb-5 drop-shadow-lg">
               {currentCard.word}
             </p>
-            <p className="text-[10px] font-bold text-red-400 mb-2 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
+            <p className="text-[10px] font-black text-red-500/70 mb-3 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
             <div className="flex flex-wrap gap-2 justify-center">
               {(currentCard.taboo || currentCard.examples || []).map((w: string) => (
-                <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1 rounded-full">
+                <span key={w} className="bg-red-500/10 border border-red-500/30 text-red-400 text-[12px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl">
                   {w}
                 </span>
               ))}
@@ -640,16 +646,16 @@ const Taboo = () => {
         )}
 
         {/* Scores */}
-        <div className="card p-4">
-          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 {t('taboo.currentScores')}</h3>
-          <div className="space-y-1.5">
+        <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl mt-4">
+          <h3 className="font-black text-[12px] uppercase tracking-widest text-slate-500 mb-4 text-center">📊 {t('taboo.currentScores')}</h3>
+          <div className="space-y-2">
             {sortedScores.map(([name, score], idx) => (
-              <div key={name} className="flex items-center gap-2.5 p-2 rounded-xl bg-olive-50/60">
-                <span className="text-[11px] font-black text-olive-400 w-4">{idx + 1}</span>
-                <span className="flex-1 font-bold text-[13px] text-olive-700">{name}</span>
-                <span className="font-black text-[14px] text-sage-600">{score as number}</span>
+              <div key={name} className="flex items-center gap-4 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-[11px] font-black text-slate-600 w-4 text-center">{idx + 1}</span>
+                <span className="flex-1 font-black text-[12px] uppercase tracking-widest text-slate-300">{name}</span>
+                <span className="font-black text-[14px] text-emerald-400">{score as number}</span>
                 {name === userNickname && (
-                  <span className="text-[9px] font-bold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded">{t('taboo.you')}</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-md">{t('taboo.you')}</span>
                 )}
               </div>
             ))}
@@ -657,13 +663,17 @@ const Taboo = () => {
         </div>
 
         {isHost ? (
-          <button onClick={handleNextRound} className="btn btn-primary w-full py-3 text-[14px]">
-            {currentDescriberIndex + 1 >= describerOrder.length ? t('taboo.viewResults') : t('taboo.nextRound')}
-          </button>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
+            <GiantButton color="emerald" onClick={handleNextRound} className="w-full">
+              {currentDescriberIndex + 1 >= describerOrder.length ? t('taboo.viewResults') : t('taboo.nextRound')}
+            </GiantButton>
+          </div>
         ) : (
-          <div className="flex-center gap-2 text-olive-400 py-2">
-            <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[12px] font-semibold">{t('taboo.waitNextRound')}</span>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex justify-center">
+            <div className="flex-center gap-3 text-slate-400">
+              <span className="w-3 h-3 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+              <span className="text-[11px] font-black uppercase tracking-widest">{t('taboo.waitNextRound')}</span>
+            </div>
           </div>
         )}
       </div>
@@ -676,14 +686,14 @@ const Taboo = () => {
   const nonDescribers = players.filter((p) => p !== currentDescriber);
 
   return (
-    <div className="flex-1 flex flex-col gap-3 min-h-0">
+    <div className="flex-1 flex flex-col gap-3 min-h-0 bg-slate-950 px-2 py-4">
       {renderErrorToast()}
       {/* Round header */}
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
+      <div className="flex items-center justify-between px-2 mb-2">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
           {t('taboo.round')} {round}/{totalRounds}
         </span>
-        <span className="text-[12px] font-bold text-olive-600 text-center">
+        <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400 text-center">
           {t('taboo.isExplaining', { name: currentDescriber })}
         </span>
         {/* Timer display */}
@@ -692,36 +702,39 @@ const Taboo = () => {
 
       {/* ─── Describer view ─── */}
       {isDescriber ? (
-        <div className="flex-1 flex flex-col gap-3 min-h-0">
+        <div className="flex-1 flex flex-col gap-4 min-h-0 relative">
           {/* The secret card */}
-          <div className="card p-5 text-center">
-            <p className="text-[10px] font-bold text-olive-400 mb-2 uppercase tracking-widest">{t('taboo.secretWord')}</p>
-            <p className="font-display font-black text-[40px] text-olive-800 leading-none mb-5">
+          <div className="p-8 text-center bg-slate-900 border border-slate-700 rounded-3xl mx-2 flex flex-col justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <p className="text-[10px] font-black text-slate-500 mb-3 uppercase tracking-widest">{t('taboo.secretWord')}</p>
+            <p className="font-black text-[42px] uppercase tracking-widest text-white leading-none mb-6 drop-shadow-lg">
               {currentCard?.word}
             </p>
-            <p className="text-[10px] font-bold text-red-400 mb-2.5 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
-            <div className="flex flex-wrap gap-2 justify-center">
+            <p className="text-[10px] font-black text-red-500/70 mb-3 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
+            <div className="flex flex-col gap-2 justify-center max-w-[200px] mx-auto">
               {(currentCard?.taboo || currentCard?.examples || []).map((w: string) => (
-                <span key={w} className="bg-red-50 border border-red-200 text-red-600 text-[12px] font-bold px-3 py-1 rounded-full">
+                <span key={w} className="bg-red-500/10 border border-red-500/30 text-red-400 text-[14px] font-black uppercase tracking-widest px-4 py-2 rounded-xl">
                   {w}
                 </span>
               ))}
             </div>
           </div>
 
-          <div className="card p-3 bg-amber-50/60 border border-amber-100">
-            <p className="text-[11px] text-amber-700 font-semibold text-center">
-              💬 {t('taboo.description')}
+          <div className="mx-2 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl mt-auto">
+            <p className="text-[11px] text-amber-400 font-black uppercase tracking-widest text-center">
+               {t('taboo.description')}
             </p>
           </div>
 
           {/* Correct guess button */}
-          <button
-            onClick={() => setShowGuesserPicker(true)}
-            className="btn btn-primary w-full py-4 text-[16px] mt-auto bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
-          >
-            {t('taboo.someoneCorrect')}
-          </button>
+          <div className="mx-2 mt-2">
+            <GiantButton
+              color="emerald"
+              onClick={() => setShowGuesserPicker(true)}
+              className="w-full"
+            >
+              {t('taboo.someoneCorrect')}
+            </GiantButton>
+          </div>
 
           {/* Guesser picker overlay */}
           <AnimatePresence>
@@ -730,7 +743,7 @@ const Taboo = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-6 backdrop-blur-sm"
                 onClick={() => setShowGuesserPicker(false)}
               >
                 <motion.div
@@ -738,17 +751,17 @@ const Taboo = () => {
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.85, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="card p-5 w-full max-w-sm"
+                  className="bg-slate-900 border border-slate-700 p-6 rounded-3xl w-full max-w-sm shadow-[0_0_40px_rgba(0,0,0,1)]"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <p className="font-display font-bold text-[16px] text-olive-800 text-center mb-1">{t('taboo.whoCorrect')}</p>
-                  <p className="text-[12px] text-olive-400 text-center mb-4">{t('taboo.selectWhoCorrect')}</p>
-                  <div className="space-y-2.5">
+                  <p className="font-black text-[20px] uppercase tracking-widest text-white text-center mb-2 drop-shadow-md">{t('taboo.whoCorrect')}</p>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 text-center mb-6">{t('taboo.selectWhoCorrect')}</p>
+                  <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 hide-scrollbar">
                     {nonDescribers.map((name) => (
                       <button
                         key={name}
                         onClick={() => handleCorrectGuess(name)}
-                        className="btn btn-outline w-full py-3 text-[14px] font-bold"
+                        className="w-full py-4 rounded-2xl text-[14px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-200 active:scale-95 transition-all hover:border-emerald-500 hover:text-emerald-400"
                       >
                         {name}
                       </button>
@@ -756,7 +769,7 @@ const Taboo = () => {
                   </div>
                   <button
                     onClick={() => setShowGuesserPicker(false)}
-                    className="w-full mt-4 text-[12px] font-semibold text-olive-400 py-2"
+                    className="w-full mt-6 text-[12px] font-black uppercase tracking-widest text-slate-500 py-3 border border-transparent hover:bg-slate-800 hover:border-slate-700 rounded-xl transition-all"
                   >
                     {t('taboo.cancel')}
                   </button>
@@ -767,41 +780,41 @@ const Taboo = () => {
         </div>
       ) : (
         /* ─── Non-describer view ─── */
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center gap-6">
           {/* Hidden word card */}
-          <div className="card p-6 text-center w-full">
-            <p className="text-[10px] font-bold text-olive-400 mb-3 uppercase tracking-widest">{t('taboo.secretWord')}</p>
-            <p className="font-display font-black text-[52px] text-olive-200 leading-none select-none mb-4">
+          <div className="p-8 text-center w-full max-w-[280px] bg-slate-900 border border-slate-700 rounded-3xl mx-auto shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <p className="text-[10px] font-black text-slate-500 mb-4 uppercase tracking-widest">{t('taboo.secretWord')}</p>
+            <p className="font-black text-[64px] text-slate-800 leading-none select-none mb-6 drop-shadow-md">
               ???
             </p>
-            <p className="text-[10px] font-bold text-olive-300 mb-1 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
-            <div className="flex items-center justify-center gap-1 text-olive-300">
-              <EyeOff size={12} />
-              <span className="text-[11px] font-semibold">{t('common.revealAfterRound') || 'เปิดเผยหลังรอบจบ'}</span>
+            <p className="text-[10px] font-black text-slate-600 mb-2 uppercase tracking-wider">{t('taboo.tabooWords')}</p>
+            <div className="flex items-center justify-center gap-2 text-slate-500 mt-4 bg-slate-950 p-2 rounded-xl">
+              <EyeOff size={14} />
+              <span className="text-[9px] font-black uppercase tracking-widest">{t('common.revealAfterRound') || 'เปิดเผยหลังรอบจบ'}</span>
             </div>
           </div>
 
           {/* Listening prompt */}
-          <div className="card p-4 text-center w-full bg-sage-50/60 border border-sage-100">
-            <p className="text-[28px] mb-2">👂</p>
-            <p className="font-bold text-[14px] text-olive-700">{t('taboo.listenAndAnswer')}</p>
-            <p className="text-[11px] text-olive-400 mt-1">{t('taboo.shoutAnswer')}</p>
+          <div className="p-6 text-center w-full max-w-[280px] mx-auto bg-emerald-500/10 border border-emerald-500/30 rounded-3xl">
+            <p className="text-[40px] mb-4 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">👂</p>
+            <p className="font-black text-[16px] uppercase tracking-widest text-emerald-400 mb-2">{t('taboo.listenAndAnswer')}</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-500/70">{t('taboo.shoutAnswer')}</p>
           </div>
         </div>
       )}
 
       {/* Mini score strip */}
-      <div className="flex items-center gap-2 px-0.5 overflow-x-auto pb-0.5">
+      <div className="flex items-center gap-2 px-2 overflow-x-auto pb-2 mt-4 hide-scrollbar opacity-70">
         {sortedScores.map(([name, score]) => (
           <div
             key={name}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg shrink-0 ${
-              name === currentDescriber ? 'bg-sage-100 border border-sage-200' : 'bg-olive-50'
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl shrink-0 border ${
+              name === currentDescriber ? 'bg-amber-500/20 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-900 border-slate-800'
             }`}
           >
-            {name === currentDescriber && <span className="text-[9px]">🎤</span>}
-            <span className="text-[10px] font-bold text-olive-600 max-w-[64px] truncate">{name}</span>
-            <span className="text-[11px] font-black text-sage-600">{score as number}</span>
+            {name === currentDescriber && <span className="text-[10px]">🎤</span>}
+            <span className={`text-[10px] font-black uppercase tracking-widest max-w-[64px] truncate ${name === currentDescriber ? 'text-amber-400' : 'text-slate-500'}`}>{name}</span>
+            <span className={`text-[11px] font-black ${name === currentDescriber ? 'text-white' : 'text-slate-300'}`}>{score as number}</span>
           </div>
         ))}
       </div>

@@ -20,13 +20,13 @@ const SoundToggle = () => {
   return (
     <button
       onClick={() => setEnabled(!enabled)}
-      className="w-11 h-11 rounded-2xl bg-white border-2 border-sage-100 flex-center active:scale-95 shadow-sm transition-transform"
+      className="w-11 h-11 rounded-2xl bg-slate-800 border-2 border-slate-700 flex-center active:scale-95 shadow-sm transition-transform"
       title={enabled ? 'ปิดเสียง' : 'เปิดเสียง'}
     >
       {enabled ? (
-        <Volume2 size={18} className="text-sage-500" />
+        <Volume2 size={18} className="text-slate-300" />
       ) : (
-        <VolumeX size={18} className="text-olive-300" />
+        <VolumeX size={18} className="text-slate-500" />
       )}
     </button>
   );

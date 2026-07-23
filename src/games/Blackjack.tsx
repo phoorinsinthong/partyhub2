@@ -9,6 +9,8 @@ import { createDeck, shuffleDeck, calculateBlackjackScore } from './logic/cards'
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const Blackjack: React.FC = () => {
   const { t } = useTranslation();
@@ -176,7 +178,7 @@ const Blackjack: React.FC = () => {
   };
 
   const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
       {errorMsg}
     </div>
   ) : null;
@@ -187,20 +189,29 @@ const Blackjack: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950 text-slate-200">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className="text-6xl animate-bounce-soft">🃏</div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('blackjack.title') || 'Blackjack'}</h2>
-          <p className="text-olive-400 text-[13px]">{t('blackjack.description') || 'สู้กับ Dealer! ใครแต้มใกล้ 21 ที่สุดชนะ (แต่ห้ามเกิน 21)'}</p>
+        <motion.div
+          className="text-8xl drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]"
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          🃏
+        </motion.div>
+        <div className="text-center px-4">
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-white mb-2 drop-shadow-md">{t('blackjack.title') || 'Blackjack'}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed max-w-xs mx-auto">{t('blackjack.description') || 'สู้กับ Dealer! ใครแต้มใกล้ 21 ที่สุดชนะ (แต่ห้ามเกิน 21)'}</p>
         </div>
         {isHost ? (
-          <button onClick={startGame} className="btn btn-primary px-10 py-4 rounded-3xl text-lg shadow-lg">
+          <GiantButton color="sky" onClick={startGame} className="px-12 w-full max-w-xs mt-4">
             {t('blackjack.startGame') || 'เริ่มแจกไพ่!'}
-          </button>
+          </GiantButton>
         ) : (
-          <p className="text-olive-400 font-bold animate-pulse">{t('blackjack.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-sky-500 rounded-full animate-spin shadow-[0_0_15px_rgba(56,189,248,0.5)]" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('blackjack.waitingHost') || 'รอ Host เริ่มเกม...'}</span>
+          </div>
         )}
       </div>
     );
@@ -208,21 +219,21 @@ const Blackjack: React.FC = () => {
 
 
   return (
-    <div className="flex-1 flex flex-col py-2 animate-fade-in relative">
+    <div className="flex-1 flex flex-col py-2 animate-fade-in relative bg-slate-950 text-slate-200">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Dealer Area */}
-      <div className="flex flex-col items-center gap-2 mb-8">
+      <div className="flex flex-col items-center gap-2 mb-8 mt-4">
         <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-olive-400 uppercase tracking-widest">{t('blackjack.dealer') || 'DEALER'}</span>
+            <span className="text-[12px] font-black text-sky-400 uppercase tracking-widest bg-sky-500/10 border border-sky-500/30 px-3 py-1 rounded-lg shadow-[0_0_10px_rgba(56,189,248,0.2)]">{t('blackjack.dealer') || 'DEALER'}</span>
             {phase === 'result' && (
-                <span className={`text-[12px] font-black px-2 py-0.5 rounded-lg ${dealerScore > 21 ? 'bg-red-100 text-red-600' : 'bg-olive-100 text-olive-700'}`}>
+                <span className={`text-[12px] font-black px-3 py-1 rounded-lg border uppercase tracking-widest ${dealerScore > 21 ? 'bg-red-950/50 text-red-500 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.3)]' : 'bg-slate-900 text-slate-300 border-slate-700'}`}>
                     {dealerScore}
                 </span>
             )}
         </div>
-        <div className="flex gap-[-20px]">
+        <div className="flex gap-[-20px] mt-2 scale-110">
           {(dealer.hand || []).map((card: any, i: number) => (
             <div key={i} className={i > 0 ? '-ml-12' : ''}>
               <PlayingCard card={card} hidden={phase === 'playing' && i === 1} size="sm" />
@@ -232,7 +243,7 @@ const Blackjack: React.FC = () => {
       </div>
 
       {/* Players Area */}
-      <div className="flex-1 overflow-y-auto space-y-6 pb-24 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-28 custom-scrollbar px-2">
         {Object.entries(playersData).map(([name, data]: [string, any]) => {
           const score = calculateBlackjackScore(data.hand || []);
           const isMyArea = name === userNickname;
@@ -240,27 +251,27 @@ const Blackjack: React.FC = () => {
           const isBust = data.status === 'bust' || score > 21;
 
           return (
-            <div key={name} className={`card p-4 mx-1 transition-all ${isHisTurn ? 'border-sage-400 shadow-md ring-2 ring-sage-100' : 'border-olive-50'}`}>
-              <div className="flex-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-olive-100 flex-center text-xs border border-white shadow-sm">
+            <NeonCard key={name} color={isHisTurn ? 'sky' : 'slate'} className={`p-4 transition-all relative ${isHisTurn ? 'shadow-[0_0_15px_rgba(56,189,248,0.2)]' : 'opacity-80'}`}>
+              <div className="flex-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-800 flex-center text-sm border border-slate-600 shadow-md">
                     {roomData.players[name]?.avatar || '👤'}
                   </div>
-                  <span className={`font-bold text-[13px] ${isMyArea ? 'text-sage-600' : 'text-olive-700'}`}>
+                  <span className={`font-black text-[13px] uppercase tracking-widest ${isMyArea ? 'text-emerald-400' : 'text-slate-300'}`}>
                     {name === userNickname ? t('common.you') || 'คุณ' : name}
                   </span>
-                  {isHisTurn && <span className="text-[9px] font-black bg-sage-500 text-white px-1.5 py-0.5 rounded-full animate-pulse uppercase">Turn</span>}
+                  {isHisTurn && <span className="text-[9px] font-black bg-sky-500/20 text-sky-400 border border-sky-500/50 px-2 py-1 rounded-md animate-pulse uppercase tracking-widest shadow-[0_0_10px_rgba(56,189,248,0.3)]">Turn</span>}
                 </div>
                 <div className="flex items-center gap-2">
                     {isBust ? (
-                        <span className="text-[10px] font-black bg-red-100 text-red-600 px-2 py-0.5 rounded-lg uppercase">BUST</span>
+                        <span className="text-[10px] font-black bg-red-950/50 border border-red-500/30 text-red-500 px-2 py-1 rounded-md uppercase tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.2)]">BUST</span>
                     ) : data.status === 'stand' ? (
-                        <span className="text-[10px] font-black bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg uppercase">STAND</span>
+                        <span className="text-[10px] font-black bg-sky-950/50 border border-sky-500/30 text-sky-400 px-2 py-1 rounded-md uppercase tracking-widest">STAND</span>
                     ) : null}
-                    <span className={`text-[12px] font-black ${isBust ? 'text-red-500' : 'text-olive-700'}`}>{score}</span>
+                    <span className={`text-[16px] font-black ml-2 ${isBust ? 'text-red-500' : 'text-white drop-shadow-md'}`}>{score}</span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-[-10px]">
+              <div className="flex flex-wrap gap-[-10px] justify-center mt-2">
                 {(data.hand || []).map((card: any, i: number) => (
                   <div key={i} className={i > 0 ? '-ml-8' : ''}>
                     <PlayingCard card={card} size="sm" />
@@ -269,46 +280,58 @@ const Blackjack: React.FC = () => {
               </div>
               
               {isMyArea && isHisTurn && phase === 'playing' && (
-                <div className="flex gap-3 mt-4">
-                  <button onClick={handleHit} className="btn btn-primary flex-1 py-3 text-[14px]">HIT</button>
-                  <button onClick={handleStand} className="btn btn-outline flex-1 py-3 text-[14px]">STAND</button>
+                <div className="flex gap-3 mt-6">
+                  <GiantButton color="sky" onClick={handleHit} className="flex-1">HIT</GiantButton>
+                  <button onClick={handleStand} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all hover:border-slate-500">STAND</button>
                 </div>
               )}
-            </div>
+            </NeonCard>
           );
         })}
       </div>
 
       {/* Result Layer */}
       {phase === 'result' && (
-        <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute bottom-16 left-0 w-full p-4 z-10">
-          <div className="card p-6 border-2 border-sage-300 shadow-2xl bg-white/95 backdrop-blur-md">
-            <h3 className="text-center font-black text-lg text-olive-800 mb-4">{t('blackjack.roundOver') || 'จบตา! ผลการเล่น'}</h3>
-            <div className="space-y-2 mb-6">
-                {Object.entries(playersData).map(([name, data]: [string, any]) => {
-                    let result = 'LOSE';
-                    let color = 'text-red-400';
-                    
-                    if (score > 21) { result = 'BUST'; color = 'text-red-500'; }
-                    else if (dealerScore > 21 || score > dealerScore) { result = 'WIN! 🏆'; color = 'text-green-600'; }
-                    else if (score === dealerScore) { result = 'PUSH'; color = 'text-blue-500'; }
+        <AnimatePresence>
+          <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="absolute bottom-4 left-0 w-full px-4 z-20">
+            <NeonCard color="amber" className="p-6 shadow-[0_0_40px_rgba(0,0,0,0.8)] border-amber-500/50 bg-slate-900/95 backdrop-blur-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-sky-500/10 blur-3xl rounded-full" />
+              
+              <h3 className="text-center font-black text-[20px] text-amber-500 uppercase tracking-widest mb-6 drop-shadow-md">{t('blackjack.roundOver') || 'จบตา! ผลการเล่น'}</h3>
+              
+              <div className="space-y-3 mb-6 max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar relative z-10">
+                  {Object.entries(playersData).map(([name, data]: [string, any]) => {
+                      let result = 'LOSE';
+                      let color = 'text-red-400 bg-red-950/30 border-red-500/30';
+                      const score = calculateBlackjackScore(data.hand || []);
+                      
+                      if (score > 21) { result = 'BUST'; color = 'text-red-500 bg-red-950/50 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]'; }
+                      else if (dealerScore > 21 || score > dealerScore) { result = 'WIN! 🏆'; color = 'text-emerald-400 bg-emerald-950/50 border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]'; }
+                      else if (score === dealerScore) { result = 'PUSH'; color = 'text-sky-400 bg-sky-950/50 border-sky-500/30'; }
 
-                    return (
-                        <div key={name} className="flex-between text-[13px] font-bold">
-                            <span className="text-olive-700">{name}</span>
-                            <span className={color}>{result}</span>
-                        </div>
-                    );
-                })}
-            </div>
-            {isHost && (
-              <div className="flex gap-3">
-                <button onClick={startGame} className="btn btn-primary flex-1 py-3 text-[14px]">{t('common.playAgain') || 'เล่นอีกรอบ'}</button>
-                <button onClick={handleBackToLobby} className="btn btn-outline flex-1 py-3 text-[14px]">{t('common.backToLobby') || 'Lobby'}</button>
+                      return (
+                          <div key={name} className="flex-between bg-slate-950/50 p-3 rounded-xl border border-slate-800">
+                              <span className="font-black text-[12px] uppercase tracking-widest text-slate-300">{name}</span>
+                              <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-widest border ${color}`}>{result}</span>
+                          </div>
+                      );
+                  })}
               </div>
-            )}
-          </div>
-        </motion.div>
+              
+              {isHost && (
+                <div className="flex gap-3 relative z-10">
+                  <GiantButton color="emerald" onClick={startGame} className="flex-[2]">
+                    {t('common.playAgain') || 'เล่นอีกรอบ'}
+                  </GiantButton>
+                  <button onClick={handleBackToLobby} className="flex-1 py-4 text-[11px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-400 rounded-2xl active:scale-95 transition-all hover:border-slate-500 hover:text-white">
+                    {t('common.backToLobby') || 'Lobby'}
+                  </button>
+                </div>
+              )}
+            </NeonCard>
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );

@@ -530,102 +530,100 @@ const Werewolf: React.FC = () => {
     
     const deckCounts = wwData.deckCounts || {};
     const totalDeck = Object.values(deckCounts).reduce((a, b) => a + b, 0);
-    // No limit for physical, 10 for digital
     const limit = gameMode === 'digital' ? 10 : 999;
 
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
-        <div className="glass-panel-werewolf p-xl text-center">
-          <div className="flex-center mb-md">
-            <div className="p-lg bg-danger/20 rounded-full text-danger shadow-lg shadow-danger/10">
-              <Skull size={48} />
+      <div className="flex flex-col gap-4 w-full animate-fade-in pb-20 relative z-10 px-2">
+        <NeonCard color="amber" className="p-6 text-center">
+          <div className="flex-center mb-4">
+            <div className="w-20 h-20 bg-amber-500/20 rounded-full flex-center text-amber-500 border border-amber-500 shadow-[0_0_15px_rgba(251,191,36,0.3)]">
+              <Skull size={40} />
             </div>
           </div>
-          <h2 className="text-3xl font-black mb-sm">WEREWOLF</h2>
-          <p className="text-secondary leading-relaxed">
+          <h2 className="font-display font-black text-3xl uppercase tracking-widest text-amber-500 mb-2">WEREWOLF</h2>
+          <p className="text-[12px] font-bold text-slate-300 leading-relaxed">
             {gameMode === 'digital' 
               ? 'หมาป่ากำลังแฝงตัวอยู่ในหมู่ชาวบ้าน! ทุกอย่างรันบนแอป 100%' 
               : 'โหมด GM Dashboard: แอปจะช่วย Host คุมเกมแบบใช้ไพ่จริง'}
           </p>
           {isHost && (
-            <p className="text-primary font-bold mt-sm text-sm">🎭 คุณเป็นผู้ดำเนินเกม (GM)</p>
+            <div className="mt-4 inline-block px-4 py-1.5 bg-amber-500/20 border border-amber-500/50 rounded-full">
+              <p className="text-amber-400 font-bold text-[10px] uppercase tracking-widest">🎭 คุณเป็นผู้ดำเนินเกม (GM)</p>
+            </div>
           )}
-        </div>
+        </NeonCard>
 
-        {/* Guest Management (Physical only) */}
         {isHost && gameMode === 'physical' && (
-          <div className="glass-panel-werewolf p-lg space-y-md">
-            <h4 className="text-xs font-black text-secondary uppercase tracking-widest">➕ เพิ่มผู้เล่น (Guest)</h4>
-            <div className="flex gap-sm">
+          <NeonCard color="slate" className="p-4 space-y-3">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Users size={14}/> เพิ่มผู้เล่น (Guest)</h4>
+            <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="ชื่อผู้เล่น..."
-                className="input-field flex-1"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-bold focus:border-neon-blue outline-none text-sm"
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addGuest()}
               />
-              <button className="btn btn-primary px-lg" onClick={addGuest}>เพิ่ม</button>
+              <button className="px-4 py-2 bg-neon-blue text-slate-900 font-black rounded-xl" onClick={addGuest}>เพิ่ม</button>
             </div>
             {guestNames.length > 0 && (
-              <div className="flex flex-wrap gap-xs">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {guestNames.map(name => (
-                  <span key={name} className="px-sm py-xs rounded-lg text-[11px] font-bold bg-glass flex items-center gap-xs">
+                  <span key={name} className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 flex items-center gap-1 text-slate-300">
                     {name}
-                    <button onClick={() => removeGuest(name)} className="text-danger">×</button>
+                    <button onClick={() => removeGuest(name)} className="text-red-400 hover:text-red-300"><XCircle size={12}/></button>
                   </span>
                 ))}
               </div>
             )}
-          </div>
+          </NeonCard>
         )}
 
-        {/* Player List Summary */}
-        <div className="glass-panel-werewolf p-lg">
-          <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-md">👥 รายชื่อผู้เล่น ({allGamePlayers.length} คน)</h4>
-          <div className="flex flex-wrap gap-xs">
+        <NeonCard color="slate" className="p-4">
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Users size={14}/> รายชื่อผู้เล่น ({allGamePlayers.length} คน)</h4>
+          <div className="flex flex-wrap gap-2">
             {allGamePlayers.map(name => {
               const isGuest = guestNames.includes(name);
               return (
-                <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${isGuest ? 'border-dashed border-secondary/40 text-secondary' : 'border-glass text-white'}`}>
+                <span key={name} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border ${isGuest ? 'border-dashed border-slate-600 text-slate-400 bg-slate-800/50' : 'border-slate-700 text-white bg-slate-800'}`}>
                   {name} {isGuest && '(Guest)'}
                 </span>
               );
             })}
           </div>
-        </div>
+        </NeonCard>
 
-        {/* Deck Setup (GM only) */}
         {isHost && (
-          <div className="glass-panel-werewolf p-lg">
-            <div className="flex-between mb-md">
-              <h4 className="font-black flex items-center gap-sm text-sm">
+          <NeonCard color="slate" className="p-4">
+            <div className="flex-between mb-4 pb-2 border-b border-slate-700">
+              <h4 className="font-black flex items-center gap-2 text-sm text-white uppercase tracking-widest">
                 🎴 จัดเตรียมการ์ด
-                <span className={`px-sm py-xs rounded-lg text-xs font-bold ${totalDeck === allGamePlayers.length ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black ${totalDeck === allGamePlayers.length ? 'bg-neon-green/20 text-neon-green border border-neon-green' : 'bg-red-500/20 text-red-400 border border-red-500'}`}>
                   {totalDeck}/{allGamePlayers.length}
                 </span>
               </h4>
-              <button className="btn btn-glass p-xs text-xs" onClick={() => setShowDeckSetup(!showDeckSetup)}>
+              <button className="text-[10px] font-bold text-slate-400 border border-slate-700 px-2 py-1 rounded hover:text-white" onClick={() => setShowDeckSetup(!showDeckSetup)}>
                 {showDeckSetup ? 'ซ่อน' : 'แสดง'}
               </button>
             </div>
 
             {showDeckSetup && Object.entries(ROLE_CATEGORIES).map(([teamKey, teamInfo]) => (
-              <div key={teamKey} className="mb-md">
-                <p className="text-xs font-bold mb-sm" style={{ color: teamInfo.color }}>{teamInfo.name}</p>
-                <div className="grid grid-cols-1 gap-xs">
+              <div key={teamKey} className="mb-4">
+                <p className="text-[11px] font-black uppercase tracking-widest mb-2" style={{ color: teamInfo.color }}>{teamInfo.name}</p>
+                <div className="grid grid-cols-1 gap-2">
                   {Object.entries(ROLES).filter(([, r]) => r.team === teamKey).map(([roleKey, role]) => {
                     const count = deckCounts[roleKey] || 0;
                     return (
-                      <div key={roleKey} className="flex justify-between items-center p-sm bg-glass-dark/30 rounded-lg" style={{ borderLeft: `3px solid ${role.color}` }}>
-                        <div className="flex items-center gap-sm overflow-hidden">
-                          <span>{role.icon}</span>
-                          <span className="text-xs font-bold truncate" style={{ color: role.color }}>{role.name}</span>
+                      <div key={roleKey} className="flex justify-between items-center p-3 bg-slate-800/50 border border-slate-700 rounded-xl" style={{ borderLeftWidth: '4px', borderLeftColor: role.color }}>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className="text-xl bg-slate-900 w-8 h-8 rounded-full flex-center shadow-inner">{role.icon}</span>
+                          <span className="text-[12px] font-bold truncate" style={{ color: role.color }}>{role.name}</span>
                         </div>
-                        <div className="flex items-center gap-xs">
-                          <button className="w-6 h-6 rounded bg-glass-dark/50 text-white font-bold text-sm flex-center" onClick={() => updateDeckCount(roleKey, -1)}>-</button>
-                          <span className="w-5 text-center font-bold text-sm">{count}</span>
-                          <button className="w-6 h-6 rounded bg-glass-dark/50 text-white font-bold text-sm flex-center" onClick={() => updateDeckCount(roleKey, 1)}>+</button>
+                        <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700">
+                          <button className="w-6 h-6 rounded bg-slate-800 text-white font-bold text-sm flex-center active:scale-95" onClick={() => updateDeckCount(roleKey, -1)}>-</button>
+                          <span className="w-4 text-center font-bold text-[12px] text-white">{count}</span>
+                          <button className="w-6 h-6 rounded bg-slate-800 text-white font-bold text-sm flex-center active:scale-95" onClick={() => updateDeckCount(roleKey, 1)}>+</button>
                         </div>
                       </div>
                     );
@@ -633,29 +631,28 @@ const Werewolf: React.FC = () => {
                 </div>
               </div>
             ))}
-          </div>
+          </NeonCard>
         )}
 
-        {/* Public deck display */}
         {totalDeck > 0 && (
-          <div className="glass-panel-werewolf p-lg">
-            <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-md">การ์ดที่จะใช้ในเกม</h4>
-            <div className="flex flex-wrap gap-xs">
+          <NeonCard color="slate" className="p-4">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">การ์ดที่จะใช้ในเกม</h4>
+            <div className="flex flex-wrap gap-2">
               {Object.entries(deckCounts).filter(([, c]) => c > 0).map(([roleKey, count]) => {
                 const role = ROLES[roleKey];
                 return (
-                  <span key={roleKey} className="px-sm py-xs rounded-lg text-xs font-bold border" style={{ borderColor: `${role.color}60`, color: role.color, background: `${role.color}15` }}>
-                    {role.icon} {role.name} x{count}
+                  <span key={roleKey} className="px-2 py-1 rounded-lg text-[10px] font-bold border bg-slate-900" style={{ borderColor: `${role.color}60`, color: role.color }}>
+                    {role.icon} {role.name} <span className="text-white ml-1">x{count}</span>
                   </span>
                 );
               })}
             </div>
-          </div>
+          </NeonCard>
         )}
 
         {isHost ? (
-          <button
-            className="btn btn-primary w-full py-xl text-xl font-black shadow-xl shadow-primary/20"
+          <GiantButton
+            color="pink"
             onClick={startGame}
             disabled={
               (gameMode === 'digital' && (allGamePlayers.length < 4 || allGamePlayers.length > 10)) ||
@@ -664,16 +661,16 @@ const Werewolf: React.FC = () => {
             }
           >
             {gameMode === 'digital' && allGamePlayers.length < 4
-              ? `รอผู้เล่น (ต้องการอีก ${4 - allGamePlayers.length} คน)`
+              ? `รอผู้เล่น (ขาด ${4 - allGamePlayers.length} คน)`
               : (gameMode === 'digital' && allGamePlayers.length > 10)
-                ? `ผู้เล่นเกินกำหนด (ดิจิทัลสูงสุด 10 คน)`
+                ? `ผู้เล่นเกิน (สูงสุด 10)`
                 : totalDeck > 0 && totalDeck !== allGamePlayers.length
                   ? `จัดไพ่ไม่พอดี (${totalDeck}/${allGamePlayers.length})`
-                  : '🎭 เริ่มเกม!'}
-          </button>
+                  : 'เริ่มเกม!'}
+          </GiantButton>
         ) : (
-          <div className="glass-panel-werewolf p-md text-center border-primary/30">
-            <p className="animate-pulse text-primary font-bold">รอ GM เริ่มเกม...</p>
+          <div className="mt-4 p-4 rounded-2xl border border-neon-blue/30 bg-neon-blue/10 text-center shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+            <p className="animate-pulse text-neon-blue font-bold uppercase tracking-widest text-[12px]">Waiting for GM to start...</p>
           </div>
         )}
       </div>
@@ -770,56 +767,58 @@ const Werewolf: React.FC = () => {
     const winner = wwData.winnerTeam;
     const wwPlayers = wwData.players || {};
 
-    return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-panel-werewolf p-xl text-center">
-          <div className="flex-center mb-md">
-            <div className={`p-xl rounded-full ${winner === 'werewolf' ? 'bg-danger/20 text-danger' : winner === 'villager' ? 'bg-success/20 text-success' : 'bg-purple-500/20 text-purple-400'}`}>
-              {winner === 'werewolf' ? <Skull size={60} /> : winner === 'villager' ? <CheckCircle2 size={60} /> : <Eye size={60} />}
-            </div>
-          </div>
-          <h2 className="text-3xl font-black mb-sm">
-            {winner === 'werewolf' ? '🐺 หมาป่าชนะ!' : winner === 'villager' ? '🏘️ ชาวบ้านชนะ!' : '🎭 ฝ่ายอิสระชนะ!'}
-          </h2>
-          <p className="text-secondary">
-            {winner === 'werewolf' ? 'หมู่บ้านตกอยู่ในความมืด...' : winner === 'villager' ? 'หมาป่าทุกตัวถูกจับได้!' : 'ผู้เล่นอิสระบรรลุเป้าหมาย!'}
-          </p>
-        </motion.div>
+    const winnerColor = winner === 'werewolf' ? 'red' : winner === 'villager' ? 'green' : 'purple';
+    const winnerTitle = winner === 'werewolf' ? 'หมาป่าชนะ!' : winner === 'villager' ? 'ชาวบ้านชนะ!' : 'ฝ่ายอิสระชนะ!';
+    const winnerDesc = winner === 'werewolf' ? 'หมู่บ้านตกอยู่ในความมืด...' : winner === 'villager' ? 'หมาป่าทุกตัวถูกกำจัด!' : 'ผู้เล่นอิสระบรรลุเป้าหมาย!';
 
-        <div className="glass-panel-werewolf p-lg space-y-sm">
-          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">เปิดเผยบทบาท</p>
-          {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
-            const cfg = ROLES[p.role] || ROLES.villager;
-            return (
-              <div key={name} className={`flex justify-between items-center p-md rounded-xl border ${p.isAlive ? 'bg-glass border-glass' : 'bg-glass-dark/30 border-glass opacity-60'}`}>
-                <div className="flex items-center gap-md">
-                  <span className="text-xl">{cfg.icon}</span>
-                  <span className="font-bold">{name}</span>
+    return (
+      <div className="flex flex-col gap-6 w-full animate-fade-in pb-20 relative z-10 px-2 mt-8">
+        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        
+        <EpicPopup
+          isOpen={true}
+          title={winnerTitle}
+          description={winnerDesc}
+          color={winnerColor}
+          icon={winner === 'werewolf' ? <Skull size={48} /> : winner === 'villager' ? <CheckCircle2 size={48} /> : <Eye size={48} />}
+          onClose={() => {}} // Always open
+          disableClose={true}
+        />
+
+        <NeonCard color="slate" className="p-4 space-y-3 mt-[320px]">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">เปิดเผยบทบาท</p>
+          <div className="flex flex-col gap-2">
+            {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => {
+              const cfg = ROLES[p.role] || ROLES.villager;
+              return (
+                <div key={name} className={`flex justify-between items-center p-3 rounded-xl border ${p.isAlive ? 'bg-slate-800 border-slate-700' : 'bg-slate-900/80 border-slate-800 opacity-60'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl drop-shadow-md">{cfg.icon}</span>
+                    <span className="font-bold text-sm text-white">{name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: cfg.color }}>{cfg.name}</span>
+                    {!p.isAlive && <span className="text-red-500 text-xs ml-2">💀</span>}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold" style={{ color: cfg.color }}>{cfg.name}</span>
-                  {!p.isAlive && <span className="text-danger text-xs ml-sm">💀</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </NeonCard>
 
         {isHost ? (
-          <div className="flex flex-col gap-sm w-full">
-            <button className="btn btn-primary py-3 px-6 text-[14px] w-full" onClick={handlePlayAgain}>
+          <div className="flex flex-col gap-3 w-full">
+            <GiantButton color="pink" onClick={handlePlayAgain}>
               🔄 เล่นอีกครั้ง
-            </button>
-            <button className="btn btn-outline w-full py-lg font-black" onClick={resetToLobby}>กลับสู่ล็อบบี้</button>
+            </GiantButton>
+            <GiantButton color="slate" onClick={resetToLobby}>
+              กลับสู่ล็อบบี้
+            </GiantButton>
           </div>
         ) : (
-          <button
-            className="btn btn-outline w-full py-lg font-black"
-            onClick={requestLeave}
-          >
+          <GiantButton color="slate" onClick={requestLeave}>
             <LogOut size={18} /> ออกจากห้อง
-          </button>
+          </GiantButton>
         )}
       </div>
     );
@@ -835,67 +834,68 @@ const Werewolf: React.FC = () => {
 
   if (gameMode === 'physical') {
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
+      <div className="flex flex-col gap-6 w-full animate-fade-in pb-32 z-10 relative px-2">
         <StarsBackground />
         <AmbientMist />
         <VFXOverlay />
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>
-          <div className="flex items-center gap-md">
-            {phase === 'night' ? <Moon className="text-indigo-400" size={20} /> : <Sun className="text-orange-400" size={20} />}
-            <p className="font-black text-white">{phaseLabel}</p>
+        
+        <NeonCard color={phase === 'night' ? 'indigo' : phase === 'day' ? 'amber' : phase === 'voting' ? 'red' : 'slate'} className="p-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            {phase === 'night' ? <Moon className="text-indigo-400" size={24} /> : <Sun className="text-amber-400" size={24} />}
+            <p className="font-display font-black text-xl text-white uppercase tracking-widest">{phaseLabel}</p>
           </div>
           <div className="text-right">
-            {isGM ? <span className="text-xs font-bold text-warning">🎭 GM Dashboard</span> : (
-              <span className={`text-xs font-bold ${myIsAlive ? 'text-success' : 'text-danger'}`}>
-                {myIsAlive ? '🟢 ยังมีชีวิต' : '💀 ตายแล้ว'}
+            {isGM ? <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">GM Dashboard</span> : (
+              <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${myIsAlive ? 'bg-neon-green/10 text-neon-green border-neon-green/30' : 'bg-red-500/10 text-red-500 border-red-500/30'}`}>
+                {myIsAlive ? 'ยังมีชีวิต' : 'ตายแล้ว'}
               </span>
             )}
           </div>
-        </div>
+        </NeonCard>
 
         {isGM ? (
-          <div className="glass-panel-werewolf p-lg space-y-lg border-warning/20">
-            <h3 className="font-black flex items-center gap-sm text-warning">🕹️ ควบคุมเกม (ไพ่จริง)</h3>
+          <NeonCard color="amber" className="p-5 space-y-4">
+            <h3 className="font-black flex items-center gap-2 text-amber-500 uppercase tracking-widest text-[11px] mb-4">🕹️ ควบคุมเกม (ไพ่จริง)</h3>
 
             {/* Manual Life/Death Grid (Top level view) */}
-            <div className="grid grid-cols-2 gap-sm mb-md">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
                 <button
                   key={name}
                   onClick={() => togglePlayerAlive(name, !p.isAlive)}
-                  className={`flex items-center gap-md p-md rounded-xl border-2 transition-all ${
-                    p.isAlive ? 'bg-glass border-glass text-white hover:border-white/20' : 'bg-danger/10 border-danger/30 text-danger opacity-70'
+                  className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                    p.isAlive ? 'bg-slate-800 border-slate-700 text-white hover:border-slate-500' : 'bg-red-500/10 border-red-500/30 text-red-500 opacity-70'
                   }`}
                 >
                   <span className="text-sm font-bold truncate flex-1 text-left">{name}</span>
-                  {p.isAlive ? <CheckCircle2 size={18} className="text-success" /> : <Skull size={18} />}
+                  {p.isAlive ? <CheckCircle2 size={16} className="text-neon-green" /> : <Skull size={16} />}
                 </button>
               ))}
             </div>
 
             {/* Phase Logic */}
             {phase === 'night' && (
-              <div className="space-y-md border-t border-glass pt-md animate-fade-in">
-                <div className="p-md bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-center mb-md">
-                   <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-1">Night Step Manager</p>
-                   <p className="text-[10px] text-secondary">เรียกบทบาทตามลำดับด้านล่าง และบันทึกผลการกระทำ</p>
+              <div className="space-y-4 border-t border-slate-700 pt-4 animate-fade-in">
+                <div className="p-4 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-center mb-4">
+                   <p className="text-[11px] font-black text-indigo-400 uppercase tracking-widest mb-1">Night Step Manager</p>
+                   <p className="text-[10px] text-slate-400">เรียกบทบาทตามลำดับด้านล่าง และบันทึกผลการกระทำ</p>
                 </div>
 
                 {/* Seer Quick View for GM */}
                 {wwData.lastSeerResult && (
-                  <div className="p-sm bg-purple-500/10 rounded-lg border border-purple-500/30 flex justify-between items-center mb-md">
-                    <div className="flex items-center gap-xs">
-                       <Eye size={14} className="text-purple-400" />
+                  <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/30 flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-2">
+                       <Eye size={16} className="text-purple-400" />
                        <span className="text-[11px] text-white">ผลการส่องล่าสุด: <strong>{wwData.lastSeerResult.targetName}</strong> คือ <strong>{wwData.lastSeerResult.isWolf ? '🐺 หมาป่า!' : '🏘️ ชาวบ้าน'}</strong></span>
                     </div>
-                    <button onClick={clearSeerResults} className="text-[10px] text-secondary hover:text-white underline">ล้าง</button>
+                    <button onClick={clearSeerResults} className="text-[10px] text-slate-400 hover:text-white underline">ล้าง</button>
                   </div>
                 )}
 
-                <div className="space-y-md border-t border-glass pt-md">
-                  <p className="text-sm font-bold text-indigo-300 flex items-center gap-sm"><Moon size={16} /> ขั้นตอนการเรียกบทบาท (Physical):</p>
-                  <div className="bg-glass-dark/40 rounded-xl p-md border border-indigo-500/20 space-y-md">
+                <div className="space-y-4 border-t border-slate-700 pt-4">
+                  <p className="text-sm font-bold text-indigo-300 flex items-center gap-2"><Moon size={16} /> ขั้นตอนการเรียกบทบาท (Physical):</p>
+                  <div className="bg-slate-900/40 rounded-xl p-4 border border-indigo-500/20 space-y-4">
                     {(() => {
                       const deckRoles = Object.entries(wwData.deckCounts || {}).filter(([, c]) => c > 0).map(([r]) => r);
                       const actionRoles = Object.keys(ROLES).filter(r => 
@@ -909,9 +909,9 @@ const Werewolf: React.FC = () => {
                       });
 
                       return (
-                        <div className="space-y-lg">
-                          <div className="p-sm bg-indigo-500/10 rounded-lg text-center">
-                            <p className="text-[11px] font-bold text-indigo-300 uppercase">1. ทุกคนหลับตาลง</p>
+                        <div className="space-y-6">
+                          <div className="p-3 bg-indigo-500/10 rounded-xl text-center border border-indigo-500/20 shadow-inner">
+                            <p className="text-[11px] font-black text-indigo-300 uppercase tracking-widest">1. ทุกคนหลับตาลง</p>
                           </div>
 
                           {activeRoles.map((roleKey, idx) => {
@@ -1004,8 +1004,8 @@ const Werewolf: React.FC = () => {
                             );
                           })}
 
-                          <div className="p-sm bg-orange-400/10 rounded-lg text-center mt-md border border-orange-400/20">
-                            <p className="text-xs font-bold text-orange-300 uppercase">{activeRoles.length + 2}. ทุกคนลืมตาขึ้น... เข้าสู่ตอนเช้า</p>
+                          <div className="p-3 bg-amber-400/10 rounded-xl text-center mt-4 border border-amber-400/20 shadow-inner">
+                            <p className="text-[11px] font-black text-amber-300 uppercase tracking-widest">{activeRoles.length + 2}. ทุกคนลืมตาขึ้น... เข้าสู่ตอนเช้า</p>
                           </div>
                         </div>
                       );
@@ -1014,8 +1014,8 @@ const Werewolf: React.FC = () => {
                 </div>
 
                 {/* Night Kill Section */}
-                <div className="bg-danger/10 rounded-xl p-md border border-danger/20 space-y-md">
-                  <p className="text-sm font-bold text-danger flex items-center gap-xs"><Skull size={16} /> บันทึกผู้เสียชีวิตในคืนนี้:</p>
+                <div className="bg-red-500/10 rounded-xl p-4 border border-red-500/20 space-y-4 mt-4">
+                  <p className="text-[12px] font-black text-red-400 flex items-center gap-2 uppercase tracking-widest"><Skull size={16} /> บันทึกผู้เสียชีวิตในคืนนี้</p>
                   
                   {/* Suggested Results based on nightActions */}
                   {(() => {
@@ -1026,14 +1026,14 @@ const Werewolf: React.FC = () => {
                     });
                     if (!result.finalEliminated) return null;
                     return (
-                      <div className="p-sm bg-danger/20 rounded-lg border border-danger/40 mb-sm">
-                        <p className="text-[11px] font-black text-danger uppercase mb-xs">💡 ระบบวิเคราะห์ผู้ตาย:</p>
+                      <div className="p-3 bg-red-500/20 rounded-xl border border-red-500/40 mb-2">
+                        <p className="text-[10px] font-black text-red-400 uppercase mb-2">💡 ระบบวิเคราะห์ผู้ตาย:</p>
                         {result.finalEliminated.map(name => (
-                          <div key={name} className="flex justify-between items-center">
-                             <span className="text-xs font-bold text-white">{name}</span>
+                          <div key={name} className="flex justify-between items-center mb-2 last:mb-0">
+                             <span className="text-[12px] font-bold text-white">{name}</span>
                              <button 
                                onClick={() => togglePlayerAlive(name, false)}
-                               className="btn btn-danger py-xs px-sm text-[10px]"
+                               className="px-3 py-1 bg-red-500 text-white font-black text-[10px] rounded-lg shadow-sm"
                              >
                                ยืนยันการตาย
                              </button>
@@ -1043,8 +1043,8 @@ const Werewolf: React.FC = () => {
                     );
                   })()}
 
-                  <p className="text-[11px] text-danger/80 leading-tight mb-sm">แตะที่ชื่อผู้เล่นเพื่อทำการยืนยันการตาย (สามารถกดซ้ำที่กริดด้านบนเพื่อยกเลิกได้)</p>
-                  <div className="grid grid-cols-2 gap-sm">
+                  <p className="text-[10px] text-red-300/80 leading-tight mb-2">แตะที่ชื่อผู้เล่นเพื่อทำการยืนยันการตาย (สามารถกดซ้ำที่กริดด้านบนเพื่อยกเลิกได้)</p>
+                  <div className="grid grid-cols-2 gap-2">
                     {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name, p]) => (
                       <button
                         key={name}
@@ -1053,26 +1053,30 @@ const Werewolf: React.FC = () => {
                              togglePlayerAlive(name, false);
                           }
                         }}
-                        className="flex justify-between items-center p-md bg-glass border border-danger/30 rounded-xl hover:bg-danger/20 active:scale-95 transition-all text-white group"
+                        className="flex justify-between items-center p-3 bg-slate-800 border border-red-500/30 rounded-xl hover:bg-red-500/20 active:scale-95 transition-all text-white group"
                       >
                          <span className="font-bold text-sm truncate">{name}</span>
-                         <span className="text-lg opacity-50 group-hover:opacity-100 group-hover:text-danger drop-shadow-md">🔪</span>
+                         <span className="text-lg opacity-50 group-hover:opacity-100 group-hover:text-red-500 drop-shadow-md">🔪</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <button className="btn btn-primary w-full py-lg font-black text-lg shadow-lg shadow-primary/20" onClick={resolveNightToDay}>☀️ ประกาศผลตอนเช้า</button>
+                <div className="mt-4">
+                  <GiantButton color="amber" onClick={resolveNightToDay}>
+                    ☀️ ประกาศผลตอนเช้า
+                  </GiantButton>
+                </div>
               </div>
             )}
 
             {phase === 'day' && (
-              <div className="space-y-md border-t border-glass pt-md">
-                <div className="text-center p-lg bg-orange-400/10 rounded-xl border border-orange-400/30 shadow-inner">
-                  <p className="text-lg font-black text-orange-400 mb-xs flex-center gap-sm"><Sun size={20} /> โหวตแขวนคอ</p>
-                  <p className="text-xs text-secondary mb-lg leading-relaxed">ให้ทุกคนอภิปรายและโหวตแขวนคอ 1 คน <br/> <strong className="text-white">แตะที่ชื่อด้านล่างเพื่อประหารผู้เล่นที่ถูกโหวต</strong></p>
+              <div className="space-y-4 border-t border-slate-700 pt-4">
+                <NeonCard color="amber" className="text-center p-6 bg-amber-400/10">
+                  <p className="text-lg font-black text-amber-400 mb-2 flex-center gap-2"><Sun size={20} /> โหวตแขวนคอ</p>
+                  <p className="text-[11px] text-slate-300 mb-6 leading-relaxed">ให้ทุกคนอภิปรายและโหวตแขวนคอ 1 คน <br/> <strong className="text-white">แตะที่ชื่อด้านล่างเพื่อประหารผู้เล่นที่ถูกโหวต</strong></p>
                   
-                  <div className="grid grid-cols-2 gap-sm text-left">
+                  <div className="grid grid-cols-2 gap-2 text-left">
                     {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm' && p.isAlive).map(([name, p]) => (
                       <button
                         key={name}
@@ -1081,31 +1085,34 @@ const Werewolf: React.FC = () => {
                              togglePlayerAlive(name, false);
                           }
                         }}
-                        className="flex justify-between items-center p-md bg-glass-dark/50 border border-orange-500/30 rounded-xl hover:border-danger hover:bg-danger/20 active:scale-95 transition-all text-white group"
+                        className="flex justify-between items-center p-3 bg-slate-900/50 border border-amber-500/30 rounded-xl hover:border-red-500 hover:bg-red-500/20 active:scale-95 transition-all text-white group"
                       >
                          <span className="font-bold text-sm truncate">{name}</span>
-                         <span className="text-xl opacity-40 group-hover:opacity-100 group-hover:text-danger drop-shadow-md">🪢</span>
+                         <span className="text-xl opacity-40 group-hover:opacity-100 group-hover:text-red-500 drop-shadow-md">🪢</span>
                       </button>
                     ))}
                   </div>
-                </div>
-                <button className="btn btn-primary w-full py-lg font-black text-lg shadow-lg shadow-primary/20" onClick={startNextNight}>🌙 ข้ามโหวต / เริ่มคืนถัดไป</button>
+                </NeonCard>
+                
+                <GiantButton color="slate" onClick={startNextNight}>
+                  🌙 ข้ามโหวต / เริ่มคืนถัดไป
+                </GiantButton>
               </div>
             )}
 
             {/* Manual Winner Buttons */}
-            <div className="border-t border-glass pt-md">
-              <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">ประกาศผลผู้ชนะ / สรุปเกม</p>
-              <div className="flex gap-xs">
-                <button className="flex-1 btn btn-glass py-sm text-[10px] text-success border-success/20" onClick={() => announceWinner('villager')}>🏘️ ชาวบ้านชนะ</button>
-                <button className="flex-1 btn btn-glass py-sm text-[10px] text-danger border-danger/20" onClick={() => announceWinner('werewolf')}>🐺 หมาป่าชนะ</button>
-                <button className="flex-1 btn btn-glass py-sm text-[10px] text-purple-400 border-purple-400/20" onClick={() => announceWinner('independent')}>🎭 อิสระชนะ</button>
+            <div className="border-t border-slate-700 pt-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">ประกาศผลผู้ชนะ / สรุปเกม</p>
+              <div className="flex gap-2">
+                <button className="flex-1 py-2 px-1 bg-slate-900 border border-neon-green/30 text-[10px] font-bold text-neon-green rounded-xl" onClick={() => announceWinner('villager')}>🏘️ ชาวบ้านชนะ</button>
+                <button className="flex-1 py-2 px-1 bg-slate-900 border border-red-500/30 text-[10px] font-bold text-red-500 rounded-xl" onClick={() => announceWinner('werewolf')}>🐺 หมาป่าชนะ</button>
+                <button className="flex-1 py-2 px-1 bg-slate-900 border border-purple-400/30 text-[10px] font-bold text-purple-400 rounded-xl" onClick={() => announceWinner('independent')}>🎭 อิสระชนะ</button>
               </div>
             </div>
 
-            <div className="border-t border-warning/30 pt-md mt-md">
+            <div className="border-t border-slate-700 pt-4 mt-4">
               <button 
-                className="btn btn-outline w-full py-md font-bold text-danger border-danger/30 hover:bg-danger/10" 
+                className="w-full py-3 bg-slate-900 font-bold text-red-400 border border-red-500/30 hover:bg-red-500/10 rounded-xl flex items-center justify-center transition-all active:scale-95 text-sm" 
                 onClick={async () => {
                   if(confirm('ต้องการจบเกมและกลับสู่ล็อบบี้ใช่หรือไม่?')) {
                     await resetToLobby();
@@ -1115,44 +1122,41 @@ const Werewolf: React.FC = () => {
                 <LogOut size={16} className="inline mr-2" /> จบเกม (กลับสู่ล็อบบี้)
               </button>
             </div>
-          </div>
+          </NeonCard>
         ) : (
-          <div className="glass-panel-werewolf p-xl text-center space-y-md">
-            <div className="text-5xl animate-pulse">
+          <NeonCard color={myIsAlive ? 'slate' : 'red'} className="p-8 text-center flex flex-col items-center">
+            <div className="text-6xl animate-pulse mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
               {phase === 'night' ? '🌙' : '☀️'}
             </div>
-            <h3 className="text-xl font-black">
+            <h3 className="text-2xl font-black text-white mb-2">
               {phase === 'night' ? 'ถึงเวลากลางคืน' : 'ถึงเวลากลางวัน'}
             </h3>
-            <p className="text-secondary text-sm">
+            <p className="text-slate-400 text-sm mb-6">
               {phase === 'night' ? 'หลับตาลงและทำตามที่ GM บอก...' : 'ลืมตาขึ้นและพูดคุยหาตัวหมาป่า!'}
             </p>
-            <div className={`p-md rounded-2xl border-2 ${myIsAlive ? 'bg-success/5 border-success/20 text-success' : 'bg-danger/5 border-danger/20 text-danger'}`}>
-              <p className="font-bold">{myIsAlive ? 'คุณยังมีชีวิตอยู่' : 'คุณเสียชีวิตแล้ว'}</p>
+            <div className={`p-4 rounded-2xl border-2 w-full mb-6 ${myIsAlive ? 'bg-neon-green/5 border-neon-green/30 text-neon-green shadow-[0_0_15px_rgba(0,255,0,0.1)]' : 'bg-red-500/5 border-red-500/30 text-red-500 shadow-[0_0_15px_rgba(255,0,0,0.1)]'}`}>
+              <p className="font-black tracking-widest uppercase text-sm">{myIsAlive ? '🟢 คุณยังมีชีวิตอยู่' : '💀 คุณเสียชีวิตแล้ว'}</p>
             </div>
             
-            <div className="pt-md mt-md border-t border-glass">
-              <button 
-                className="btn btn-outline w-full py-md font-bold text-danger border-danger/30 hover:bg-danger/10"
-                onClick={requestLeave}
-              >
-                <LogOut size={16} className="inline mr-2" /> ออกจากห้อง
-              </button>
+            <div className="pt-6 w-full border-t border-slate-700">
+              <GiantButton color="slate" onClick={requestLeave}>
+                <LogOut size={16} /> ออกจากห้อง
+              </GiantButton>
             </div>
-          </div>
+          </NeonCard>
         )}
 
         {/* Player List Sidebar */}
-        <div className="glass-panel-werewolf p-md">
-          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่นทั้งหมด ({Object.values(wwPlayers).filter(p => p.role !== 'gm').length} คน)</p>
-          <div className="flex flex-wrap gap-xs">
+        <NeonCard color="slate" className="p-4 mt-6">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Users size={14}/> ผู้เล่นทั้งหมด ({Object.values(wwPlayers).filter(p => p.role !== 'gm').length} คน)</p>
+          <div className="flex flex-wrap gap-2">
             {Object.entries(wwPlayers).filter(([, p]) => p.role !== 'gm').map(([name, p]) => (
-              <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${!p.isAlive ? 'opacity-40 line-through border-glass text-secondary' : 'border-glass text-white'}`}>
+              <span key={name} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border ${!p.isAlive ? 'opacity-40 line-through bg-slate-900 border-slate-800 text-slate-500' : 'bg-slate-800 border-slate-700 text-white shadow-sm'}`}>
                 {!p.isAlive && '💀 '}{name}
               </span>
             ))}
           </div>
-        </div>
+        </NeonCard>
       </div>
     );
   }
@@ -1167,7 +1171,7 @@ const Werewolf: React.FC = () => {
 
   // ─── Digital Mode UI (Original) ───
   return (
-    <div className="flex flex-col gap-lg w-full animate-fade-in pb-32">
+    <div className="flex flex-col gap-6 w-full animate-fade-in pb-32 relative z-10 px-2">
       {renderErrorToast()}
       {renderStarsBackground()}
       {renderAmbientMist()}
@@ -1175,11 +1179,11 @@ const Werewolf: React.FC = () => {
       {renderRoleRevealOverlay()}
 
       {/* Phase Banner */}
-      <div className={`glass-panel-werewolf p-md flex justify-between items-center ${phaseBg}`}>
-        <div className="flex items-center gap-md">
-          {phase === 'night' ? <Moon className="text-indigo-400" size={20} /> : phase === 'day' ? <Sun className="text-orange-400" size={20} /> : <Users className="text-red-400" size={20} />}
+      <NeonCard color={phase === 'night' ? 'indigo' : phase === 'day' ? 'amber' : phase === 'voting' ? 'red' : 'slate'} className="p-4 flex justify-between items-center mt-4">
+        <div className="flex items-center gap-3">
+          {phase === 'night' ? <Moon className="text-indigo-400" size={24} /> : phase === 'day' ? <Sun className="text-amber-400" size={24} /> : <Users className="text-red-400" size={24} />}
           <div>
-            <p className="font-black text-white">{phaseLabel}</p>
+            <p className="font-display font-black text-xl text-white uppercase tracking-widest leading-none">{phaseLabel}</p>
           </div>
           {wwData.timerEnd && (
             <div className="ml-2">
@@ -1187,52 +1191,54 @@ const Werewolf: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="text-right">
+        <div className="text-right flex items-center justify-end gap-2">
           {!isGM && (
-            <div className="flex items-center gap-sm">
-              <span className="text-xl">{roleInfo?.icon || '🎭'}</span>
-              <span className={`text-xs font-bold ${myIsAlive ? 'text-success' : 'text-danger'}`}>
-                {myIsAlive ? 'มีชีวิต' : '💀 ตาย'}
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${myIsAlive ? 'bg-neon-green/10 border-neon-green/30 text-neon-green' : 'bg-red-500/10 border-red-500/30 text-red-500'}`}>
+              <span className="text-xl drop-shadow-md">{roleInfo?.icon || '🎭'}</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">
+                {myIsAlive ? 'ยังมีชีวิต' : 'ตายแล้ว'}
               </span>
             </div>
           )}
-          {isGM && <span className="text-xs font-bold text-warning">🎭 GM</span>}
+          {isGM && <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30">GM</span>}
         </div>
-      </div>
+      </NeonCard>
 
       {/* Last Elimination Banner */}
       {wwData.lastElimination && wwData.lastElimination.playerName && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass-panel-werewolf p-md text-center border-danger/30 bg-danger/5">
-          <p className="text-danger font-bold text-sm">
-            {wwData.lastElimination.reason === 'vote' && `🗳️ ${wwData.lastElimination.playerName} ถูกโหวตไล่ออก!`}
-            {wwData.lastElimination.reason === 'prince_saved' && `👑 ${wwData.lastElimination.playerName} ถูกโหวต แต่เจ้าชายรอดชีวิต!`}
-            {wwData.lastElimination.reason === 'tie' && '🗳️ โหวตเสมอ! ไม่มีผู้ถูกกำจัด'}
-            {wwData.lastElimination.reason === 'skipped' && '⏭️ GM ข้ามรอบโหวต'}
-          </p>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <NeonCard color="red" className="p-4 text-center bg-red-500/10">
+            <p className="text-red-400 font-black text-sm uppercase tracking-widest">
+              {wwData.lastElimination.reason === 'vote' && `🗳️ ${wwData.lastElimination.playerName} ถูกโหวตไล่ออก!`}
+              {wwData.lastElimination.reason === 'prince_saved' && `👑 ${wwData.lastElimination.playerName} ถูกโหวต แต่เจ้าชายรอดชีวิต!`}
+              {wwData.lastElimination.reason === 'tie' && '🗳️ โหวตเสมอ! ไม่มีผู้ถูกกำจัด'}
+              {wwData.lastElimination.reason === 'skipped' && '⏭️ GM ข้ามรอบโหวต'}
+            </p>
+          </NeonCard>
         </motion.div>
       )}
 
       {/* GM Panel */}
       {isGM && (
-        <div className="glass-panel-werewolf p-lg space-y-lg border-warning/20">
-          <h3 className="font-black flex items-center gap-sm text-warning">🎭 แผงควบคุม GM</h3>
+        <NeonCard color="amber" className="p-5 space-y-4">
+          <h3 className="font-black flex items-center gap-2 text-amber-500 text-[11px] uppercase tracking-widest">🎭 แผงควบคุม GM</h3>
 
           {/* Player Status Table */}
-          <div className="space-y-xs max-h-60 overflow-y-auto">
-            <p className="text-[10px] font-bold text-secondary uppercase tracking-widest">สถานะผู้เล่น</p>
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">สถานะผู้เล่น</p>
             {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.role !== 'gm').map(([name, p]: [string, any]) => {
               const cfg = ROLES[p.role] || ROLES.villager;
               const isDead = !p.isAlive;
               return (
-                <div key={name} className={`flex items-center gap-sm p-sm rounded-lg ${isDead ? 'opacity-50 bg-glass-dark/20' : 'bg-glass-dark/30'}`}>
-                  <span className="text-sm">{cfg.icon}</span>
-                  <span className="flex-1 text-xs font-bold truncate">{name}</span>
-                  <span className="text-[10px] font-bold" style={{ color: cfg.color }}>{cfg.name}</span>
-                  {p.status?.silenced && <span className="text-xs">🤐</span>}
-                  {p.status?.banned && <span className="text-xs">🚫</span>}
-                  {p.status?.lover && <span className="text-xs">💘</span>}
+                <div key={name} className={`flex items-center gap-2 p-3 rounded-xl border ${isDead ? 'bg-slate-900/50 border-slate-800 opacity-60' : 'bg-slate-800 border-slate-700'}`}>
+                  <span className="text-xl drop-shadow-md">{cfg.icon}</span>
+                  <span className="flex-1 text-sm font-bold truncate text-white">{name}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: cfg.color }}>{cfg.name}</span>
+                  {p.status?.silenced && <span className="text-sm">🤐</span>}
+                  {p.status?.banned && <span className="text-sm">🚫</span>}
+                  {p.status?.lover && <span className="text-sm">💘</span>}
                   <button
-                    className={`px-sm py-xs rounded text-[10px] font-bold ${isDead ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ml-2 transition-all active:scale-95 shadow-sm ${isDead ? 'bg-neon-green/20 text-neon-green hover:bg-neon-green/30' : 'bg-red-500 text-white hover:bg-red-400'}`}
                     onClick={() => togglePlayerAlive(name, isDead)}
                   >
                     {isDead ? 'ชุบ' : 'ฆ่า'}
@@ -1244,8 +1250,8 @@ const Werewolf: React.FC = () => {
 
           {/* Night Controls */}
           {phase === 'night' && (
-            <div className="space-y-md border-t border-glass pt-md">
-              <p className="text-xs font-bold text-indigo-300">🌙 บทบาทคืนนี้ (GM เลือกให้)</p>
+            <div className="space-y-4 border-t border-slate-700 pt-4">
+              <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2"><Moon size={14}/> บทบาทคืนนี้ (GM เลือกให้)</p>
               {(() => {
                 // Only include roles where at least one alive player has that role
                 const activeRoles = Array.from(new Set(
@@ -1274,34 +1280,35 @@ const Werewolf: React.FC = () => {
                   // Label & color per action type
                   let actionLabel = 'เลือกเป้าหมาย';
                   const doneLabel = `→ ${chosenTarget === 'skip' ? 'ข้าม' : chosenTarget}`;
-                  let cardBorder = 'border-indigo-500/20';
-                  if (WOLF_ROLES.includes(actionKey)) { actionLabel = '🔪 ฆ่า'; cardBorder = 'border-danger/30'; }
-                  else if (actionKey === 'bodyguard') { actionLabel = '🛡️ ปกป้อง'; cardBorder = 'border-success/30'; }
-                  else if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(actionKey)) { actionLabel = '🔮 ส่อง'; cardBorder = 'border-purple-400/30'; }
+                  let cardBorder = 'border-indigo-500/30';
+                  let cardBg = 'bg-indigo-500/5';
+                  if (WOLF_ROLES.includes(actionKey)) { actionLabel = '🔪 ฆ่า'; cardBorder = 'border-red-500/30'; cardBg = 'bg-red-500/5'; }
+                  else if (actionKey === 'bodyguard') { actionLabel = '🛡️ ปกป้อง'; cardBorder = 'border-neon-green/30'; cardBg = 'bg-neon-green/5'; }
+                  else if (['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(actionKey)) { actionLabel = '🔮 ส่อง'; cardBorder = 'border-purple-500/30'; cardBg = 'bg-purple-500/5'; }
 
                   return (
-                    <div key={actionKey} className={`bg-glass-dark/40 rounded-xl p-sm border ${cardBorder}`}>
-                      <div className="flex items-center justify-between mb-xs">
-                        <span className="text-xs font-bold" style={{ color: cfg.color }}>
+                    <div key={actionKey} className={`rounded-xl p-3 border ${cardBorder} ${cardBg}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-black uppercase tracking-widest" style={{ color: cfg.color }}>
                           {cfg.icon} {WOLF_ROLES.includes(actionKey) ? 'หมาป่า' : cfg.name} — {actionLabel}
                         </span>
                         {isDone && (
-                          <span className="text-[10px] font-bold text-success">✅ {doneLabel}</span>
+                          <span className="text-[10px] font-black text-neon-green bg-neon-green/10 px-2 py-0.5 rounded-full border border-neon-green/20">✅ {doneLabel}</span>
                         )}
                       </div>
                       {!isDone ? (
-                        <div className="flex flex-wrap gap-xs">
+                        <div className="flex flex-wrap gap-2">
                           {targets.map(([name]) => (
                             <button
                               key={name}
-                              className="px-sm py-xs rounded-lg text-[11px] font-bold border border-glass bg-glass-dark/50 text-white active:scale-95 transition-all"
+                              className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-600 bg-slate-800 text-white active:scale-95 transition-all shadow-sm hover:border-slate-400"
                               onClick={() => gmSubmitForRole(actionKey, name)}
                             >
                               {name}
                             </button>
                           ))}
                           <button
-                            className="px-sm py-xs rounded-lg text-[11px] font-bold border border-glass text-secondary active:scale-95 transition-all"
+                            className="px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-700 bg-slate-900 text-slate-400 active:scale-95 transition-all hover:text-white"
                             onClick={() => gmSubmitForRole(actionKey, 'skip')}
                           >
                             ข้าม
@@ -1309,7 +1316,7 @@ const Werewolf: React.FC = () => {
                         </div>
                       ) : (
                         <button
-                          className="text-[10px] text-secondary underline"
+                          className="text-[10px] text-slate-400 underline hover:text-white"
                           onClick={async () => {
                             await safeUpdate(`rooms/${roomId}/gameData/wwData`, {
                               [`nightActions/${actionKey}Target`]: null,
@@ -1317,7 +1324,7 @@ const Werewolf: React.FC = () => {
                             });
                           }}
                         >
-                          เปลี่ยน
+                          เปลี่ยนใจ
                         </button>
                       )}
                     </div>
@@ -1335,18 +1342,18 @@ const Werewolf: React.FC = () => {
 
                 if (!killed && !protected_ && !seen) return null;
                 return (
-                  <div className="bg-glass-dark/30 rounded-xl p-sm space-y-xs border border-glass">
-                    <p className="text-[10px] font-bold text-secondary uppercase tracking-widest">สรุปคืนนี้ (มองเห็นแค่ GM)</p>
+                  <div className="bg-slate-900/50 rounded-xl p-4 space-y-2 border border-slate-700">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">สรุปคืนนี้ (มองเห็นแค่ GM)</p>
                     {killed && killed !== 'skip' && (
-                      <p className="text-xs font-bold text-danger">🔪 หมาป่าฆ่า: <span className="text-white">{killed}</span>
-                        {protected_ === killed && <span className="text-success ml-xs">→ ถูกปกป้อง! รอด</span>}
+                      <p className="text-xs font-bold text-red-500">🔪 หมาป่าฆ่า: <span className="text-white">{killed}</span>
+                        {protected_ === killed && <span className="text-neon-green ml-2">→ ถูกปกป้อง! รอด</span>}
                       </p>
                     )}
                     {protected_ && protected_ !== 'skip' && (
-                      <p className="text-xs font-bold text-success">🛡️ บอดี้การ์ดปกป้อง: <span className="text-white">{protected_}</span></p>
+                      <p className="text-xs font-bold text-neon-green">🛡️ บอดี้การ์ดปกป้อง: <span className="text-white">{protected_}</span></p>
                     )}
                     {seen && seen !== 'skip' && seenRole && (
-                      <p className={`text-xs font-bold ${isWolf ? 'text-danger' : 'text-success'}`}>
+                      <p className={`text-xs font-bold ${isWolf ? 'text-red-500' : 'text-neon-green'}`}>
                         🔮 ส่อง: <span className="text-white">{seen}</span> = {isWolf ? '🐺 หมาป่า' : '✅ ไม่ใช่หมาป่า'} ({ROLES[seenRole]?.name || seenRole})
                       </p>
                     )}
@@ -1354,94 +1361,114 @@ const Werewolf: React.FC = () => {
                 );
               })()}
 
-              <button className="btn btn-primary w-full py-md font-bold" onClick={resolveNightToDay}>☀️ เข้าสู่กลางวัน</button>
+              <GiantButton color="amber" onClick={resolveNightToDay}>
+                ☀️ เข้าสู่กลางวัน
+              </GiantButton>
             </div>
           )}
 
           {/* Day Controls */}
           {phase === 'day' && (
-            <div className="flex gap-sm border-t border-glass pt-md">
-              <button className="btn btn-danger flex-1 py-md font-bold" onClick={startVotingPhase}>🗳️ เริ่มโหวต</button>
+            <div className="border-t border-slate-700 pt-4">
+              <GiantButton color="red" onClick={startVotingPhase}>
+                🗳️ เริ่มโหวต
+              </GiantButton>
             </div>
           )}
 
           {/* Voting Controls */}
           {phase === 'voting' && (
-            <div className="space-y-sm border-t border-glass pt-md">
-              <p className="text-xs font-bold text-red-300">ผลโหวตปัจจุบัน</p>
-              {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm').map(([name]) => {
-                const voteCount = Object.values(wwPlayers).filter((pp: any) => pp.vote === name).reduce((acc: number, pp: any) => acc + (pp.role === 'mayor' ? 2 : 1), 0);
-                return voteCount > 0 ? (
-                  <div key={name} className="flex justify-between items-center p-sm bg-glass-dark/30 rounded-lg">
-                    <span className="text-xs font-bold">{name}</span>
-                    <span className="text-danger font-bold text-xs">{voteCount} โหวต</span>
-                  </div>
-                ) : null;
-              })}
-              <div className="flex gap-sm">
-                <button className="btn btn-danger flex-1 py-md font-bold" onClick={resolveVotes}>✅ อนุมัติผลโหวต</button>
-                <button className="btn btn-glass flex-1 py-md font-bold" onClick={gmSkipVote}>⏭️ ข้าม</button>
+            <div className="space-y-4 border-t border-slate-700 pt-4">
+              <p className="text-[11px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2"><Users size={14}/> ผลโหวตปัจจุบัน</p>
+              <div className="flex flex-col gap-2">
+                {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.isAlive && p.role !== 'gm').map(([name]) => {
+                  const voteCount = Object.values(wwPlayers).filter((pp: any) => pp.vote === name).reduce((acc: number, pp: any) => acc + (pp.role === 'mayor' ? 2 : 1), 0);
+                  return voteCount > 0 ? (
+                    <div key={name} className="flex justify-between items-center p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                      <span className="text-sm font-bold text-white">{name}</span>
+                      <span className="text-red-500 font-black text-xs px-2 py-1 bg-red-500/20 rounded-lg">{voteCount} โหวต</span>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+              <div className="flex flex-col gap-3 mt-4">
+                <GiantButton color="red" onClick={resolveVotes}>✅ อนุมัติผลโหวต</GiantButton>
+                <GiantButton color="slate" onClick={gmSkipVote}>⏭️ ข้าม</GiantButton>
               </div>
             </div>
           )}
 
           {/* Standby Controls */}
           {phase === 'standby' && (
-            <div className="space-y-sm border-t border-glass pt-md">
-              <button className="btn btn-primary w-full py-md font-bold" onClick={startNextNight}>🌙 เริ่มคืนถัดไป</button>
-              <div className="flex gap-sm">
-                <button className="btn btn-glass flex-1 py-sm text-xs font-bold" onClick={() => announceWinner('villager')}>🏘️ ชาวบ้านชนะ</button>
-                <button className="btn btn-glass flex-1 py-sm text-xs font-bold" onClick={() => announceWinner('werewolf')}>🐺 หมาป่าชนะ</button>
-                <button className="btn btn-glass flex-1 py-sm text-xs font-bold" onClick={() => announceWinner('independent')}>🎭 อิสระชนะ</button>
+            <div className="space-y-4 border-t border-slate-700 pt-4">
+              <GiantButton color="indigo" onClick={startNextNight}>
+                🌙 เริ่มคืนถัดไป
+              </GiantButton>
+              <div className="border-t border-slate-700 pt-4 mt-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">จบเกมล่วงหน้า</p>
+                <div className="flex gap-2">
+                  <button className="flex-1 py-2 px-1 bg-slate-900 border border-neon-green/30 text-[10px] font-bold text-neon-green rounded-xl active:scale-95 transition-all" onClick={() => announceWinner('villager')}>🏘️ ชาวบ้าน</button>
+                  <button className="flex-1 py-2 px-1 bg-slate-900 border border-red-500/30 text-[10px] font-bold text-red-500 rounded-xl active:scale-95 transition-all" onClick={() => announceWinner('werewolf')}>🐺 หมาป่า</button>
+                  <button className="flex-1 py-2 px-1 bg-slate-900 border border-purple-400/30 text-[10px] font-bold text-purple-400 rounded-xl active:scale-95 transition-all" onClick={() => announceWinner('independent')}>🎭 อิสระ</button>
+                </div>
               </div>
             </div>
           )}
-        </div>
+        </NeonCard>
       )}
 
       {/* Player View */}
       {!isGM && (
-        <>
+        <div className="space-y-4 w-full">
           {/* Role Card */}
-          <div className="glass-panel-werewolf p-lg flex items-center gap-md cursor-pointer" onClick={() => setShowRoleReveal(true)} style={{ borderLeft: `4px solid ${roleInfo?.color || '#666'}` }}>
-            <span className="text-3xl">{roleInfo?.icon || '❓'}</span>
+          <NeonCard 
+            color="slate" 
+            className="p-4 flex items-center gap-4 cursor-pointer active:scale-95 transition-all" 
+            onClick={() => setShowRoleReveal(true)}
+            style={{ borderLeft: `6px solid ${roleInfo?.color || '#666'}` }}
+          >
+            <div className="text-4xl drop-shadow-md">{roleInfo?.icon || '❓'}</div>
             <div className="flex-1">
-              <p className="font-black" style={{ color: roleInfo?.color }}>{roleInfo?.name || 'ไม่ทราบ'}</p>
-              <p className="text-[10px] text-secondary">{roleInfo?.description || ''}</p>
+              <p className="font-display font-black text-xl uppercase tracking-widest" style={{ color: roleInfo?.color, textShadow: `0 0 10px ${roleInfo?.color}40` }}>{roleInfo?.name || 'ไม่ทราบ'}</p>
+              <p className="text-[10px] text-slate-400 mt-1 leading-tight">{roleInfo?.description || ''}</p>
             </div>
-            <Info size={16} className="text-secondary" />
-          </div>
+            <div className="w-8 h-8 rounded-full bg-slate-800 flex-center">
+              <Info size={16} className="text-slate-400" />
+            </div>
+          </NeonCard>
 
           {/* Wolf allies */}
           {WOLF_ROLES.includes(myRole) && (
-            <div className="glass-panel-werewolf p-md border-danger/30 bg-danger/5">
-              <p className="text-xs text-danger font-bold">🐺 เพื่อนหมาป่า: {Object.entries(wwPlayers).filter(([n, p]: [string, any]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</p>
-            </div>
+            <NeonCard color="red" className="p-3 bg-red-500/10 border-red-500/30">
+              <p className="text-[11px] text-red-400 font-black uppercase tracking-widest flex items-center gap-2">
+                <Users size={14} /> เพื่อนหมาป่า: <span className="text-white normal-case font-bold">{Object.entries(wwPlayers).filter(([n, p]: [string, any]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</span>
+              </p>
+            </NeonCard>
           )}
 
           {/* Seer Result */}
           {userNickname && ['seer', 'apprentice_seer', 'mystic_wolf', 'aura_seer'].includes(myRole) && wwData.privateData?.[userNickname]?.seerResult && (
-            <div className={`glass-panel-werewolf p-md text-center ${wwData.privateData[userNickname].seerResult.isWolf ? 'border-danger/30 bg-danger/5' : 'border-success/30 bg-success/5'}`}>
-              <p className="text-xs font-bold text-secondary mb-xs">🔮 ผลการส่อง</p>
-              <p className="font-bold">
-                {wwData.privateData[userNickname].seerResult.targetName} คือ{' '}
-                <span className={wwData.privateData[userNickname].seerResult.isWolf ? 'text-danger' : 'text-success'}>
+            <NeonCard color={wwData.privateData[userNickname].seerResult.isWolf ? 'red' : 'indigo'} className={`p-4 text-center ${wwData.privateData[userNickname].seerResult.isWolf ? 'bg-red-500/10' : 'bg-indigo-500/10'}`}>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 flex-center gap-2"><Eye size={14} /> ผลการส่อง</p>
+              <p className="font-bold text-sm">
+                <span className="text-white">{wwData.privateData[userNickname].seerResult.targetName}</span> คือ{' '}
+                <span className={`font-black uppercase tracking-widest px-2 py-0.5 rounded-lg text-[11px] ${wwData.privateData[userNickname].seerResult.isWolf ? 'text-red-500 bg-red-500/20' : 'text-neon-green bg-neon-green/20'}`}>
                   {wwData.privateData[userNickname].seerResult.isWolf ? '🐺 หมาป่า!' : '✅ ไม่ใช่หมาป่า'}
                 </span>
               </p>
-            </div>
+            </NeonCard>
           )}
 
           {/* Night: Action Panel */}
           {phase === 'night' && myIsAlive && (
-            <div className="glass-panel-werewolf p-lg">
+            <NeonCard color="indigo" className="p-5 border-indigo-500/30 bg-indigo-500/5">
               {(() => {
                 const cfg = ROLES[myRole];
                 if (!cfg || cfg.actionPhase === 'none' || (cfg.actionPhase === 'firstNight' && dayCount > 1)) {
                   return (
-                    <div className="text-center p-lg">
-                      <div className="text-4xl mb-md animate-pulse">🌙</div>
-                      <p className="text-secondary font-bold">กำลังหลับอยู่... ไม่ต้องทำอะไรในคืนนี้</p>
+                    <div className="text-center p-4">
+                      <div className="text-5xl mb-4 animate-pulse drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">🌙</div>
+                      <p className="text-indigo-300 font-bold">กำลังหลับอยู่... ไม่ต้องทำอะไรในคืนนี้</p>
                     </div>
                   );
                 }
@@ -1449,9 +1476,12 @@ const Werewolf: React.FC = () => {
                 const isDone = !!nightActions[`${myRole}TargetDone`];
                 if (isDone) {
                   return (
-                    <div className="text-center p-lg">
-                      <div className="text-4xl mb-md">✅</div>
-                      <p className="text-success font-bold">ส่งการกระทำแล้ว รอ GM ประกาศผล</p>
+                    <div className="text-center p-4">
+                      <div className="w-16 h-16 mx-auto bg-neon-green/20 rounded-full flex-center mb-4 border border-neon-green/50">
+                        <CheckCircle2 size={32} className="text-neon-green" />
+                      </div>
+                      <p className="text-neon-green font-black uppercase tracking-widest text-sm drop-shadow-[0_0_10px_rgba(0,255,0,0.5)]">ส่งการกระทำแล้ว</p>
+                      <p className="text-[10px] text-slate-400 mt-2">รอ GM ประกาศผล</p>
                     </div>
                   );
                 }
@@ -1465,13 +1495,13 @@ const Werewolf: React.FC = () => {
                 });
 
                 return (
-                  <div className="space-y-md">
-                    <p className="text-xs font-bold text-indigo-300">{cfg.icon} ถึงตาคุณแล้ว — เลือกเป้าหมาย:</p>
-                    <div className="grid grid-cols-2 gap-sm">
+                  <div className="space-y-4">
+                    <p className="text-[11px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-2">{cfg.icon} ถึงตาคุณแล้ว — เลือกเป้าหมาย:</p>
+                    <div className="grid grid-cols-2 gap-2">
                       {targets.map(([name]) => (
                         <button
                           key={name}
-                          className={`p-md rounded-xl border flex-center flex-col gap-xs transition-all ${selectedTarget === name ? 'border-primary bg-primary/20 scale-95' : 'border-glass bg-glass-dark/30'}`}
+                          className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all active:scale-95 ${selectedTarget === name ? 'border-neon-green bg-neon-green/20 scale-[0.98] shadow-[0_0_10px_rgba(0,255,0,0.2)]' : 'border-slate-700 bg-slate-900 hover:border-slate-500'}`}
                           onClick={() => {
                             if (cfg.actionType === 'target2') {
                               const newTargets = selectedTargets.includes(name)
@@ -1488,59 +1518,62 @@ const Werewolf: React.FC = () => {
                             }
                           }}
                         >
-                          <span className="font-bold text-sm">{name}</span>
+                          <span className="font-bold text-sm text-white">{name}</span>
+                          {selectedTarget === name && <span className="text-[9px] text-neon-green font-black uppercase">เลือกแล้ว</span>}
                         </button>
                       ))}
                     </div>
-                    <button className="btn btn-glass w-full py-sm text-xs font-bold" onClick={() => submitNightAction(myRole, 'skip')}>
+                    <GiantButton color="slate" onClick={() => submitNightAction(myRole, 'skip')}>
                       ข้าม (ไม่ใช้พลัง)
-                    </button>
+                    </GiantButton>
                   </div>
                 );
               })()}
-            </div>
+            </NeonCard>
           )}
 
           {/* Night: Dead */}
           {phase === 'night' && !myIsAlive && (
-            <div className="glass-panel-werewolf p-lg text-center opacity-60">
-              <p className="text-danger font-bold">💀 คุณเสียชีวิตแล้ว — รอชมเกมต่อ</p>
-            </div>
+            <NeonCard color="slate" className="p-4 text-center opacity-70 bg-slate-900/50">
+              <p className="text-red-500 font-black uppercase tracking-widest text-[11px]"><Skull size={14} className="inline mr-1 mb-1"/> คุณเสียชีวิตแล้ว — รอชมเกมต่อ</p>
+            </NeonCard>
           )}
 
           {/* Day Panel */}
           {phase === 'day' && (
-            <div className="glass-panel-werewolf p-lg text-center">
+            <NeonCard color="amber" className="p-8 text-center bg-amber-400/10">
               {myIsAlive ? (
                 myPlayerData?.status?.silenced ? (
                   <div>
-                    <div className="text-3xl mb-md">🤐</div>
-                    <p className="text-purple-400 font-bold">คุณถูกปิดปาก! ห้ามพูดหรือโหวตวันนี้</p>
+                    <div className="text-4xl mb-4">🤐</div>
+                    <p className="text-purple-400 font-black uppercase tracking-widest drop-shadow-md">คุณถูกปิดปาก!</p>
+                    <p className="text-xs text-slate-300 mt-2">ห้ามพูดหรือโหวตวันนี้</p>
                   </div>
                 ) : myPlayerData?.status?.banned ? (
                   <div>
-                    <div className="text-3xl mb-md">🚫</div>
-                    <p className="text-secondary font-bold">คุณถูกแบน! ไม่มีสิทธิ์โหวตวันนี้</p>
+                    <div className="text-4xl mb-4">🚫</div>
+                    <p className="text-red-500 font-black uppercase tracking-widest drop-shadow-md">คุณถูกแบน!</p>
+                    <p className="text-xs text-slate-300 mt-2">ไม่มีสิทธิ์โหวตวันนี้</p>
                   </div>
                 ) : (
                   <div>
-                    <div className="text-3xl mb-md">☀️</div>
-                    <p className="text-orange-300 font-bold">คุยกันและค้นหาหมาป่า!</p>
-                    <p className="text-secondary text-xs mt-sm">รอ GM เริ่มโหวต</p>
+                    <div className="text-5xl mb-4 animate-pulse drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">☀️</div>
+                    <p className="text-amber-400 font-black uppercase tracking-widest drop-shadow-md">คุยกันและค้นหาหมาป่า!</p>
+                    <p className="text-[10px] text-slate-400 mt-3 border-t border-amber-500/30 pt-3">รอ GM เริ่มโหวต</p>
                   </div>
                 )
               ) : (
-                <p className="text-danger font-bold">💀 คุณเสียชีวิตแล้ว</p>
+                <p className="text-red-500 font-black uppercase tracking-widest drop-shadow-md"><Skull size={18} className="inline mr-2 mb-1"/>คุณเสียชีวิตแล้ว</p>
               )}
-            </div>
+            </NeonCard>
           )}
 
           {/* Voting Panel */}
           {phase === 'voting' && (
-            <div className="glass-panel-werewolf p-lg space-y-md">
-              <p className="text-xs font-bold text-red-300 uppercase tracking-widest">🗳️ เลือกคนที่จะแขวนคอ</p>
+            <NeonCard color="red" className="p-5 border-red-500/30 bg-red-500/10">
+              <p className="text-[11px] font-black text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2 drop-shadow-md"><Users size={14} /> 🗳️ เลือกคนที่จะแขวนคอ</p>
               {myIsAlive && !myPlayerData?.status?.silenced && !myPlayerData?.status?.banned ? (
-                <div className="grid grid-cols-2 gap-sm">
+                <div className="grid grid-cols-2 gap-2">
                   {Object.entries(wwPlayers).filter(([name, p]: [string, any]) => p.isAlive && p.role !== 'gm' && name !== userNickname).map(([name]) => {
                     const isSelected = myPlayerData?.vote === name;
                     const voteCount = Object.values(wwPlayers).filter((p: any) => p.vote === name).length;
@@ -1548,60 +1581,64 @@ const Werewolf: React.FC = () => {
                       <button
                         key={name}
                         onClick={() => castVote(name)}
-                        className={`p-md rounded-xl border flex flex-col items-center gap-xs relative transition-all ${isSelected ? 'border-danger bg-danger/20 scale-95' : 'border-glass bg-glass-dark/30'}`}
+                        className={`p-4 rounded-xl border flex flex-col items-center gap-1 relative transition-all active:scale-95 ${isSelected ? 'border-red-500 bg-red-500/20 scale-[0.98] shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'border-slate-700 bg-slate-900 hover:border-slate-500'}`}
                         disabled={!!myPlayerData?.vote}
                       >
-                        <span className="font-bold text-sm">{name}</span>
+                        <span className="font-bold text-sm text-white">{name}</span>
+                        {isSelected && <span className="text-[9px] text-red-500 font-black uppercase">โหวตแล้ว</span>}
                         {voteCount > 0 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-danger rounded-full flex-center text-[10px] font-black">{voteCount}</span>
+                          <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex-center text-[11px] font-black text-white shadow-[0_0_10px_rgba(239,68,68,0.5)] border-2 border-slate-900">{voteCount}</span>
                         )}
                       </button>
                     );
                   })}
                 </div>
               ) : (
-                <div className="text-center p-lg opacity-60">
-                  <p className="text-danger font-bold">
+                <div className="text-center p-6 bg-slate-900/50 rounded-xl border border-slate-700">
+                  <p className="text-red-500 font-black uppercase tracking-widest text-sm drop-shadow-md">
                     {!myIsAlive ? '💀 วิญญาณไม่มีสิทธิ์โหวต' : myPlayerData?.status?.silenced ? '🤐 คุณถูกปิดปาก' : '🚫 คุณถูกแบน'}
                   </p>
                 </div>
               )}
-            </div>
+            </NeonCard>
           )}
 
           {/* Standby */}
           {phase === 'standby' && (
-            <div className="glass-panel-werewolf p-lg text-center">
-              <div className="text-3xl mb-md">🎭</div>
-              <p className="text-secondary font-bold">รอ GM เริ่มรอบต่อไป...</p>
-            </div>
+            <NeonCard color="slate" className="p-8 text-center bg-slate-800/50">
+              <div className="text-5xl mb-4 opacity-50 drop-shadow-md">🎭</div>
+              <p className="text-slate-300 font-black uppercase tracking-widest drop-shadow-md">รอ GM เริ่มรอบต่อไป...</p>
+            </NeonCard>
           )}
-        </>
+        </div>
       )}
 
       {/* Player List Sidebar */}
-      <div className="glass-panel-werewolf p-md">
-        <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">👥 ผู้เล่น</p>
-        <div className="flex flex-wrap gap-xs">
+      <NeonCard color="slate" className="p-4 mt-6">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Users size={14}/> ผู้เล่น</p>
+        <div className="flex flex-wrap gap-2">
           {Object.entries(wwPlayers).filter(([, p]: [string, any]) => p.role !== 'gm').map(([name, p]: [string, any]) => (
-            <span key={name} className={`px-sm py-xs rounded-lg text-xs font-bold border ${!p.isAlive ? 'opacity-40 line-through border-glass text-secondary' : name === userNickname ? 'border-primary/40 text-primary bg-primary/10' : 'border-glass text-white'}`}>
-              {!p.isAlive && '💀 '}{name}
-              {isGM && WOLF_ROLES.includes(p.role) && <span className="text-danger ml-xs">🐺</span>}
+            <span key={name} className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border flex items-center shadow-sm ${!p.isAlive ? 'opacity-40 line-through bg-slate-900 border-slate-800 text-slate-500' : name === userNickname ? 'border-neon-green/50 text-neon-green bg-neon-green/10' : 'bg-slate-800 border-slate-700 text-white'}`}>
+              {!p.isAlive && <Skull size={10} className="mr-1" />}
+              {name}
+              {isGM && WOLF_ROLES.includes(p.role) && <span className="text-red-500 ml-1">🐺</span>}
             </span>
           ))}
         </div>
-      </div>
-
+      </NeonCard>
 
       {/* Show Role button (non-GM) */}
       {!isGM && (
-        <button className="btn btn-glass w-full py-sm text-xs font-bold" onClick={() => setShowRoleReveal(true)}>
-          <Eye size={14} /> ดูบทบาทอีกครั้ง
-        </button>
+        <div className="mt-4 pt-4 border-t border-slate-700/50">
+          <GiantButton color="slate" onClick={() => setShowRoleReveal(true)}>
+             <Eye size={16} /> ดูบทบาทอีกครั้ง
+          </GiantButton>
+        </div>
       )}
 
       {errorMsg && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-danger/90 text-white px-lg py-sm rounded-xl text-sm font-bold shadow-xl animate-fade-in">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-fade-in border border-red-400 flex items-center gap-2">
+          <AlertCircle size={16} />
           {errorMsg}
         </div>
       )}

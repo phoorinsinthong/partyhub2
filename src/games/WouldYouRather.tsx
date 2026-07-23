@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ref, update, increment } from 'firebase/database';
+import { motion } from 'framer-motion';
+import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { RotateCcw, ChevronRight, LogOut, Users, CheckCircle2 } from 'lucide-react';
 import { recordPersonalGame } from '../components/PersonalStats';
@@ -9,6 +9,8 @@ import { useGame } from '../contexts/GameContext';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { getShuffledWyrQuestions } from './logic/wyrData';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const WouldYouRather: React.FC = () => {
   const { t } = useTranslation();
@@ -83,48 +85,60 @@ const WouldYouRather: React.FC = () => {
   };
 
   const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
       {errorMsg}
     </div>
   ) : null;
 
   if (!roomData) return null;
+
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in relative z-10">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className="text-6xl animate-bounce-soft">⚖️</div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('wouldYouRather.title') || 'Would You Rather'}</h2>
-          <p className="text-olive-400 text-[13px]">{t('wouldYouRather.description') || 'เลือกสิ่งที่คุณชอบมากกว่า และดูว่าเพื่อนเลือกเหมือนกันไหม!'}</p>
-        </div>
-        {isHost ? (
-          <button onClick={handleStart} className="btn btn-primary px-10 py-4 rounded-3xl text-lg shadow-lg">
-            {t('wouldYouRather.startGame') || 'เริ่มเกมเลย!'}
-          </button>
-        ) : (
-          <p className="text-olive-400 font-bold animate-pulse">{t('wouldYouRather.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
-        )}
+        
+        <NeonCard color="indigo" className="p-8 flex flex-col items-center text-center max-w-sm w-full mx-auto">
+          <div className="text-6xl animate-pulse mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">⚖️</div>
+          <h2 className="font-display font-black text-2xl text-white mb-2 uppercase tracking-widest">{t('wouldYouRather.title') || 'Would You Rather'}</h2>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed">{t('wouldYouRather.description') || 'เลือกสิ่งที่คุณชอบมากกว่า และดูว่าเพื่อนเลือกเหมือนกันไหม!'}</p>
+          
+          {isHost ? (
+            <GiantButton color="indigo" onClick={handleStart} className="w-full">
+              {t('wouldYouRather.startGame') || 'เริ่มเกมเลย!'}
+            </GiantButton>
+          ) : (
+            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 font-bold animate-pulse w-full">
+              {t('wouldYouRather.waitingHost') || 'รอ Host เริ่มเกม...'}
+            </div>
+          )}
+        </NeonCard>
       </div>
     );
   }
 
   if (phase === 'finished') {
     return (
-      <div className="flex-1 flex flex-center flex-col gap-6 animate-fade-in">
-        <div className="text-6xl">🏁</div>
-        <h2 className="font-display font-bold text-2xl text-olive-800">{t('common.finished') || 'จบเกม!'}</h2>
-        {isHost && (
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button onClick={handleStart} className="btn btn-primary py-4 rounded-2xl">
-              <RotateCcw size={18} /> {t('common.playAgain') || 'เล่นอีกรอบ'}
-            </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline py-4 rounded-2xl">
-              <LogOut size={18} /> {t('common.backToLobby') || 'กลับ Lobby'}
-            </button>
-          </div>
-        )}
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 animate-fade-in relative z-10 p-4">
+        {renderErrorToast()}
+        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+
+        <NeonCard color="neon" className="p-8 text-center max-w-sm w-full">
+          <div className="text-6xl mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">🏁</div>
+          <h2 className="font-display font-black text-3xl text-white mb-6 uppercase tracking-widest">{t('common.finished') || 'จบเกม!'}</h2>
+          {isHost ? (
+            <div className="flex flex-col gap-3">
+              <GiantButton color="neon" onClick={handleStart}>
+                <RotateCcw size={18} /> {t('common.playAgain') || 'เล่นอีกรอบ'}
+              </GiantButton>
+              <GiantButton color="slate" onClick={handleBackToLobby}>
+                <LogOut size={18} /> {t('common.backToLobby') || 'กลับ Lobby'}
+              </GiantButton>
+            </div>
+          ) : (
+            <p className="text-slate-400 font-bold">{t('common.waitingHostPlayAgain') || 'รอ Host เริ่มเกมใหม่...'}</p>
+          )}
+        </NeonCard>
       </div>
     );
   }
@@ -135,86 +149,112 @@ const WouldYouRather: React.FC = () => {
   const percentB = totalVotes > 0 ? 100 - percentA : 50;
 
   return (
-    <div className="flex-1 flex flex-col py-4 animate-fade-in">
+    <div className="flex-1 flex flex-col py-4 animate-fade-in relative z-10 px-2 max-w-lg mx-auto w-full">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
       
-      <div className="flex-between mb-4 px-1">
-        <span className="text-[11px] font-bold text-olive-400 uppercase tracking-widest">
+      <div className="flex justify-between items-center mb-6 bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
+        <span className="text-[11px] font-black text-indigo-400 uppercase tracking-widest px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/30">
           {t('wouldYouRather.question') || 'คำถามที่'} {currentQIndex + 1}/{questions.length}
         </span>
-        <div className="flex items-center gap-1.5 text-olive-500 font-bold text-[12px]">
-          <Users size={14} />
+        <div className="flex items-center gap-1.5 text-slate-300 font-bold text-xs bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
+          <Users size={14} className="text-neon-green" />
           {totalVotes}/{players.length} {t('wouldYouRather.voted') || 'โหวตแล้ว'}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col gap-4">
-        {/* Option A */}
+        {/* Option A (Indigo) */}
         <motion.button
           whileTap={!myVote ? { scale: 0.98 } : {}}
           onClick={() => handleVote('a')}
-          className={`relative overflow-hidden p-8 rounded-[32px] border-2 transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[160px] ${
-            myVote === 'a' ? 'bg-blue-50 border-blue-300 shadow-md' : 
-            myVote ? 'bg-white border-olive-50 opacity-60' : 'bg-white border-blue-100 shadow-sm'
+          className={`relative overflow-hidden p-6 rounded-[24px] border-2 transition-all flex flex-col items-center justify-center text-center gap-3 min-h-[160px] ${
+            myVote === 'a' 
+              ? 'bg-indigo-900/40 border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.2)]' 
+              : myVote 
+                ? 'bg-slate-900 border-slate-800 opacity-60' 
+                : 'bg-slate-800/50 border-indigo-500/30 hover:border-indigo-400/50 shadow-sm'
           }`}
         >
           {myVote && (
             <motion.div 
               initial={{ width: 0 }} animate={{ width: `${percentA}%` }}
-              className="absolute inset-0 bg-blue-100/50 pointer-events-none"
+              className="absolute left-0 top-0 bottom-0 bg-indigo-500/20 pointer-events-none"
             />
           )}
-          <span className={`relative font-black text-lg ${myVote === 'a' ? 'text-blue-700' : 'text-olive-700'}`}>
+          <span className={`relative font-bold text-lg leading-relaxed z-10 ${myVote === 'a' ? 'text-indigo-100' : 'text-slate-200'}`}>
             {currentQuestion?.a}
           </span>
           {myVote && (
-            <span className="relative text-2xl font-black text-blue-600">{percentA}%</span>
+            <div className="relative z-10 flex flex-col items-center">
+              <span className="text-3xl font-black text-indigo-400 drop-shadow-md">{percentA}%</span>
+              {myVote === 'a' && (
+                <div className="mt-2 flex items-center gap-1 bg-indigo-500/20 px-3 py-1 rounded-full border border-indigo-500/30">
+                  <CheckCircle2 size={14} className="text-indigo-400" />
+                  <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">คุณเลือกสิ่งนี้</span>
+                </div>
+              )}
+            </div>
           )}
-          {myVote === 'a' && <CheckCircle2 size={20} className="relative text-blue-500 mt-1" />}
         </motion.button>
 
-        <div className="flex-center relative h-8">
-          <div className="absolute w-full h-px bg-olive-100" />
-          <span className="relative bg-white px-4 font-black text-olive-300 text-xs italic">OR</span>
+        <div className="flex justify-center relative h-6 my-2">
+          <div className="absolute w-full top-1/2 -translate-y-1/2 h-px bg-slate-800" />
+          <span className="relative bg-slate-950 px-4 font-black text-slate-500 text-xs italic uppercase tracking-widest">OR</span>
         </div>
 
-        {/* Option B */}
+        {/* Option B (Rose/Pink) */}
         <motion.button
           whileTap={!myVote ? { scale: 0.98 } : {}}
           onClick={() => handleVote('b')}
-          className={`relative overflow-hidden p-8 rounded-[32px] border-2 transition-all flex flex-col items-center justify-center text-center gap-2 min-h-[160px] ${
-            myVote === 'b' ? 'bg-rose-50 border-rose-300 shadow-md' : 
-            myVote ? 'bg-white border-olive-50 opacity-60' : 'bg-white border-rose-100 shadow-sm'
+          className={`relative overflow-hidden p-6 rounded-[24px] border-2 transition-all flex flex-col items-center justify-center text-center gap-3 min-h-[160px] ${
+            myVote === 'b' 
+              ? 'bg-pink-900/40 border-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.2)]' 
+              : myVote 
+                ? 'bg-slate-900 border-slate-800 opacity-60' 
+                : 'bg-slate-800/50 border-pink-500/30 hover:border-pink-400/50 shadow-sm'
           }`}
         >
           {myVote && (
             <motion.div 
               initial={{ width: 0 }} animate={{ width: `${percentB}%` }}
-              className="absolute inset-0 bg-rose-100/50 pointer-events-none"
+              className="absolute left-0 top-0 bottom-0 bg-pink-500/20 pointer-events-none"
             />
           )}
-          <span className={`relative font-black text-lg ${myVote === 'b' ? 'text-rose-700' : 'text-olive-700'}`}>
+          <span className={`relative font-bold text-lg leading-relaxed z-10 ${myVote === 'b' ? 'text-pink-100' : 'text-slate-200'}`}>
             {currentQuestion?.b}
           </span>
           {myVote && (
-            <span className="relative text-2xl font-black text-rose-600">{percentB}%</span>
+            <div className="relative z-10 flex flex-col items-center">
+              <span className="text-3xl font-black text-pink-400 drop-shadow-md">{percentB}%</span>
+              {myVote === 'b' && (
+                <div className="mt-2 flex items-center gap-1 bg-pink-500/20 px-3 py-1 rounded-full border border-pink-500/30">
+                  <CheckCircle2 size={14} className="text-pink-400" />
+                  <span className="text-[10px] font-black text-pink-300 uppercase tracking-widest">คุณเลือกสิ่งนี้</span>
+                </div>
+              )}
+            </div>
           )}
-          {myVote === 'b' && <CheckCircle2 size={20} className="relative text-rose-500 mt-1" />}
         </motion.button>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8 pb-20">
         {isHost && totalVotes >= 1 && (
-          <button onClick={nextQuestion} className="btn btn-primary w-full py-4 rounded-3xl text-lg shadow-lg">
+          <GiantButton 
+            color={currentQIndex + 1 >= questions.length ? "neon" : "indigo"} 
+            onClick={nextQuestion} 
+            className="w-full"
+          >
             {currentQIndex + 1 >= questions.length ? t('common.viewResults') || 'ดูผลลัพธ์' : t('common.next') || 'ข้อถัดไป'}
-            <ChevronRight size={20} strokeWidth={3} />
-          </button>
+            <ChevronRight size={20} strokeWidth={3} className="inline ml-1" />
+          </GiantButton>
         )}
         {!isHost && myVote && (
-          <p className="text-center text-[13px] font-bold text-olive-400 animate-pulse py-4">
-            {t('wouldYouRather.waitingHostNext') || 'รอ Host ไปข้อถัดไป...'}
-          </p>
+          <div className="text-center p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
+              {t('wouldYouRather.waitingHostNext') || 'รอ Host ไปข้อถัดไป...'}
+            </p>
+          </div>
         )}
       </div>
     </div>

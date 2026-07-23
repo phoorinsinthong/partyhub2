@@ -13,6 +13,8 @@ import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const DISCUSSION_TIME_OPTIONS = (t: any) => [
   { label: t('insider.discussionTime') + ' 5 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 300 },
@@ -40,7 +42,7 @@ const TwentyQuestions = () => {
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
 
   const renderErrorToast = () => errorMsg ? (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
       {errorMsg}
     </div>
   ) : null;
@@ -353,38 +355,38 @@ const TwentyQuestions = () => {
   // ════════════════════════════════════════════════════════════════
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950 text-slate-200 px-4">
         {renderErrorToast()}
-        <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl select-none">
+        <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl select-none drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]">
           🕵️
         </motion.div>
 
         <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('insider.title')}</h2>
-          <p className="text-olive-400 text-[13px] leading-relaxed px-4">
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-white mb-2 drop-shadow-md">{t('insider.title')}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed px-4 max-w-sm">
             {t('insider.description')}
           </p>
         </div>
 
-        <div className="card p-4 w-full max-w-xs">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>👑</span><span>{t('insider.roleMaster')} {t('insider.roleMasterDesc')}</span>
+        <NeonCard color="purple" className="p-4 w-full max-w-xs text-left bg-purple-950/20 border-purple-500/30">
+          <div className="space-y-3 font-medium text-[11px] leading-relaxed text-slate-300">
+            <div className="flex items-center gap-3">
+              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">👑</span><span><strong className="text-amber-400">{t('insider.roleMaster')}</strong> {t('insider.roleMasterDesc')}</span>
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>🕵️</span><span>{t('insider.roleInsider')} {t('insider.roleInsiderDesc')}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">🕵️</span><span><strong className="text-purple-400">{t('insider.roleInsider')}</strong> {t('insider.roleInsiderDesc')}</span>
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-olive-500">
-              <span>❓</span><span>{t('insider.roleCommon')} {t('insider.roleCommonDesc')}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">❓</span><span><strong className="text-emerald-400">{t('insider.roleCommon')}</strong> {t('insider.roleCommonDesc')}</span>
             </div>
           </div>
-        </div>
+        </NeonCard>
 
-        <div className="card p-3 w-full max-w-xs">
-          <p className="text-[11px] font-bold text-olive-500 mb-2">{t('taboo.players')} {players.length} {t('spyfall.startGame').split(' ')[1]}</p>
-          <div className="flex flex-wrap gap-1.5">
+        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl w-full max-w-xs">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.players')} {players.length} {t('spyfall.startGame').split(' ')[1]}</p>
+          <div className="flex flex-wrap gap-2 justify-center">
             {players.map(p => (
-              <span key={p} className={`text-[12px] font-bold px-2.5 py-1 rounded-full ${p === roomData.host ? 'bg-amber-100 text-amber-700' : 'bg-sage-100 text-sage-700'}`}>
+              <span key={p} className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${p === roomData.host ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
                 {p === roomData.host ? `👑 ${p}` : p === userNickname ? `${p} (${t('taboo.you')})` : p}
               </span>
             ))}
@@ -394,14 +396,14 @@ const TwentyQuestions = () => {
         {isHost ? (
           <>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('insider.categoryTitle')}</p>
-              <div className="flex flex-wrap gap-1.5 justify-center">
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('insider.categoryTitle')}</p>
+              <div className="flex flex-wrap gap-2 justify-center">
                 <button
                   onClick={() => setSelectedCategories([])}
-                  className={`py-2 px-3 rounded-2xl text-[12px] font-bold border-2 transition-colors ${
+                  className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
                     selectedCategories.length === 0
-                      ? 'bg-sage-500 border-sage-500 text-white'
-                      : 'bg-white border-olive-100 text-olive-600'
+                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
                   }`}
                 >
                   {t('taboo.cardPackAll')}
@@ -412,10 +414,10 @@ const TwentyQuestions = () => {
                     onClick={() => setSelectedCategories(prev =>
                       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
                     )}
-                    className={`py-2 px-3 rounded-2xl text-[12px] font-bold border-2 transition-colors ${
+                    className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
                       selectedCategories.includes(cat)
-                        ? 'bg-sage-500 border-sage-500 text-white'
-                        : 'bg-white border-olive-100 text-olive-600'
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
                     }`}
                   >
                     {cat}
@@ -423,28 +425,28 @@ const TwentyQuestions = () => {
                 ))}
               </div>
             </div>
-            <div className="w-full max-w-xs">
-              <div className="flex items-center justify-between px-1">
-                <p className="text-[11px] font-bold text-olive-500">แสดงหมวดหมู่ระหว่างเล่น</p>
+            <div className="w-full max-w-xs bg-slate-900/50 p-4 rounded-3xl border border-slate-800">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">แสดงหมวดหมู่ระหว่างเล่น</p>
                 <button
                   onClick={() => setShowCategorySetting(!showCategorySetting)}
-                  className={`w-12 h-7 rounded-full transition-colors relative ${showCategorySetting ? 'bg-sage-500' : 'bg-olive-200'}`}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${showCategorySetting ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-slate-700'}`}
                 >
-                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCategorySetting ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCategorySetting ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             </div>
             <div className="w-full max-w-xs">
-              <p className="text-[11px] font-bold text-olive-500 mb-2 text-center">{t('taboo.roundTime')}</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.roundTime')}</p>
               <div className="flex gap-2">
                 {DISCUSSION_TIME_OPTIONS(t).map(opt => (
                   <button
                     key={opt.seconds}
                     onClick={() => setSelectedTime(opt.seconds)}
-                    className={`flex-1 py-2.5 rounded-2xl text-[13px] font-bold border-2 transition-colors ${
+                    className={`flex-1 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-colors ${
                       selectedTime === opt.seconds
-                        ? 'bg-sage-500 border-sage-500 text-white'
-                        : 'bg-white border-olive-100 text-olive-600'
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
                     }`}
                   >
                     {opt.label}
@@ -452,19 +454,19 @@ const TwentyQuestions = () => {
                 ))}
               </div>
             </div>
-            <button onClick={handleStartGame} className="btn btn-primary py-3.5 px-8 text-[15px]" disabled={nonHostPlayers.length < 2}>
-              <Play size={18} fill="currentColor" /> {t('insider.startGame')}
-            </button>
+            <GiantButton color="purple" onClick={handleStartGame} className="w-full max-w-xs" disabled={nonHostPlayers.length < 2}>
+              <Play size={20} fill="currentColor" className="mr-2 inline-block mb-1" /> {t('insider.startGame')}
+            </GiantButton>
             {nonHostPlayers.length < 2 && (
-              <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl">
+              <p className="text-center text-[11px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl mt-2 w-full max-w-xs">
                 {t('taboo.minPlayers')} (ไม่นับ Host)
               </p>
             )}
           </>
         ) : (
-          <div className="flex items-center gap-2 text-olive-400">
-            <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[13px] font-semibold">{t('insider.waitingHost')}</span>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -476,53 +478,53 @@ const TwentyQuestions = () => {
   // ════════════════════════════════════════════════════════════════
   if (phase === 'reveal') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-5 py-6 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6 animate-fade-in bg-slate-950 text-slate-200 px-4">
         {renderErrorToast()}
-        <div className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
+        <div className="text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/30 px-4 py-2 rounded-xl">
           {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
         </div>
 
         {isModerator && (
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">{t('insider.roleMaster')} 👑</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
-            <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
-            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleMasterDesc').split('!')[1].trim()}</p>
-            <div className="flex gap-2 mt-4 w-full">
-              <button onClick={handleRerollWord} className="btn btn-outline flex-1 py-3 text-[13px]">
-                <Shuffle size={14} /> {t('spyfall.actualLocation').split(' ')[0] === 'สถานที่' ? 'สุ่มใหม่' : 'Reroll'}
+          <NeonCard color="amber" className="p-8 w-full max-w-xs text-center border-amber-500/30 bg-amber-950/20">
+            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">{t('insider.roleMaster')} 👑</p>
+            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
+            <p className="font-black text-[36px] text-white drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] mb-4 leading-tight">{secretWord}</p>
+            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleMasterDesc').split('!')[1].trim()}</p>
+            <div className="flex flex-col gap-3 mt-6 w-full">
+              <button onClick={handleRerollWord} className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-amber-500/50 bg-amber-500/10 text-amber-400 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                <Shuffle size={16} /> {t('spyfall.actualLocation').split(' ')[0] === 'สถานที่' ? 'สุ่มใหม่' : 'Reroll'}
               </button>
-              <button onClick={handleStartDiscussion} className="btn btn-primary flex-1 py-3 text-[14px]">
-                <Clock size={16} /> {t('taboo.startNow')} ({Math.floor(discussionTime / 60)} {t('taboo.roundTime').includes('Time') ? 'min' : 'นาที'})
-              </button>
+              <GiantButton color="emerald" onClick={handleStartDiscussion} className="w-full">
+                <Clock size={20} className="mr-2 inline-block mb-1" /> {t('taboo.startNow')} ({Math.floor(discussionTime / 60)} {t('taboo.roundTime').includes('Time') ? 'min' : 'นาที'})
+              </GiantButton>
             </div>
-          </motion.div>
+          </NeonCard>
         )}
 
         {isInsider && !isModerator && (
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center bg-gradient-to-br from-purple-50 to-fuchsia-50 border-2 border-purple-200">
-            <p className="text-[10px] font-bold text-purple-600 uppercase tracking-widest mb-2">{t('insider.roleInsider')} 🕵️</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
-            <p className="font-display font-black text-[32px] text-olive-800">{secretWord}</p>
-            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleInsiderDesc')}</p>
-            <div className="mt-3 flex-center gap-2 text-olive-400">
-              <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-              <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
+          <NeonCard color="purple" className="p-8 w-full max-w-xs text-center border-purple-500/30 bg-purple-950/20">
+            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3">{t('insider.roleInsider')} 🕵️</p>
+            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
+            <p className="font-black text-[36px] text-white drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] mb-4 leading-tight">{secretWord}</p>
+            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleInsiderDesc')}</p>
+            <div className="flex flex-col items-center gap-3 mt-8">
+              <div className="w-6 h-6 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
             </div>
-          </motion.div>
+          </NeonCard>
         )}
 
         {!isModerator && !isInsider && (
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card p-6 w-full max-w-xs text-center">
-            <p className="text-[10px] font-bold text-sage-600 uppercase tracking-widest mb-2">{t('insider.roleCommon')} 🏘️</p>
-            {showCategory && <p className="text-[11px] text-olive-500 mb-3">{t('insider.category', { name: category })}</p>}
-            <p className="font-display font-black text-[28px] text-olive-300">???</p>
-            <p className="text-[11px] text-olive-400 mt-3">{t('insider.roleCommonDesc')}</p>
-            <div className="mt-3 flex-center gap-2 text-olive-400">
-              <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-              <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
+          <NeonCard color="emerald" className="p-8 w-full max-w-xs text-center border-emerald-500/30 bg-emerald-950/20">
+            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3">{t('insider.roleCommon')} 🏘️</p>
+            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
+            <p className="font-black text-[42px] text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4">???</p>
+            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleCommonDesc')}</p>
+            <div className="flex flex-col items-center gap-3 mt-8">
+              <div className="w-6 h-6 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
             </div>
-          </motion.div>
+          </NeonCard>
         )}
       </div>
     );
@@ -533,44 +535,46 @@ const TwentyQuestions = () => {
   // ════════════════════════════════════════════════════════════════
   if (phase === 'discussion') {
     return (
-      <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in bg-slate-950 text-slate-200 px-4 py-4">
         {renderErrorToast()}
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-olive-400 bg-olive-50 px-3 py-1.5 rounded-full">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex justify-between items-center shadow-sm">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
             {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
           </span>
           <TimerDisplay timeLeft={timeLeft} />
         </div>
 
         {/* Category + Word hints */}
-        <div className="card p-3 flex items-center justify-between">
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center justify-between">
           {showCategory && (
             <div className="flex items-center gap-2">
-              <span className="text-[12px] font-bold text-olive-500">{t('insider.categoryTitle')}:</span>
-              <span className="text-[14px] font-extrabold text-sage-600">{category}</span>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('insider.categoryTitle')}:</span>
+              <span className="text-[14px] font-black text-slate-300">{category}</span>
             </div>
           )}
           <div className="flex items-center gap-2">
             {(isModerator || isInsider) && (
-              <span className={`text-[12px] font-bold ${isModerator ? 'text-amber-600 bg-amber-50' : 'text-purple-600 bg-purple-50'} px-2.5 py-1 rounded-lg`}>
-                {t('insider.secretWord')}: {secretWord}
+              <span className={`text-[10px] font-black uppercase tracking-widest border px-3 py-1.5 rounded-xl ${
+                isModerator ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-purple-400 bg-purple-500/10 border-purple-500/30'
+              }`}>
+                {t('insider.secretWord')}: <span className="text-[14px]">{secretWord}</span>
               </span>
             )}
           </div>
         </div>
 
         {/* Instructions */}
-        <div className="card p-4 text-center bg-olive-50/60">
+        <div className="bg-slate-900/50 border border-slate-800 p-4 text-center rounded-3xl">
           {isModerator ? (
             <div>
-              <p className="text-[13px] text-olive-700 font-bold mb-1">{t('insider.roleMasterDesc')}</p>
-              <p className="text-[11px] text-olive-400">{t('taboo.selectWhoCorrect')}</p>
+              <p className="text-[12px] font-black text-amber-400 uppercase tracking-widest mb-2">{t('insider.roleMasterDesc')}</p>
+              <p className="text-[11px] font-bold text-slate-500">{t('taboo.selectWhoCorrect')}</p>
             </div>
           ) : (
             <div>
-              <p className="text-[13px] text-olive-700 font-bold mb-1">{t('insider.roleCommonDesc')}</p>
-              <p className="text-[11px] text-olive-400">{t('taboo.shoutAnswer')}</p>
+              <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest mb-2">{t('insider.roleCommonDesc')}</p>
+              <p className="text-[11px] font-bold text-slate-500">{t('taboo.shoutAnswer')}</p>
             </div>
           )}
         </div>
@@ -580,16 +584,16 @@ const TwentyQuestions = () => {
 
         {/* Host: mark who guessed correctly */}
         {isModerator && !wordGuessed && (
-          <div className="card p-4">
+          <NeonCard color="emerald" className="p-4 border-emerald-500/30 bg-emerald-950/20">
             {!confirmGuesser ? (
               <>
-                <p className="text-[11px] font-bold text-olive-500 mb-3">{t('taboo.whoCorrect')}</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3 text-center">{t('taboo.whoCorrect')}</p>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {nonHostPlayers.map(p => (
                     <button
                       key={p}
                       onClick={() => setConfirmGuesser(p)}
-                      className="text-[13px] font-bold px-4 py-2.5 rounded-xl bg-sage-100 text-sage-700 active:scale-95 border-2 border-sage-200"
+                      className="text-[12px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 active:scale-95 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
                     >
                       ✓ {p}
                     </button>
@@ -598,15 +602,17 @@ const TwentyQuestions = () => {
               </>
             ) : (
               <div className="text-center">
-                <p className="text-[13px] font-bold text-olive-700 mb-3">{t('taboo.someoneCorrect')} <span className="text-sage-600">{confirmGuesser}</span> {t('taboo.correct')}</p>
-                <div className="flex gap-2 justify-center">
+                <p className="text-[12px] font-black text-slate-300 mb-4">{t('taboo.someoneCorrect')} <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">{confirmGuesser}</span> {t('taboo.correct')}</p>
+                <div className="flex gap-3 justify-center">
                   <button
                     onClick={() => setConfirmGuesser(null)}
-                    className="btn btn-outline py-2.5 px-5 text-[13px]"
+                    className="flex-1 py-3 text-[11px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-400 rounded-2xl active:scale-95 transition-all hover:border-slate-500"
                   >
                     {t('taboo.cancel')}
                   </button>
-                  <button
+                  <GiantButton
+                    color="emerald"
+                    className="flex-1"
                     onClick={async () => {
                       if (advancingRef.current) return;
                       advancingRef.current = true;
@@ -625,20 +631,20 @@ const TwentyQuestions = () => {
                         advancingRef.current = false;
                       }
                     }}
-                    className="btn btn-primary py-2.5 px-5 text-[13px]"
                   >
                     {t('target.confirmTarget')}
-                  </button>
+                  </GiantButton>
                 </div>
               </div>
             )}
-          </div>
+          </NeonCard>
         )}
 
         {/* Non-host: waiting indicator */}
         {!isModerator && !wordGuessed && (
-          <div className="card p-4 text-center">
-            <p className="text-[12px] text-olive-500 font-semibold">🗣️ {t('taboo.listenAndAnswer')}</p>
+          <div className="bg-slate-900/50 border border-slate-800 p-6 text-center rounded-3xl flex flex-col items-center gap-3">
+            <div className="text-4xl animate-bounce">🗣️</div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 animate-pulse">{t('taboo.listenAndAnswer')}</p>
           </div>
         )}
       </div>
@@ -653,62 +659,66 @@ const TwentyQuestions = () => {
     const totalVoters = nonHostPlayers.length;
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4">
         {renderErrorToast()}
         <div className="text-center">
-          <span className="text-4xl">🗳️</span>
-          <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">{t('insider.votingPhase')}</h3>
-          <p className="text-[12px] text-olive-400 mt-1">{t('insider.voteInsider')}</p>
+          <span className="text-5xl drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">🗳️</span>
+          <h3 className="font-black text-[24px] uppercase tracking-widest text-white mt-4 drop-shadow-md">{t('insider.votingPhase')}</h3>
+          <p className="text-[12px] font-bold text-slate-400 mt-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl inline-block">{t('insider.voteInsider')}</p>
         </div>
 
-        <div className="flex-center gap-3">
+        <div className="flex-center gap-4 mt-2">
           <TimerDisplay timeLeft={timeLeft} />
-          <span className="text-[12px] font-bold text-olive-500 bg-olive-50 px-3 py-2 rounded-full">
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-500/10 border border-rose-500/30 px-4 py-2 rounded-xl">
             🗳️ {voteCount}/{totalVoters}
           </span>
         </div>
 
-        <div className="card p-3 text-center bg-green-50 border border-green-200">
-          <p className="text-[12px] text-olive-500">{t('insider.wordGuessedDesc', { name: guesser })} "<span className="font-bold">{secretWord}</span>" {t('taboo.correct')}</p>
-        </div>
+        <NeonCard color="emerald" className="p-4 text-center border-emerald-500/30 bg-emerald-950/20">
+          <p className="text-[12px] font-medium text-slate-300">{t('insider.wordGuessedDesc', { name: guesser })} "<span className="font-black text-emerald-400">{secretWord}</span>" {t('taboo.correct')}</p>
+        </NeonCard>
 
         {/* Vote buttons */}
         {!isModerator && (
-          <div className="card p-4">
-            <p className="text-[11px] font-bold text-olive-500 mb-3">{t('spyfall.votePanelDesc')}:</p>
+          <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('spyfall.votePanelDesc')}:</p>
             <div className="space-y-2">
               {nonHostPlayers.filter(p => p !== userNickname).map(p => (
                 <button
                   key={p}
                   onClick={() => handleVote(p)}
                   disabled={!!votedFor}
-                  className={`w-full p-3 rounded-xl text-left font-bold text-[14px] border-2 transition-all ${
+                  className={`w-full p-4 rounded-2xl text-left font-black text-[14px] uppercase tracking-widest border transition-all ${
                     votedFor === p
-                      ? 'bg-purple-50 border-purple-300 text-purple-700'
+                      ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.3)]'
                       : votedFor
-                        ? 'bg-olive-50 border-olive-100 text-olive-400'
-                        : 'bg-white border-olive-100 text-olive-700 active:scale-[0.98]'
+                        ? 'bg-slate-900 border-slate-800 text-slate-600'
+                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white active:scale-95'
                   }`}
                 >
-                  {votedFor === p && '🗳️ '}{p}
+                  <div className="flex items-center gap-3">
+                    {votedFor === p ? <span className="text-xl">🗳️</span> : <span className="w-5" />}
+                    {p}
+                  </div>
                 </button>
               ))}
             </div>
-            {votedFor && <p className="text-[11px] text-sage-600 font-semibold mt-2 text-center">{t('insider.voted')}</p>}
+            {votedFor && <p className="text-[10px] text-rose-400 font-black uppercase tracking-widest mt-4 text-center animate-pulse">{t('insider.voted')}</p>}
           </div>
         )}
 
         {isModerator && (
-          <div className="card p-4 text-center">
-            <p className="text-[12px] text-olive-500 mb-3">{t('insider.voted')} {voteCount}/{totalVoters}</p>
-            <button
+          <NeonCard color="slate" className="p-6 text-center border-slate-800 bg-slate-900">
+            <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4">{t('insider.voted')} <span className="text-white">{voteCount}/{totalVoters}</span></p>
+            <GiantButton
+              color="rose"
               onClick={handleVoteEnd}
               disabled={voteCount === 0}
-              className="btn btn-primary py-3 px-6 text-[14px]"
+              className="w-full"
             >
               {t('quiz.viewResults')}
-            </button>
-          </div>
+            </GiantButton>
+          </NeonCard>
         )}
       </div>
     );
@@ -722,58 +732,64 @@ const TwentyQuestions = () => {
     const topVoted = gameData.topVoted || '';
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4 h-full pb-24">
         {renderErrorToast()}
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-          <span className="text-5xl">{caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}</span>
-          <h3 className="font-display font-bold text-[20px] text-olive-800 mt-2">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center mt-4">
+          <span className={`text-6xl drop-shadow-[0_0_20px_rgba(${caughtInsider ? '16,185,129' : wordGuessed ? '168,85,247' : '239,68,68'},0.5)]`}>
+            {caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}
+          </span>
+          <h3 className="font-black text-[24px] uppercase tracking-widest text-white mt-4 drop-shadow-md">
             {!wordGuessed ? t('taboo.timeUp') : caughtInsider ? t('insider.commonsWin') : t('insider.insiderWin')}
           </h3>
         </motion.div>
 
-        <div className="card p-5 text-center">
-          <p className="text-[10px] font-bold text-olive-400 uppercase tracking-widest mb-2">{t('insider.insiderWas', { name: '' }).trim()}</p>
-          <p className="font-display font-black text-[24px] text-purple-600">{insiderName}</p>
+        <NeonCard color="purple" className="p-6 text-center border-purple-500/30 bg-purple-950/20 mt-2">
+          <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3">{t('insider.insiderWas', { name: '' }).trim()}</p>
+          <p className="font-black text-[32px] text-white drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] leading-tight">{insiderName}</p>
           {wordGuessed && topVoted && (
-            <p className="text-[12px] text-olive-400 mt-2">
-              {t('spyfall.spyGuessed').split(' ')[0] === 'สายลับ' ? 'โดนโหวตมากสุด' : 'Top Voted'}: <span className="font-bold">{topVoted}</span>
-              {caughtInsider ? ' ✅' : ' ❌'}
-            </p>
+            <div className="mt-4 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+              <p className="text-[11px] font-bold text-slate-400">
+                {t('spyfall.spyGuessed').split(' ')[0] === 'สายลับ' ? 'โดนโหวตมากสุด' : 'Top Voted'}: <span className="font-black text-slate-200">{topVoted}</span>
+                {caughtInsider ? ' ✅' : ' ❌'}
+              </p>
+            </div>
           )}
+        </NeonCard>
+
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-3xl text-center">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('insider.secretWord')}</p>
+          <p className="font-black text-[24px] text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">{secretWord}</p>
+          <p className="text-[11px] font-bold text-slate-500 mt-1">{category}</p>
         </div>
 
-        <div className="card p-4 text-center">
-          <p className="text-[10px] font-bold text-olive-400 mb-1">{t('insider.secretWord')}</p>
-          <p className="font-display font-black text-[22px] text-olive-800">{secretWord}</p>
-          <p className="text-[11px] text-olive-400">{category}</p>
-        </div>
-
-        <div className="card p-4">
-          <h3 className="font-bold text-[12px] text-olive-600 mb-2.5">📊 {t('taboo.currentScores')}</h3>
-          <div className="space-y-1.5">
+        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl">
+          <h3 className="font-black text-[10px] text-slate-500 uppercase tracking-widest mb-3 text-center">📊 {t('taboo.currentScores')}</h3>
+          <div className="space-y-2">
             {sortedScores.map(([name, score], idx) => (
-              <div key={name} className="flex items-center gap-2.5 p-2 rounded-xl bg-olive-50/60">
-                <span className="text-[11px] font-black text-olive-400 w-4">{idx + 1}</span>
-                <span className="flex-1 font-bold text-[13px] text-olive-700">
+              <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-[11px] font-black text-slate-500 w-4">{idx + 1}</span>
+                <span className="flex-1 font-black text-[13px] text-slate-300 uppercase tracking-widest flex items-center gap-2">
                   {name}
-                  {name === insiderName && <span className="ml-1 text-[9px] text-purple-500 bg-purple-50 px-1.5 py-0.5 rounded">Insider</span>}
+                  {name === insiderName && <span className="text-[8px] text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md">Insider</span>}
                 </span>
-                <span className="font-black text-[14px] text-sage-600">{score as number}</span>
+                <span className="font-black text-[16px] text-emerald-400">{score as number}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {isHost ? (
-          <button onClick={handleNextRound} className="btn btn-primary w-full py-3.5 text-[15px]">
-            {roundNumber >= nonHostPlayers.length ? t('taboo.viewResults') : t('taboo.nextRound')}
-          </button>
-        ) : (
-          <div className="flex-center gap-2 text-olive-400 py-2">
-            <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[12px] font-semibold">{t('insider.waitingHost')}</span>
-          </div>
-        )}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
+          {isHost ? (
+            <GiantButton color="emerald" onClick={handleNextRound} className="w-full">
+              {roundNumber >= nonHostPlayers.length ? t('taboo.viewResults') : t('taboo.nextRound')}
+            </GiantButton>
+          ) : (
+            <div className="flex-center gap-3 py-3">
+              <div className="w-5 h-5 border-2 border-slate-800 border-t-emerald-500 rounded-full animate-spin" />
+              <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">{t('insider.waitingHost')}</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -784,65 +800,70 @@ const TwentyQuestions = () => {
   if (phase === 'finished') {
     const topPlayer = sortedScores[0];
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4 pb-24 h-full">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className="text-center">
-          <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }} className="text-5xl mb-2">
+        
+        <div className="text-center mt-6">
+          <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }} className="text-6xl mb-4 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">
             🏆
           </motion.div>
-          <h2 className="font-display font-bold text-[22px] text-olive-800">{t('quiz.finished')}</h2>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-white drop-shadow-md">{t('quiz.finished')}</h2>
         </div>
 
         {topPlayer && (
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-center">
-            <Crown size={22} className="text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-[14px] text-olive-600 mb-0.5">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
-            <p className="font-display font-black text-[20px] text-olive-800">{topPlayer[0]}</p>
-            <p className="text-[15px] font-bold text-amber-600 mt-1">{topPlayer[1]} {t('taboo.pointsGuesser').split(' ')[1]}</p>
-          </motion.div>
+          <NeonCard color="amber" className="p-8 text-center border-amber-500/50 bg-amber-950/20 shadow-[0_0_30px_rgba(245,158,11,0.15)] mt-4">
+            <Crown size={32} className="text-amber-400 mx-auto mb-4 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+            <p className="font-black text-[10px] text-amber-500 uppercase tracking-widest mb-2">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
+            <p className="font-black text-[32px] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] leading-tight">{topPlayer[0]}</p>
+            <p className="text-[16px] font-black text-amber-400 mt-2">{topPlayer[1]} <span className="text-[10px] text-amber-500/70">{t('taboo.pointsGuesser').split(' ')[1]}</span></p>
+          </NeonCard>
         )}
 
-        <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('taboo.totalScores')}</h3>
+        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl mt-4">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">{t('taboo.totalScores')}</h3>
           <div className="space-y-2">
             {sortedScores.map(([name, score], idx) => (
-              <div key={name} className={`flex-between p-3 rounded-xl border-2 ${
-                idx === 0 ? 'bg-amber-50 border-amber-200' : 'bg-olive-50 border-olive-100'
+              <div key={name} className={`flex justify-between items-center p-4 rounded-2xl border ${
+                idx === 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-900 border-slate-800'
               }`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}</span>
-                  <span className="font-bold text-[14px] text-olive-700">{name}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl drop-shadow-md">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : <span className="text-slate-600 text-sm font-black w-8 text-center inline-block">#{idx + 1}</span>}</span>
+                  <span className={`font-black text-[14px] uppercase tracking-widest ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
                 </div>
-                <span className="font-bold text-[14px] text-sage-600">{score as number}</span>
+                <span className={`font-black text-[18px] ${idx === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{score as number}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {isHost ? (
-          <div className="space-y-2">
-            <button onClick={handlePlayAgain} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> {t('taboo.playAgain')}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
+          {isHost ? (
+            <>
+              <GiantButton color="emerald" className="flex-1" onClick={handlePlayAgain}>
+                <RotateCcw size={18} className="mr-2 inline-block mb-0.5" />
+                {t('taboo.playAgain')}
+              </GiantButton>
+              <button className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all hover:border-slate-500" onClick={handleBackToLobby}>
+                <LogOut size={16} className="mr-2 inline-block mb-0.5" />
+                {t('quiz.backToLobby')}
+              </button>
+            </>
+          ) : (
+            <button className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20" onClick={requestLeave}>
+              <LogOut size={16} /> {t('taboo.leaveRoom')}
             </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
-              <LogOut size={14} /> {t('quiz.backToLobby')}
-            </button>
-          </div>
-        ) : (
-          <button onClick={requestLeave} className="btn btn-outline w-full py-3.5 text-[14px]">
-            <LogOut size={15} /> {t('taboo.leaveRoom')}
-          </button>
-        )}
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-center flex-1 flex-col gap-3">
+    <div className="flex-center flex-1 flex-col gap-4 bg-slate-950">
       {renderErrorToast()}
-      <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-      <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
+      <div className="w-10 h-10 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+      <p className="text-slate-500 text-[11px] font-black uppercase tracking-widest animate-pulse">{t('common.loading')}</p>
     </div>
   );
 };

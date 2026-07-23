@@ -9,6 +9,9 @@ import { createDeck, shuffleDeck, calculatePokDeng } from './logic/cards';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
+import { SwipeableHand } from '../components/SwipeableHand';
 
 const PokDeng: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
@@ -162,49 +165,61 @@ const PokDeng: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-center flex-col gap-lg flex-1 text-center p-md animate-fade-in">
+      <div className="flex-center flex-col gap-6 flex-1 text-center p-4 animate-fade-in bg-slate-950 text-slate-200">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         {showSettings && isHost && (
-          <div className="fixed inset-0 z-50 flex-center p-6 bg-stone-900/60 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
-            <div className="card p-6 w-full max-w-[320px] bg-white flex flex-col gap-4 text-left" onClick={e => e.stopPropagation()}>
-              <h3 className="font-bold text-lg text-stone-800">⚙️ {t('pokdeng.settings') || 'ตั้งค่ากติกา'}</h3>
-              <label className="flex flex-col gap-1">
-                <span className="font-bold text-sm">{t('pokdeng.startingChips') || 'ชิปเริ่มต้น'}</span>
-                <input type="number" value={localSettings.startingChips} onChange={(e) => setLocalSettings({...localSettings, startingChips: Number(e.target.value)})} className="input py-2 px-3 border border-stone-300 rounded-lg font-bold" />
+          <div className="fixed inset-0 z-50 flex-center p-6 bg-slate-950/80 backdrop-blur-sm" onClick={() => setShowSettings(false)}>
+            <div className="p-6 w-full max-w-[320px] bg-slate-900 border border-slate-700 rounded-3xl flex flex-col gap-4 text-left shadow-[0_0_30px_rgba(0,0,0,0.8)]" onClick={e => e.stopPropagation()}>
+              <h3 className="font-black text-lg text-slate-200 tracking-widest uppercase">⚙️ ตั้งค่ากติกา</h3>
+              <label className="flex flex-col gap-2 mt-2">
+                <span className="font-bold text-xs text-slate-400 uppercase tracking-widest">ชิปเริ่มต้น</span>
+                <input type="number" value={localSettings.startingChips} onChange={(e) => setLocalSettings({...localSettings, startingChips: Number(e.target.value)})} className="py-3 px-4 bg-slate-800 border border-slate-700 rounded-xl font-bold text-white focus:border-amber-500 focus:outline-none transition-colors" />
               </label>
-              <button className="btn btn-primary mt-4 py-3 font-bold" onClick={() => setShowSettings(false)}>{t('common.save') || 'บันทึกการตั้งค่า'}</button>
+              <GiantButton color="amber" onClick={() => setShowSettings(false)} className="mt-4">
+                บันทึกการตั้งค่า
+              </GiantButton>
             </div>
           </div>
         )}
-        <div className="text-6xl animate-bounce-soft">💰</div>
+        <div className="text-6xl animate-bounce-soft drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">💰</div>
         <div>
-          <h2 className="font-display font-bold text-[24px] text-stone-800 mb-1">{t('pokdeng.title') || 'ป๊อกเด้ง'}</h2>
-          <p className="text-stone-400 text-sm">{t('pokdeng.description') || 'ป๊อก 8 ป๊อก 9 กินรอบวง! เกมไพ่ยอดฮิตของชาวไทย'}</p>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mb-2 drop-shadow-md">ป๊อก<span className="text-amber-500">เด้ง</span></h2>
+          <p className="text-slate-400 text-xs font-bold">ป๊อก 8 ป๊อก 9 กินรอบวง! เกมไพ่ยอดฮิตของชาวไทย</p>
         </div>
         {isHost ? (
-          <div className="flex flex-col gap-3 w-full max-w-xs">
-            <button onClick={startGame} className="btn btn-primary py-4 rounded-3xl text-lg shadow-lg">
-                {t('pokdeng.startGame') || 'เริ่มแจกไพ่!'}
-            </button>
-            <button onClick={() => setShowSettings(true)} className="btn btn-outline py-3 text-sm font-bold border-stone-200">
-                {t('pokdeng.settings') || 'ตั้งค่ากติกา'}
+          <div className="flex flex-col gap-3 w-full max-w-xs mt-8">
+            <GiantButton color="amber" onClick={startGame}>
+                เริ่มแจกไพ่!
+            </GiantButton>
+            <button onClick={() => setShowSettings(true)} className="py-3 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                ⚙️ ตั้งค่ากติกา
             </button>
           </div>
         ) : (
-          <p className="text-stone-400 font-bold animate-pulse">{t('pokdeng.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs mt-8 animate-pulse">รอ Host เริ่มเกม...</p>
         )}
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
+    <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full bg-slate-950 text-slate-200">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
+      {/* Header Info */}
+      <div className="px-4 py-2 flex justify-between items-center mb-2">
+         <h2 className="text-[14px] font-black uppercase tracking-widest text-slate-400">
+          ป๊อก<span className="text-amber-500">เด้ง</span>
+        </h2>
+        <button onClick={requestLeave} className="text-[10px] font-black uppercase tracking-widest text-red-500 px-3 py-1.5 bg-red-500/10 rounded-lg hover:bg-red-500/20 transition-all">
+          ออก
+        </button>
+      </div>
+
       {/* Players List */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-24 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto space-y-4 pb-32 hide-scrollbar px-2">
         {Object.entries(playersData).map(([name, data]: [string, any]) => {
           const isMe = name === userNickname;
           const isDealer = name === roomData.host;
@@ -213,86 +228,96 @@ const PokDeng: React.FC = () => {
           const showCards = isMe || phase === 'result' || (phase === 'dealer_action' && isDealer);
 
           return (
-            <div key={name} className={`card p-4 mx-1 transition-all ${isDealer ? 'bg-stone-50 border-stone-200 ring-2 ring-stone-100' : 'border-stone-50'}`}>
-              <div className="flex-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-xl flex-center text-sm shadow-sm ${isDealer ? 'bg-amber-100' : 'bg-stone-100'}`}>
+            <NeonCard key={name} color={isDealer ? 'amber' : 'slate'} className={`p-4 mx-2 transition-all ${isDealer ? 'bg-amber-900/20 border-amber-500/50' : 'bg-slate-900/50 border-slate-800'}`}>
+              <div className="flex-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex-center text-lg shadow-sm border ${isDealer ? 'bg-amber-500/20 border-amber-500/50' : 'bg-slate-800 border-slate-700'}`}>
                     {isDealer ? '🏦' : (roomData.players[name]?.avatar || '👤')}
                   </div>
                   <div className="flex flex-col">
-                    <span className={`font-bold text-[13px] ${isMe ? 'text-amber-600' : 'text-stone-700'}`}>
-                        {name} {isDealer ? `(${t('pokdeng.dealer') || 'เจ้ามือ'})` : ''}
+                    <span className={`font-bold text-[13px] ${isMe ? 'text-emerald-400' : 'text-slate-300'}`}>
+                        {name} {isDealer ? <span className="text-[10px] text-amber-500 ml-1 uppercase tracking-widest">(เจ้ามือ)</span> : ''}
                     </span>
-                    <span className="text-[10px] font-black text-stone-400">{data.chips} 🪙</span>
+                    <span className="text-[11px] font-black text-amber-500">{data.chips} 🪙</span>
                   </div>
                 </div>
                 {phase === 'result' && (
                     <div className="text-right flex flex-col">
-                        {data.isPok && <span className="text-[10px] font-black text-red-500 uppercase tracking-tighter">POK {stats.weight}!</span>}
-                        <span className={`text-lg font-black ${stats.weight >= 8 ? 'text-red-500' : 'text-stone-700'}`}>
-                            {stats.weight} {t('pokdeng.points') || 'แต้ม'} {stats.deng > 1 ? `${stats.deng} ${t('pokdeng.deng') || 'เด้ง'}` : ''}
+                        {data.isPok && <span className="text-[10px] font-black text-red-500 uppercase tracking-widest drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]">POK {stats.weight}!</span>}
+                        <span className={`text-lg font-black ${stats.weight >= 8 ? 'text-red-500' : 'text-slate-200'}`}>
+                            {stats.weight} แต้ม {stats.deng > 1 ? <span className="text-amber-500 text-sm">{stats.deng} เด้ง</span> : ''}
                         </span>
                         {data.lastResult !== undefined && (
-                            <span className={`text-[11px] font-black ${data.lastResult > 0 ? 'text-green-500' : data.lastResult < 0 ? 'text-red-400' : 'text-stone-400'}`}>
+                            <span className={`text-[12px] font-black ${data.lastResult > 0 ? 'text-emerald-400' : data.lastResult < 0 ? 'text-red-500' : 'text-slate-500'}`}>
                                 {data.lastResult > 0 ? `+${data.lastResult}` : data.lastResult}
                             </span>
                         )}
                     </div>
                 )}
                 {phase === 'playing' && !isDealer && (
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${isStanding ? 'bg-stone-200 text-stone-500' : 'bg-amber-100 text-amber-600 animate-pulse'}`}>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest border ${isStanding ? 'bg-slate-800/50 text-slate-500 border-slate-700' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.3)]'}`}>
                         {isStanding ? 'READY' : 'PLAYING'}
                     </span>
                 )}
               </div>
 
-              <div className="flex gap-[-10px] justify-center sm:justify-start">
-                {data.hand.map((card: any, i: number) => (
-                  <div key={i} className={i > 0 ? '-ml-12' : ''}>
-                    <PlayingCard card={card} hidden={!showCards} size="sm" />
-                  </div>
-                ))}
-                {data.hand.length < 3 && isMe && phase === 'playing' && !data.isPok && !isDealer && !isStanding && (
-                  <button onClick={() => drawCard(name)} className="w-24 h-36 border-2 border-dashed border-stone-200 rounded-2xl ml-[-48px] bg-stone-50/50 flex-center flex-col gap-2 text-stone-300 hover:text-stone-400 hover:border-stone-300 transition-all">
-                    <span className="text-2xl">+</span>
-                    <span className="text-[10px] font-black">{t('pokdeng.draw') || 'จั่วเพิ่ม'}</span>
-                  </button>
-                )}
+              <div className="flex justify-center sm:justify-start -mt-6 -mb-6 relative z-10">
+                 <div className="w-full max-w-[200px] h-[120px] relative flex justify-center">
+                    <SwipeableHand 
+                      cards={showCards ? data.hand : data.hand.map(() => ({ value: '?', suit: '?' }))} 
+                      hidden={!showCards}
+                      fanAngle={15}
+                      cardClassName="scale-75"
+                    />
+                 </div>
+              </div>
+
+              {/* Draw Action (if playing, not pok, not stand, and is me) */}
+              <div className="flex justify-center mt-2 relative z-20">
+                  {data.hand.length < 3 && isMe && phase === 'playing' && !data.isPok && !isDealer && !isStanding && (
+                    <button onClick={() => drawCard(name)} className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 rounded-xl font-black uppercase tracking-widest text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)] active:scale-95 transition-all">
+                      <span className="text-lg leading-none">+</span> จั่วเพิ่ม
+                    </button>
+                  )}
               </div>
 
               {isMe && phase === 'playing' && !isStanding && !data.isPok && !isDealer && (
-                <button onClick={() => setStand(name)} className="btn btn-outline w-full py-3 mt-4 text-[13px] font-black border-stone-200 rounded-xl">
-                  {t('pokdeng.stand') || 'ไม่จั่ว (อยู่)'}
+                <button onClick={() => setStand(name)} className="w-full mt-4 py-3 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-400 rounded-xl active:scale-95 transition-all">
+                  ไม่จั่ว (อยู่)
                 </button>
               )}
-            </div>
+            </NeonCard>
           );
         })}
       </div>
 
       {/* Host Controls */}
-      <div className="absolute bottom-4 left-0 w-full px-4">
+      <div className="absolute bottom-4 left-0 w-full px-4 z-50">
         {isHost && phase === 'playing' && (
-            <button onClick={finishPhase} className="btn btn-primary w-full py-4 rounded-2xl shadow-xl">
-                {t('pokdeng.nextPhase') || 'เจ้ามือเล่นต่อ'}
-            </button>
+            <GiantButton color="amber" onClick={finishPhase} className="w-full shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                เจ้ามือเล่นต่อ
+            </GiantButton>
         )}
         {isHost && phase === 'dealer_action' && (
-            <div className="flex flex-col gap-3">
-                <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-100 text-center">
-                    <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-1">{t('pokdeng.dealerAction') || 'ตาเจ้ามือแล้ว!'}</p>
-                    <p className="text-sm font-bold text-amber-600">{t('pokdeng.dealerActionDesc') || 'เลือกว่าจะจั่วเพิ่มหรือวัดแต้มเลย'}</p>
+            <div className="flex flex-col gap-3 bg-slate-900 p-4 rounded-3xl border border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+                <div className="bg-amber-500/10 p-3 rounded-2xl border border-amber-500/30 text-center">
+                    <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mb-1 animate-pulse">ตาเจ้ามือแล้ว!</p>
+                    <p className="text-xs font-bold text-slate-300">เลือกว่าจะจั่วเพิ่มหรือวัดแต้มเลย</p>
                 </div>
                 <div className="flex gap-3">
-                    <button onClick={() => drawCard(userNickname!)} disabled={playersData[userNickname!].hand.length >= 3} className="btn btn-outline flex-1 py-4 text-[14px] bg-white rounded-2xl">{t('pokdeng.draw') || 'จั่วไพ่'}</button>
-                    <button onClick={finishPhase} className="btn btn-primary flex-1 py-4 text-[14px] rounded-2xl shadow-lg">{t('pokdeng.measure') || 'วัดแต้มทั้งหมด'}</button>
+                    <button onClick={() => drawCard(userNickname!)} disabled={playersData[userNickname!].hand.length >= 3} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest bg-slate-800 text-slate-300 rounded-xl border border-slate-700 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale">จั่วไพ่</button>
+                    <button onClick={finishPhase} className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest bg-amber-500 text-slate-900 rounded-xl border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.5)] active:scale-95 transition-all">วัดแต้มทั้งหมด</button>
                 </div>
             </div>
         )}
         {isHost && phase === 'result' && (
-            <div className="flex gap-3">
-                <button onClick={startGame} className="btn btn-primary flex-1 py-4 rounded-2xl shadow-lg">{t('common.playAgain') || 'เล่นรอบใหม่'}</button>
-                <button onClick={handleBackToLobby} className="btn btn-outline flex-1 py-4 rounded-2xl bg-white">{t('common.backToLobby') || 'Lobby'}</button>
+            <div className="flex gap-3 bg-slate-900 p-4 rounded-3xl border border-slate-800 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+                <GiantButton color="amber" onClick={startGame} className="flex-1">
+                    เล่นรอบใหม่
+                </GiantButton>
+                <button onClick={handleBackToLobby} className="flex-1 py-3 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-400 rounded-2xl active:scale-95 transition-all">
+                   กลับ Lobby
+                </button>
             </div>
         )}
       </div>

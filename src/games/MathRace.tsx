@@ -13,6 +13,8 @@ import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;
@@ -76,11 +78,11 @@ const MathRace = () => {
     if (!errorMsg) return null;
     return (
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-in fade-in slide-in-from-top-4">
-        <div className="bg-red-500 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center gap-3">
+        <div className="bg-red-600 text-white px-4 py-3 rounded-2xl shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-red-500 flex items-center gap-3">
           <div className="p-1 bg-white/20 rounded-lg">
             <LogOut size={18} className="rotate-90" />
           </div>
-          <p className="text-[14px] font-bold">{errorMsg}</p>
+          <p className="text-[14px] font-black uppercase tracking-widest">{errorMsg}</p>
         </div>
       </div>
     );
@@ -251,17 +253,24 @@ const MathRace = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex flex-col flex-1 gap-4">
+      <div className="flex flex-col flex-1 gap-4 bg-slate-950 text-slate-200">
         {renderErrorToast()}
-        <div className="card p-5 text-center">
-          <h2 className="font-display font-bold text-[17px] text-olive-800 mb-1">{t('mathrace.title')}</h2>
-          <p className="text-olive-400 text-[13px]">{t('mathrace.description')}</p>
+        <div className="text-center py-6">
+          <motion.div
+            className="text-8xl drop-shadow-[0_0_20px_rgba(168,85,247,0.5)] mb-4"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            🧮
+          </motion.div>
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-white mb-2 drop-shadow-md">{t('mathrace.title')}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed max-w-xs mx-auto">{t('mathrace.description')}</p>
         </div>
 
         {isHost && (
-          <div className="card p-4">
-            <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.difficulty')}</h3>
-            <div className="grid grid-cols-3 gap-2">
+          <NeonCard color="purple" className="p-4 mx-4 border-purple-500/30 bg-purple-900/10">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('mathrace.difficulty')}</h3>
+            <div className="flex gap-2">
               {[
                 { key: 'easy', label: t('mathrace.difficultyEasy') },
                 { key: 'medium', label: t('mathrace.difficultyMedium') },
@@ -270,27 +279,27 @@ const MathRace = () => {
                 <button
                   key={d.key}
                   onClick={() => setSelectedDifficulty(d.key)}
-                  className={`rounded-2xl p-3 flex flex-col items-center gap-1 border-2 transition-all active:scale-95 ${
+                  className={`flex-1 rounded-2xl py-3 flex flex-col items-center gap-1 border transition-all active:scale-95 ${
                     selectedDifficulty === d.key
-                      ? 'bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200 shadow-sm'
-                      : 'bg-white border-transparent'
+                      ? 'bg-purple-500/20 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                      : 'bg-slate-900 border-slate-700 opacity-60'
                   }`}
                 >
-                  <span className="font-bold text-[12px] text-olive-700">{d.label}</span>
+                  <span className={`font-black text-[12px] uppercase tracking-widest ${selectedDifficulty === d.key ? 'text-purple-400' : 'text-slate-500'}`}>{d.label}</span>
                 </button>
               ))}
             </div>
-          </div>
+          </NeonCard>
         )}
 
-        <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">
+        <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl mt-2">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3 text-center">
             {t('taboo.players')} ({players.length})
           </h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {players.map(p => (
-              <span key={p} className="px-3 py-1.5 rounded-xl bg-sage-50 border border-sage-100 text-[12px] font-bold text-olive-700">
-                {p === roomData.host && <Crown size={10} className="inline mr-1 text-amber-500" />}
+              <span key={p} className="px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-[11px] font-black uppercase tracking-widest text-slate-300">
+                {p === roomData.host && <Crown size={12} className="inline mr-1 text-amber-500 mb-0.5" />}
                 {p}
               </span>
             ))}
@@ -298,24 +307,26 @@ const MathRace = () => {
         </div>
 
         {isHost ? (
-          <div className="mt-auto pt-2">
-            <button
-              className="btn btn-primary w-full py-4 text-[16px]"
+          <div className="mt-auto px-4 pb-6 pt-2">
+            <GiantButton
+              color="purple"
+              className="w-full"
               onClick={handleStart}
               disabled={players.length < 2}
             >
-              <Play size={18} fill="currentColor" />
+              <Play size={18} fill="currentColor" className="mr-2 inline-block mb-1" />
               {t('mathrace.startGame')}
-            </button>
+            </GiantButton>
             {players.length < 2 && (
-              <p className="text-center text-[11px] font-bold text-warm-500 bg-warm-50 border-2 border-warm-100 p-2.5 rounded-xl mt-2.5">
+              <p className="text-center text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-950/50 border border-red-500/30 p-2.5 rounded-xl mt-3">
                 {t('taboo.minPlayers')}
               </p>
             )}
           </div>
         ) : (
-          <div className="card flex-center flex-col gap-3 p-6">
-            <p className="text-olive-400 text-[13px] font-semibold">{t('mathrace.waitingHost')}</p>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('mathrace.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -324,23 +335,23 @@ const MathRace = () => {
 
   if (phase === 'playing' && currentQ) {
     return (
-      <div className="flex flex-col flex-1 gap-4">
+      <div className="flex flex-col flex-1 gap-4 bg-slate-950 text-slate-200 px-2 py-4">
         {renderErrorToast()}
-        <div className="w-full h-2 bg-olive-100 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]">
           <motion.div
-            className={`h-full rounded-full ${timeLeft > 10 ? 'bg-sage-400' : timeLeft > 5 ? 'bg-amber-400' : 'bg-red-400'}`}
+            className={`h-full rounded-full ${timeLeft > 10 ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]' : timeLeft > 5 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]'}`}
             initial={{ width: '100%' }}
             animate={{ width: `${(timeLeft / QUESTION_TIME) * 100}%` }}
             transition={{ duration: 0.5, ease: 'linear' }}
           />
         </div>
 
-        <div className="flex-between">
-          <span className="text-[12px] font-bold text-olive-500">
+        <div className="flex items-center justify-between px-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
             {t('mathrace.questionNumber', { current: currentQuestion + 1, total: questions.length })}
           </span>
           <TimerDisplay timeLeft={timeLeft} size="sm" />
-          <span className="text-[11px] font-bold text-sage-500 bg-sage-50 px-2 py-1 rounded-lg">
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)]">
             {t('quiz.alreadyAnswered').split('!')[0]} {answeredCount}/{players.length}
           </span>
         </div>
@@ -349,19 +360,19 @@ const MathRace = () => {
           key={currentQuestion}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="card p-6 flex-center flex-col"
+          className="p-8 text-center bg-slate-900 border border-slate-700 rounded-3xl mx-2 shadow-[0_0_30px_rgba(0,0,0,0.5)] mt-4"
         >
-          <p className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">
+          <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-4">
             {difficulty === 'easy' ? t('mathrace.difficultyEasy') : difficulty === 'medium' ? t('mathrace.difficultyMedium') : t('mathrace.difficultyHard')}
           </p>
-          <p className="font-display font-black text-[28px] text-olive-800 text-center leading-tight">
+          <p className="font-black text-[56px] text-white leading-tight drop-shadow-lg font-mono tracking-tighter">
             {currentQ.question}
           </p>
         </motion.div>
 
         {!hasAnswered && !alreadyAnswered ? (
-          <div className="card p-4">
-            <div className="flex gap-2">
+          <div className="mx-2 mt-auto pb-4">
+            <div className="flex gap-2 p-2 bg-slate-900 border border-slate-700 rounded-2xl">
               <input
                 ref={inputRef}
                 type="number"
@@ -371,28 +382,29 @@ const MathRace = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('mathrace.yourAnswer')}
-                className="input-field flex-1 text-center text-[22px] font-bold"
+                className="flex-1 bg-transparent text-center text-[28px] font-black text-white focus:outline-none placeholder-slate-600 h-16 font-mono"
                 disabled={hasAnswered}
               />
-              <button
-                className="btn btn-primary px-5"
+              <GiantButton
+                color="purple"
+                className="w-16 h-16 flex-center !p-0 shrink-0"
                 onClick={handleSubmitAnswer}
                 disabled={!inputValue.trim()}
               >
-                <Send size={18} />
-              </button>
+                <Send size={24} />
+              </GiantButton>
             </div>
           </div>
         ) : (
-          <div className="card p-4 flex-center flex-col gap-2">
-            <p className="text-[13px] font-bold text-olive-600">
+          <div className="p-6 text-center w-full mx-auto bg-purple-500/10 border border-purple-500/30 rounded-3xl mt-auto mb-4">
+            <p className="text-[12px] font-black uppercase tracking-widest text-purple-400">
               {alreadyAnswered ? `${t('quiz.alreadyAnswered')}: ${myAnswer?.answer}` : t('quiz.alreadyAnswered')}
             </p>
           </div>
         )}
 
         {errorMsg && (
-          <p className="text-center text-[11px] font-bold text-red-500 bg-red-50 p-2 rounded-xl">{errorMsg}</p>
+          <p className="text-center text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-950/50 border border-red-500/30 p-2.5 rounded-xl mx-2">{errorMsg}</p>
         )}
       </div>
     );
@@ -401,20 +413,20 @@ const MathRace = () => {
   if (phase === 'results' && currentQ) {
     const roundAnswers: any = answers[currentQuestion] || {};
     return (
-      <div className="flex flex-col flex-1 gap-4">
+      <div className="flex flex-col flex-1 gap-4 bg-slate-950 text-slate-200 px-2 py-4">
         {renderErrorToast()}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card p-5 text-center"
+          className="p-8 text-center bg-slate-900 border border-slate-700 rounded-3xl mx-2 shadow-[0_0_30px_rgba(0,0,0,0.5)] mt-4"
         >
-          <p className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-1">{t('taboo.secretWordWas')}</p>
-          <p className="font-display font-black text-[32px] text-sage-600">{currentQ.answer}</p>
-          <p className="text-[13px] text-olive-500 mt-1">{currentQ.question}</p>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">{t('taboo.secretWordWas')}</p>
+          <p className="font-black text-[56px] text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.6)] font-mono">{currentQ.answer}</p>
+          <p className="text-[14px] font-black uppercase tracking-widest text-slate-400 mt-2 font-mono">{currentQ.question}</p>
         </motion.div>
 
-        <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('mathrace.results')}</h3>
+        <div className="p-4 mx-2 bg-slate-900/50 border border-slate-800 rounded-3xl mt-2">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">{t('mathrace.results')}</h3>
           <div className="space-y-2">
             {players.map(p => {
               const pAnswer = roundAnswers[p];
@@ -423,18 +435,18 @@ const MathRace = () => {
               return (
                 <div
                   key={p}
-                  className={`flex-between p-3 rounded-xl border-2 ${
-                    isCorrect ? 'bg-green-50 border-green-200' : pAnswer ? 'bg-red-50 border-red-200' : 'bg-olive-50 border-olive-100'
+                  className={`flex items-center justify-between p-3 rounded-xl border ${
+                    isCorrect ? 'bg-emerald-500/10 border-emerald-500/30' : pAnswer ? 'bg-red-500/10 border-red-500/30' : 'bg-slate-800 border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[13px] text-olive-700">{p}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`font-black text-[12px] uppercase tracking-widest ${isCorrect ? 'text-emerald-400' : pAnswer ? 'text-red-400' : 'text-slate-400'}`}>{p}</span>
                     {pAnswer && (
-                      <span className="text-[11px] text-olive-400">({pAnswer.answer})</span>
+                      <span className="text-[11px] font-black text-slate-500 font-mono bg-slate-900 px-2 py-1 rounded-md">({pAnswer.answer})</span>
                     )}
                   </div>
-                  <span className={`font-bold text-[13px] ${isCorrect ? 'text-green-600' : 'text-olive-400'}`}>
-                    +{pts} {t('taboo.pointsGuesser').split(' ')[1]}
+                  <span className={`font-black text-[14px] ${isCorrect ? 'text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'text-slate-500'}`}>
+                    +{pts}
                   </span>
                 </div>
               );
@@ -442,12 +454,12 @@ const MathRace = () => {
           </div>
         </div>
 
-        <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2">{t('taboo.currentScores')}</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="p-4 mx-2 bg-slate-900/50 border border-slate-800 rounded-3xl mt-2">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.currentScores')}</h3>
+          <div className="flex flex-wrap justify-center gap-2">
             {sortedScores.map(([name, score], i) => (
-              <span key={name} className={`px-3 py-1.5 rounded-xl text-[12px] font-bold ${
-                i === 0 ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-olive-50 border border-olive-100 text-olive-600'
+              <span key={name} className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest border ${
+                i === 0 ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-800 border-slate-700 text-slate-300'
               }`}>
                 {name}: {score as number}
               </span>
@@ -456,9 +468,11 @@ const MathRace = () => {
         </div>
 
         {isHost && (
-          <button className="btn btn-outline w-full py-3" onClick={advanceToNext}>
-            {currentQuestion + 1 >= questions.length ? t('taboo.viewResults') : t('mathrace.nextQuestion')}
-          </button>
+          <div className="mt-auto mx-2 pb-4 pt-4">
+            <GiantButton color="purple" className="w-full" onClick={advanceToNext}>
+              {currentQuestion + 1 >= questions.length ? t('taboo.viewResults') : t('mathrace.nextQuestion')}
+            </GiantButton>
+          </div>
         )}
       </div>
     );
@@ -467,53 +481,63 @@ const MathRace = () => {
   if (phase === 'finished') {
     const winner = sortedScores[0];
     return (
-      <div className="flex flex-col flex-1 gap-4">
+      <div className="flex flex-col flex-1 gap-4 bg-slate-950 text-slate-200 pb-24">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
+        
+        <div className="text-center mt-6">
+          <div className="text-7xl mb-2 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">🏆</div>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-white mt-2 drop-shadow-md">{t('common.finished') || 'จบเกม!'}</h2>
+        </div>
+
         {winner && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card p-6 text-center bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200"
+            className="p-6 text-center border-amber-500/50 bg-amber-900/20 mx-4 shadow-[0_0_30px_rgba(245,158,11,0.15)] rounded-3xl border"
           >
-            <Trophy size={36} className="text-amber-500 mx-auto mb-2" />
-            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
-            <p className="font-display font-black text-[22px] text-olive-800">{winner[0]}</p>
-            <p className="text-[15px] font-bold text-amber-600 mt-1">{winner[1] as number} {t('taboo.pointsGuesser').split(' ')[1]}</p>
+            <Crown size={32} className="text-amber-400 mx-auto mb-3 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+            <p className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest mb-1">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
+            <p className="font-black text-[24px] uppercase tracking-widest text-amber-400 drop-shadow-md">{winner[0]}</p>
+            <p className="text-[32px] font-black text-white drop-shadow-md mt-1">{winner[1] as number} <span className="text-[16px] text-slate-400">{t('taboo.pointsGuesser').split(' ')[1]}</span></p>
           </motion.div>
         )}
 
-        <div className="card p-4">
-          <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-3">{t('taboo.totalScores')}</h3>
-          <div className="space-y-2">
+        <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl backdrop-blur-sm mt-4">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">{t('taboo.totalScores')}</h3>
+          <div className="space-y-3">
             {sortedScores.map(([name, score], i) => (
               <div
                 key={name}
-                className={`flex-between p-3 rounded-xl border-2 ${
-                  i === 0 ? 'bg-amber-50 border-amber-200' : 'bg-olive-50 border-olive-100'
-                }`}
+                className="flex items-center gap-4 p-3 rounded-2xl bg-slate-900 border border-slate-800"
               >
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg flex-center text-[13px] font-black bg-white border border-olive-100">
+                <div className="flex items-center gap-4">
+                  <span className={`w-8 h-8 rounded-xl flex-center text-[12px] font-black shrink-0 ${i === 0 ? 'bg-amber-500/20 text-amber-500 border border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : i === 1 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/50' : i === 2 ? 'bg-orange-700/20 text-orange-400 border border-orange-700/50' : 'bg-slate-800 text-slate-500'}`}>
                     {i + 1}
                   </span>
-                  <span className="font-bold text-[14px] text-olive-700">{name}</span>
+                  <span className={`font-black text-[14px] uppercase tracking-widest ${i === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
                   {name === roomData.host && <Crown size={12} className="text-amber-500" />}
                 </div>
-                <span className="font-bold text-[14px] text-sage-600">{score as number} {t('taboo.pointsGuesser').split(' ')[1]}</span>
+                <span className={`font-black text-[16px] ml-auto ${i === 0 ? 'text-white' : 'text-slate-400'}`}>{score as number}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mt-auto pt-2 space-y-2">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
           {isHost ? (
-            <button className="btn btn-primary w-full py-4 text-[16px]" onClick={handleReplay}>
-              <RotateCcw size={18} />
-              {t('taboo.playAgain')}
-            </button>
+            <>
+              <GiantButton color="purple" className="flex-1" onClick={handleReplay}>
+                <RotateCcw size={18} className="mr-2 inline-block mb-0.5" />
+                {t('taboo.playAgain')}
+              </GiantButton>
+              <button className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all hover:border-slate-500" onClick={requestLeave}>
+                <LogOut size={16} className="mr-2 inline-block mb-0.5" />
+                {t('taboo.leaveRoom')}
+              </button>
+            </>
           ) : (
-            <button className="btn btn-outline w-full py-3.5 text-[14px]" onClick={requestLeave}>
+            <button className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20" onClick={requestLeave}>
               <LogOut size={16} />
               {t('taboo.leaveRoom')}
             </button>
@@ -524,10 +548,10 @@ const MathRace = () => {
   }
 
   return (
-    <div className="flex-center flex-1 flex-col gap-3">
+    <div className="flex-center flex-1 flex-col gap-4 bg-slate-950">
       {renderErrorToast()}
-      <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-      <p className="text-olive-400 text-[13px] font-semibold">{t('common.loading')}</p>
+      <div className="w-10 h-10 border-[4px] border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+      <p className="text-slate-500 text-[11px] font-black uppercase tracking-widest animate-pulse">{t('common.loading')}</p>
     </div>
   );
 };

@@ -9,6 +9,9 @@ import { createDeck, shuffleDeck, sortCardsSlaves, analyzePlay, validatePlay } f
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { recordWin } from '../components/Scoreboard';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
+import { LogOut, RotateCcw } from 'lucide-react';
 
 const Slaves: React.FC = () => {
   const { t } = useTranslation();
@@ -24,7 +27,7 @@ const Slaves: React.FC = () => {
   const renderErrorToast = () => {
     if (!errorMsg) return null;
     return (
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
         {errorMsg}
       </div>
     );
@@ -227,32 +230,36 @@ const Slaves: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in relative z-10 px-4">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        <div className="text-6xl animate-bounce-soft">👑</div>
-        <div className="text-center">
-          <h2 className="font-display font-bold text-[22px] text-olive-800 mb-1">{t('slaves.title') || 'Slave'}</h2>
-          <p className="text-olive-400 text-[13px]">{t('slaves.description') || 'ใครไพ่หมดมือคนแรกคือ King! ใครคนสุดท้ายคือ Slave'}</p>
-        </div>
-        {isHost ? (
-          <button onClick={startGame} className="btn btn-primary px-10 py-4 rounded-3xl text-lg shadow-lg">
-            {t('slaves.startGame') || 'เริ่มแจกไพ่!'}
-          </button>
-        ) : (
-          <p className="text-olive-400 font-bold animate-pulse">{t('slaves.waitingHost') || 'รอ Host เริ่มเกม...'}</p>
-        )}
+        
+        <NeonCard color="amber" className="p-8 flex flex-col items-center text-center max-w-sm w-full mx-auto">
+          <div className="text-6xl animate-pulse mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">👑</div>
+          <h2 className="font-display font-black text-2xl text-white mb-2 uppercase tracking-widest">{t('slaves.title') || 'Slave'}</h2>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed">{t('slaves.description') || 'ใครไพ่หมดมือคนแรกคือ King! ใครคนสุดท้ายคือ Slave'}</p>
+          
+          {isHost ? (
+            <GiantButton color="amber" onClick={startGame} className="w-full">
+              {t('slaves.startGame') || 'เริ่มแจกไพ่!'}
+            </GiantButton>
+          ) : (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold animate-pulse w-full">
+              {t('slaves.waitingHost') || 'รอ Host เริ่มเกม...'}
+            </div>
+          )}
+        </NeonCard>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full">
+    <div className="flex-1 flex flex-col py-2 animate-fade-in relative h-full z-10">
       {renderErrorToast()}
       {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
       {/* Table Area */}
-      <div className="flex-center flex-col gap-3 py-6 bg-olive-50/30 rounded-3xl mb-4 min-h-[160px] border-2 border-dashed border-olive-100">
+      <div className="flex flex-col items-center justify-center gap-3 py-6 bg-slate-900/60 rounded-3xl mb-4 min-h-[160px] border border-slate-700 shadow-inner mx-2">
         {table.cards && table.cards.length > 0 ? (
           <>
             <div className="flex gap-[-20px]">
@@ -262,47 +269,49 @@ const Slaves: React.FC = () => {
                 </div>
               ))}
             </div>
-            <p className="text-[11px] font-bold text-olive-400 uppercase tracking-widest">{t('slaves.playedBy', { name: table.playedBy })}</p>
+            <p className="text-[11px] font-black text-amber-400 uppercase tracking-widest px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/30">
+              {t('slaves.playedBy', { name: table.playedBy })}
+            </p>
           </>
         ) : (
-          <span className="text-olive-200 font-bold text-sm italic">{t('slaves.emptyTable') || 'โต๊ะว่าง'}</span>
+          <span className="text-slate-500 font-bold text-sm italic uppercase tracking-widest">{t('slaves.emptyTable') || 'โต๊ะว่าง'}</span>
         )}
       </div>
 
       {/* Players List (Status Only) */}
-      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
+      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar px-2">
         {playerNames.map(name => {
           const data = playersData[name];
           const isTurn = currentTurn === name;
           const isFinished = !data.hand || data.hand.length === 0;
           return (
-            <div key={name} className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border-2 transition-all shrink-0 min-w-[70px] ${isTurn ? 'bg-white border-sage-400 shadow-sm' : 'bg-white/50 border-olive-50'}`}>
+            <div key={name} className={`flex flex-col items-center gap-1.5 p-2 rounded-2xl border transition-all shrink-0 min-w-[70px] ${isTurn ? 'bg-amber-500/20 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-slate-900 border-slate-700 opacity-80'}`}>
               <div className="relative">
-                <div className={`w-8 h-8 rounded-xl flex-center text-sm shadow-sm ${isFinished ? 'bg-amber-100' : 'bg-olive-100'}`}>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shadow-sm ${isFinished ? 'bg-amber-500/20 border border-amber-500/30' : 'bg-slate-800 border border-slate-700'}`}>
                   {isFinished ? '🏆' : (roomData.players[name]?.avatar || '👤')}
                 </div>
-                {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-sage-500 rounded-full border-2 border-white animate-pulse" />}
+                {isTurn && <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full border border-slate-900 animate-pulse shadow-[0_0_8px_rgba(0,255,0,0.8)]" />}
               </div>
-              <span className={`text-[10px] font-bold truncate max-w-[60px] ${isTurn ? 'text-sage-700' : 'text-olive-400'}`}>{name}</span>
-              {data.isPass && <span className="text-[9px] font-black text-red-400 uppercase">PASS</span>}
-              {!isFinished && <span className="text-[9px] font-black text-olive-300">🎴 {data.hand?.length}</span>}
+              <span className={`text-[10px] font-bold truncate max-w-[60px] ${isTurn ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
+              {data.isPass && <span className="text-[9px] font-black text-red-500 uppercase">PASS</span>}
+              {!isFinished && <span className="text-[9px] font-black text-slate-400">🎴 {data.hand?.length}</span>}
             </div>
           );
         })}
       </div>
 
       {/* My Hand Area */}
-      <div className="mt-auto bg-white rounded-t-[40px] p-6 shadow-2xl border-t-2 border-olive-50 -mx-4 pb-8">
-        <div className="flex-between mb-4">
-            <span className="text-[12px] font-black text-olive-800 uppercase tracking-widest">{t('slaves.yourHand') || 'ไพ่ของคุณ'}</span>
-            <span className="text-[11px] font-bold text-olive-300">{playersData[userNickname]?.hand?.length} {t('common.cards') || 'ใบ'}</span>
+      <div className="mt-auto bg-slate-900/80 backdrop-blur-md rounded-t-[40px] p-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] border-t border-slate-700 pb-8 relative z-20">
+        <div className="flex justify-between items-center mb-4">
+            <span className="text-[12px] font-black text-amber-400 uppercase tracking-widest drop-shadow-md">{t('slaves.yourHand') || 'ไพ่ของคุณ'}</span>
+            <span className="text-[11px] font-bold text-slate-400">{playersData[userNickname]?.hand?.length} {t('common.cards') || 'ใบ'}</span>
         </div>
         
         <div className="flex flex-wrap gap-2 justify-center mb-8 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
           {(playersData[userNickname]?.hand || []).map((card: any) => {
             const isSelected = selectedCards.some(sc => sc.id === card.id);
             return (
-              <div key={card.id} onClick={() => toggleCardSelection(card)} className={`transition-transform active:scale-95 ${isSelected ? '-translate-y-4' : ''}`}>
+              <div key={card.id} onClick={() => toggleCardSelection(card)} className={`transition-transform active:scale-95 cursor-pointer ${isSelected ? '-translate-y-4 shadow-lg shadow-neon-green/30 rounded-lg' : ''}`}>
                 <PlayingCard card={card} size="sm" isSelected={isSelected} />
               </div>
             );
@@ -311,50 +320,62 @@ const Slaves: React.FC = () => {
 
         {currentTurn === userNickname && phase === 'playing' && (
           <div className="flex gap-3">
-            <button 
-              onClick={handlePass} 
-              className="btn btn-outline flex-1 py-4 text-[15px] rounded-2xl"
-            >
+            <GiantButton color="slate" onClick={handlePass} className="flex-1 py-3 text-sm">
               {t('slaves.pass') || 'ผ่าน'}
-            </button>
-            <button 
+            </GiantButton>
+            <GiantButton 
+              color="amber"
               onClick={handlePlayCards} 
               disabled={selectedCards.length === 0} 
-              className="btn btn-primary flex-1 py-4 text-[15px] rounded-2xl shadow-lg shadow-sage-200"
+              className="flex-1 py-3 text-sm shadow-[0_0_15px_rgba(245,158,11,0.3)]"
             >
               {t('slaves.play') || 'ลงไพ่'}
-            </button>
+            </GiantButton>
           </div>
         )}
       </div>
 
       {/* Result Modal */}
-      {phase === 'result' && (
-        <div className="fixed inset-0 z-50 flex-center p-6 bg-slate-900/60 backdrop-blur-sm">
-            <div className="card w-full max-w-sm p-6 text-center shadow-2xl">
-                <h3 className="text-2xl font-black text-olive-800 mb-6">{t('common.finished') || 'จบเกม!'}</h3>
-                <div className="space-y-3 mb-8">
-                    {ranks.map((name: string, i: number) => (
-                        <div key={name} className="flex-between p-3 rounded-2xl bg-olive-50 border border-olive-100">
-                            <div className="flex items-center gap-3">
-                                <span className="w-6 h-6 rounded-full bg-white flex-center text-xs font-black text-olive-400">{i+1}</span>
-                                <span className="font-bold text-olive-700">{name}</span>
-                            </div>
-                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
-                                {i === 0 ? 'KING' : i === ranks.length - 1 ? 'SLAVE' : 'CITIZEN'}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-                {isHost && (
-                    <div className="flex gap-3">
-                        <button onClick={startGame} className="btn btn-primary flex-1 py-3 text-[14px]">{t('common.playAgain') || 'เล่นอีกรอบ'}</button>
-                        <button onClick={handleBackToLobby} className="btn btn-outline flex-1 py-3 text-[14px]">{t('common.backToLobby') || 'Lobby'}</button>
-                    </div>
-                )}
-            </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {phase === 'result' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+          >
+            <NeonCard color="amber" className="w-full max-w-sm p-8 text-center flex flex-col items-center">
+              <h3 className="text-3xl font-black text-amber-400 mb-6 uppercase tracking-widest drop-shadow-md">{t('common.finished') || 'จบเกม!'}</h3>
+              <div className="space-y-3 mb-8 w-full">
+                  {ranks.map((name: string, i: number) => (
+                      <div key={name} className="flex justify-between items-center p-3 rounded-xl bg-slate-900/50 border border-slate-700 shadow-inner">
+                          <div className="flex items-center gap-3">
+                              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-sm ${i === 0 ? 'bg-amber-400 text-amber-900 shadow-amber-400/50' : 'bg-slate-800 text-slate-300 border border-slate-600'}`}>{i+1}</span>
+                              <span className="font-bold text-white">{name}</span>
+                          </div>
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border ${
+                            i === 0 ? 'text-amber-400 border-amber-500/30 bg-amber-500/10' : 
+                            i === ranks.length - 1 ? 'text-red-400 border-red-500/30 bg-red-500/10' : 
+                            'text-slate-400 border-slate-600 bg-slate-800'
+                          }`}>
+                              {i === 0 ? 'KING 👑' : i === ranks.length - 1 ? 'SLAVE ⛓️' : 'CITIZEN'}
+                          </span>
+                      </div>
+                  ))}
+              </div>
+              {isHost && (
+                  <div className="flex gap-3 w-full">
+                      <GiantButton color="amber" onClick={startGame} className="flex-1 py-3 text-sm">
+                        <RotateCcw size={16} className="inline mr-1" /> {t('common.playAgain') || 'เล่นอีกรอบ'}
+                      </GiantButton>
+                      <GiantButton color="slate" onClick={handleBackToLobby} className="flex-1 py-3 text-sm">
+                        <LogOut size={16} className="inline mr-1" /> {t('common.backToLobby') || 'Lobby'}
+                      </GiantButton>
+                  </div>
+              )}
+            </NeonCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -14,6 +14,8 @@ import { useGameTimer } from '../hooks/useGameTimer';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { useGame } from '../contexts/GameContext';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const ROUND_TIME = { easy: 60, medium: 60, hard: 60, funny: 90, random: 75, custom: 60 };
 const COLORS = ['#2f2a22', '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#ecf0f1'];
@@ -533,68 +535,72 @@ const Drawing: React.FC = () => {
 
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 bg-slate-950 text-slate-200">
         {renderErrorToast()}
-        <div className="text-6xl animate-bounce-soft">🎨</div>
+        <div className="text-6xl animate-bounce-soft drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">🎨</div>
         <div className="text-center">
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mb-1">วาดรูปทายคำ</h2>
-          <p className="text-olive-400 text-[13px]">คนวาด วาดรูป — คนเดา ทายให้ถูก!</p>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mb-1 drop-shadow-md">วาดรูป<span className="text-emerald-500">ทายคำ</span></h2>
+          <p className="text-slate-400 text-xs font-bold">คนวาด วาดรูป — คนเดา ทายให้ถูก!</p>
         </div>
-        <div className="card p-4 w-full max-w-xs text-center">
-          <p className="text-[12px] font-bold text-olive-500">{players.length} ผู้เล่น • {players.length} รอบ</p>
-          <p className="text-[11px] text-olive-400 mt-1">{ROUND_TIME[difficulty as keyof typeof ROUND_TIME] || 60} วินาที/รอบ</p>
-        </div>
+        <NeonCard color="emerald" className="p-4 w-full max-w-xs text-center border-emerald-500/30 bg-emerald-900/10">
+          <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest">{players.length} ผู้เล่น • {players.length} รอบ</p>
+          <p className="text-[11px] font-bold text-slate-400 mt-1">{ROUND_TIME[difficulty as keyof typeof ROUND_TIME] || 60} วินาที/รอบ</p>
+        </NeonCard>
         {isHost ? (
           <>
-            <div className="text-center w-full max-w-xs">
-              <p className="text-[12px] font-bold text-olive-500 mb-2">เลือกระดับความยาก</p>
+            <div className="text-center w-full max-w-xs mt-4">
+              <p className="text-[11px] font-black text-slate-500 mb-3 uppercase tracking-widest">เลือกระดับความยาก</p>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'easy', label: 'ง่าย', icon: '🟢', bg: 'bg-green-50 border-green-200' },
-                  { id: 'medium', label: 'กลาง', icon: '🟡', bg: 'bg-amber-50 border-amber-200' },
-                  { id: 'hard', label: 'ยาก', icon: '🔴', bg: 'bg-red-50 border-red-200' },
-                  { id: 'funny', label: 'ฮาๆ', icon: '🤪', bg: 'bg-pink-50 border-pink-200' },
-                  { id: 'random', label: 'สุ่ม', icon: '🎲', bg: 'bg-blue-50 border-blue-200' },
-                  { id: 'custom', label: 'กำหนดเอง', icon: '✏️', bg: 'bg-purple-50 border-purple-200' },
-                ].map(d => (
+                  { id: 'easy', label: 'ง่าย', icon: '🟢', color: 'emerald' },
+                  { id: 'medium', label: 'กลาง', icon: '🟡', color: 'amber' },
+                  { id: 'hard', label: 'ยาก', icon: '🔴', color: 'red' },
+                  { id: 'funny', label: 'ฮาๆ', icon: '🤪', color: 'fuchsia' },
+                  { id: 'random', label: 'สุ่ม', icon: '🎲', color: 'blue' },
+                  { id: 'custom', label: 'กำหนดเอง', icon: '✏️', color: 'purple' },
+                ].map(d => {
+                  const colorMap: Record<string, { active: string; text: string }> = {
+                    emerald: { active: 'bg-emerald-500/20 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]', text: 'text-emerald-400' },
+                    amber: { active: 'bg-amber-500/20 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]', text: 'text-amber-400' },
+                    red: { active: 'bg-red-500/20 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]', text: 'text-red-400' },
+                    fuchsia: { active: 'bg-fuchsia-500/20 border-fuchsia-500 shadow-[0_0_15px_rgba(217,70,239,0.3)]', text: 'text-fuchsia-400' },
+                    blue: { active: 'bg-blue-500/20 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]', text: 'text-blue-400' },
+                    purple: { active: 'bg-purple-500/20 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]', text: 'text-purple-400' },
+                  };
+                  const colors = colorMap[d.color] || colorMap.blue;
+                  return (
                   <button
                     key={d.id}
                     onClick={() => setDifficulty(d.id)}
-                    className={`p-3 rounded-2xl border-2 text-center transition-transform active:scale-95 ${
-                      difficulty === d.id ? d.bg + ' shadow-sm' : 'bg-white border-transparent'
+                    className={`p-3 rounded-2xl border transition-all active:scale-95 ${
+                      difficulty === d.id ? colors.active : 'bg-slate-900 border-slate-700 hover:border-slate-500'
                     }`}
                   >
-                    <span className="text-2xl block">{d.icon}</span>
-                    <span className="font-bold text-[11px] text-olive-700">{d.label}</span>
+                    <span className="text-2xl block mb-1 drop-shadow-sm">{d.icon}</span>
+                    <span className={`font-black text-[10px] tracking-wide uppercase ${difficulty === d.id ? colors.text : 'text-slate-400'}`}>{d.label}</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {difficulty === 'custom' && (
-              <div className="card p-3 w-full max-w-xs text-center">
-                <p className="text-[11px] font-bold text-purple-600">
+              <div className="p-3 w-full max-w-xs text-center border border-purple-500/30 rounded-2xl bg-purple-900/10 mt-2">
+                <p className="text-[11px] font-black text-purple-400 uppercase tracking-widest">
                   ✏️ คนวาดแต่ละรอบจะพิมพ์คำเอง
                 </p>
               </div>
             )}
 
-            <button
-              onClick={handleStartGame}
-              className="btn btn-primary py-3.5 px-8 text-[15px]"
-              disabled={players.length < 2}
-            >
+            <GiantButton color="emerald" onClick={handleStartGame} disabled={players.length < 2} className="mt-6 px-10">
               🎨 เริ่มเกม!
-            </button>
+            </GiantButton>
           </>
         ) : (
-          <div className="flex items-center gap-2 text-olive-400">
-            <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft"></span>
-            <span className="text-[13px] font-semibold">รอ Host เริ่มเกม...</span>
-          </div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs mt-8 animate-pulse">รอ Host เริ่มเกม...</p>
         )}
         {players.length < 2 && isHost && (
-          <p className="text-center text-[11px] font-bold text-warm-500">ต้องมีอย่างน้อย 2 คน</p>
+          <p className="text-center text-[10px] font-black text-red-500 uppercase tracking-widest mt-2 drop-shadow-[0_0_5px_rgba(239,68,68,0.5)]">ต้องมีอย่างน้อย 2 คน</p>
         )}
       </div>
     );
@@ -604,12 +610,14 @@ const Drawing: React.FC = () => {
     if (isDrawer && showWordChoices) {
       if (gameData.difficulty === 'custom') {
         return (
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 bg-slate-950 text-slate-200">
             {renderErrorToast()}
-            <div className="text-4xl">✏️</div>
-            <h2 className="font-display font-bold text-[18px] text-olive-800">ถึงตาคุณวาด!</h2>
-            <p className="text-olive-400 text-[13px]">พิมพ์คำที่คุณอยากวาดให้เพื่อนทาย</p>
-            <div className="w-full max-w-xs space-y-3">
+            <div className="text-6xl drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">✏️</div>
+            <div className="text-center">
+              <h2 className="font-black text-[22px] uppercase tracking-widest text-emerald-400 mb-1 drop-shadow-md">ถึงตาคุณวาด!</h2>
+              <p className="text-slate-400 text-xs font-bold">พิมพ์คำที่คุณอยากวาดให้เพื่อนทาย</p>
+            </div>
+            <div className="w-full max-w-xs space-y-4 mt-4">
               <input
                 type="text"
                 value={customWordInput}
@@ -622,11 +630,12 @@ const Drawing: React.FC = () => {
                   }
                 }}
                 placeholder="พิมพ์คำ..."
-                className="input-field w-full text-center text-[16px] font-bold"
+                className="w-full py-4 px-6 bg-slate-900 border border-slate-700 rounded-2xl text-center text-[20px] font-black text-emerald-400 tracking-widest focus:border-emerald-500 focus:outline-none focus:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all placeholder:text-slate-600"
                 enterKeyHint="go"
                 autoFocus
               />
-              <button
+              <GiantButton
+                color="emerald"
                 onClick={() => {
                   if (customWordInput.trim()) {
                     handleChooseWord(customWordInput.trim());
@@ -634,10 +643,10 @@ const Drawing: React.FC = () => {
                   }
                 }}
                 disabled={!customWordInput.trim()}
-                className="btn btn-primary w-full py-3.5 text-[15px]"
+                className="w-full"
               >
                 🎨 เริ่มวาด!
-              </button>
+              </GiantButton>
             </div>
           </div>
         );
@@ -652,51 +661,54 @@ const Drawing: React.FC = () => {
         };
 
         return (
-          <div className="flex-1 flex flex-col items-center justify-center gap-5 py-8 animate-fade-in">
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950 text-slate-200">
             {renderErrorToast()}
-            <div className="text-4xl">🎨</div>
-            <h2 className="font-display font-bold text-[18px] text-olive-800">ถึงตาคุณวาด!</h2>
-            <div className="card p-5 w-full max-w-xs text-center">
-              <p className="text-[11px] font-bold text-olive-400 mb-2">คำที่ต้องวาดคือ</p>
-              <p className="text-[28px] font-black text-sage-600">{pendingWord}</p>
-            </div>
-            <p className="text-olive-400 text-[12px]">⏱ มีเวลา {roundTime} วินาที</p>
-            <div className="flex gap-3">
+            <div className="text-6xl drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">🎨</div>
+            <h2 className="font-black text-[22px] uppercase tracking-widest text-emerald-400 drop-shadow-md">ถึงตาคุณวาด!</h2>
+            <NeonCard color="emerald" className="p-6 w-full max-w-xs text-center border-emerald-500/30 bg-emerald-900/10">
+              <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">คำที่ต้องวาดคือ</p>
+              <p className="text-[32px] font-black text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">{pendingWord}</p>
+            </NeonCard>
+            <p className="text-slate-400 text-xs font-bold bg-slate-900 px-4 py-2 rounded-full border border-slate-800">⏱ มีเวลา <span className="text-amber-500">{roundTime}</span> วินาที</p>
+            <div className="flex gap-3 w-full max-w-xs mt-4">
               <button
                 onClick={handleReroll}
                 disabled={hasRerolled}
-                className={`btn btn-outline py-3 px-5 text-[13px] ${hasRerolled ? 'opacity-40' : ''}`}
+                className={`flex-1 py-4 text-[12px] font-black uppercase tracking-widest rounded-xl border border-slate-700 bg-slate-900 text-slate-300 active:scale-95 transition-all ${hasRerolled ? 'opacity-40 grayscale' : 'hover:border-slate-500'}`}
               >
                 🔄 สุ่มใหม่ {hasRerolled ? '(ใช้แล้ว)' : '(1 ครั้ง)'}
               </button>
-              <button
+              <GiantButton
+                color="emerald"
                 onClick={() => handleChooseWord(pendingWord)}
-                className="btn btn-primary py-3 px-5 text-[15px]"
+                className="flex-1"
               >
                 🎨 เริ่มวาด!
-              </button>
+              </GiantButton>
             </div>
           </div>
         );
       }
 
       return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 bg-slate-950 text-slate-200">
           {renderErrorToast()}
-          <div className="w-7 h-7 border-[3px] border-sage-200 border-t-sage-500 rounded-full animate-spin"></div>
-          <p className="font-bold text-[13px] text-olive-500">กำลังสุ่มคำ...</p>
+          <div className="w-8 h-8 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+          <p className="font-black text-[12px] uppercase tracking-widest text-emerald-500 animate-pulse">กำลังสุ่มคำ...</p>
         </div>
       );
     }
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8">
+      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 bg-slate-950 text-slate-200">
         {renderErrorToast()}
-        <span className="text-4xl animate-bounce-soft">🎨</span>
-        <p className="font-bold text-[15px] text-olive-700">{currentDrawer} กำลังเตรียมตัว...</p>
-        <div className="flex gap-1.5">
-          <span className="w-2.5 h-2.5 bg-sage-300 rounded-full animate-pulse-soft"></span>
-          <span className="w-2.5 h-2.5 bg-sage-400 rounded-full animate-pulse-soft" style={{animationDelay:'0.3s'}}></span>
-          <span className="w-2.5 h-2.5 bg-sage-300 rounded-full animate-pulse-soft" style={{animationDelay:'0.6s'}}></span>
+        <span className="text-6xl animate-bounce-soft drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]">🎨</span>
+        <p className="font-black text-[16px] text-emerald-400 drop-shadow-md">
+          <span className="text-white">{currentDrawer}</span> กำลังเตรียมตัว...
+        </p>
+        <div className="flex gap-2 mt-2">
+          <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
+          <span className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" style={{animationDelay:'0.3s'}}></span>
+          <span className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" style={{animationDelay:'0.6s'}}></span>
         </div>
       </div>
     );
@@ -708,37 +720,37 @@ const Drawing: React.FC = () => {
     const isLastRound = (round + 1) >= drawerOrder.length;
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-5 py-6 px-4 animate-fade-in bg-slate-950 text-slate-200">
         {renderErrorToast()}
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-          <span className="text-4xl">{correctGuessers.length > 0 ? '🎉' : '⏰'}</span>
-          <h3 className="font-display font-bold text-[18px] text-olive-800 mt-2">
+          <span className="text-6xl drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">{correctGuessers.length > 0 ? '🎉' : '⏰'}</span>
+          <h3 className="font-black text-[24px] uppercase tracking-widest text-slate-200 mt-3 drop-shadow-md">
             {correctGuessers.length > 0 ? 'ทายถูก!' : 'หมดเวลา!'}
           </h3>
         </motion.div>
 
-        <div className="card p-4 text-center bg-gradient-to-br from-sage-50 to-emerald-50 border-2 border-sage-200">
-          <p className="text-[10px] font-bold text-sage-500 uppercase tracking-widest mb-1">คำตอบคือ</p>
-          <p className="font-display font-black text-[26px] text-olive-800">{currentWord}</p>
-          <p className="text-[11px] text-olive-400 mt-1">วาดโดย {currentDrawer}</p>
-        </div>
+        <NeonCard color="amber" className="p-6 text-center bg-amber-900/10 border-amber-500/30">
+          <p className="text-[11px] font-black text-amber-500 uppercase tracking-widest mb-2 drop-shadow-sm">คำตอบคือ</p>
+          <p className="font-black text-[32px] text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">{currentWord}</p>
+          <p className="text-[12px] font-bold text-slate-400 mt-2">วาดโดย <span className="text-slate-200">{currentDrawer}</span></p>
+        </NeonCard>
 
-        <div className="card p-2 overflow-hidden">
+        <div className="p-2 bg-slate-900 rounded-[28px] border border-slate-700 shadow-xl overflow-hidden mx-auto w-full max-w-[320px]">
           <canvas
             ref={shareCanvasRef}
             width={300}
             height={300}
-            className="w-full rounded-xl"
+            className="w-full rounded-[20px]"
             style={{ aspectRatio: '1/1', background: '#fff' }}
           />
         </div>
 
         {correctGuessers.length > 0 && (
-          <div className="card p-3">
-            <p className="text-[11px] font-bold text-olive-500 mb-1.5">ทายถูก:</p>
-            <div className="flex flex-wrap gap-1.5">
+          <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800">
+            <p className="text-[11px] font-black text-emerald-500 uppercase tracking-widest mb-3">ทายถูก:</p>
+            <div className="flex flex-wrap gap-2">
               {correctGuessers.map(name => (
-                <span key={name} className="text-[11px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-lg">
+                <span key={name} className="text-[12px] font-bold bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/30">
                   ✅ {name}
                 </span>
               ))}
@@ -746,19 +758,16 @@ const Drawing: React.FC = () => {
           </div>
         )}
 
-        <button onClick={handleShare} className="btn btn-outline w-full py-3 text-[13px]">
-          <Share2 size={14} /> แชร์รูปวาด
+        <button onClick={handleShare} className="py-4 text-[13px] font-black uppercase tracking-widest border border-slate-700 bg-slate-900 text-slate-300 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:border-slate-500">
+          <Share2 size={16} /> แชร์รูปวาด
         </button>
 
         {isHost ? (
-          <button onClick={handleNextRound} className="btn btn-primary w-full py-3.5 text-[15px]">
+          <GiantButton color="emerald" onClick={handleNextRound} className="mt-2">
             {isLastRound ? '🏆 ดูผลลัพธ์' : '➡️ รอบถัดไป'}
-          </button>
+          </GiantButton>
         ) : (
-          <div className="flex-center gap-2 text-olive-400 py-2">
-            <span className="w-2 h-2 bg-sage-400 rounded-full animate-pulse-soft" />
-            <span className="text-[12px] font-semibold">รอ Host...</span>
-          </div>
+          <p className="text-slate-500 font-black uppercase tracking-widest text-xs mt-4 text-center animate-pulse">รอ Host...</p>
         )}
       </div>
     );
@@ -769,47 +778,47 @@ const Drawing: React.FC = () => {
     const winner = sortedScores[0];
 
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in">
+      <div className="flex-1 flex flex-col gap-5 py-6 px-4 animate-fade-in bg-slate-950 text-slate-200">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <div className="text-center">
-          <span className="text-5xl">🏆</span>
-          <h2 className="font-display font-bold text-[20px] text-olive-800 mt-2">จบเกม!</h2>
+          <span className="text-6xl drop-shadow-[0_0_20px_rgba(245,158,11,0.6)]">🏆</span>
+          <h2 className="font-black text-[28px] uppercase tracking-widest text-slate-200 mt-3 drop-shadow-md">จบเกม!</h2>
         </div>
         {winner && (
-          <div className="card p-5 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-center">
-            <Trophy size={24} className="text-amber-500 mx-auto mb-2" />
-            <p className="font-bold text-[16px] text-olive-800">{winner[0]}</p>
-            <p className="text-[22px] font-black text-amber-600">{winner[1] as number} คะแนน</p>
-          </div>
+          <NeonCard color="amber" className="p-6 text-center bg-amber-900/20 border-amber-500/50">
+            <Trophy size={32} className="text-amber-500 mx-auto mb-3 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]" />
+            <p className="font-black text-[22px] text-amber-400 drop-shadow-md">{winner[0]}</p>
+            <p className="text-[28px] font-black text-white mt-1">{winner[1] as number} <span className="text-lg text-amber-500">คะแนน</span></p>
+          </NeonCard>
         )}
-        <div className="card p-4">
-          <h3 className="font-bold text-[13px] text-olive-600 mb-3">คะแนนรวม</h3>
-          <div className="space-y-2">
+        <div className="p-5 bg-slate-900 rounded-3xl border border-slate-800 shadow-xl">
+          <h3 className="font-black text-[12px] text-slate-400 uppercase tracking-widest mb-4 text-center">คะแนนรวม</h3>
+          <div className="space-y-3">
             {sortedScores.map(([name, score], idx) => (
-              <div key={name} className="flex items-center gap-3 p-2.5 rounded-xl bg-olive-50/60">
-                <span className="w-7 h-7 rounded-full bg-sage-100 flex-center text-[12px] font-black text-sage-700">{idx + 1}</span>
-                <span className="flex-1 font-bold text-[14px] text-olive-700">{name}</span>
-                <span className="font-black text-[15px] text-sage-600">{score as number}</span>
+              <div key={name} className="flex items-center gap-4 p-3 rounded-2xl bg-slate-950 border border-slate-800">
+                <span className={`w-8 h-8 rounded-full flex-center text-[14px] font-black ${idx === 0 ? 'bg-amber-500 text-slate-900 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-slate-800 text-slate-400'}`}>{idx + 1}</span>
+                <span className={`flex-1 font-bold text-[16px] ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
+                <span className="font-black text-[18px] text-white">{score as number}</span>
               </div>
             ))}
           </div>
         </div>
         {isHost ? (
-          <div className="space-y-2">
-            <button onClick={handleStartGame} className="btn btn-primary w-full py-3.5 text-[15px]">
-              <RotateCcw size={16} /> เล่นอีกรอบ
-            </button>
-            <button onClick={handleBackToLobby} className="btn btn-outline w-full py-3 text-[13px]">
-              <LogOut size={14} /> กลับ Lobby
+          <div className="space-y-3 mt-4">
+            <GiantButton color="emerald" onClick={handleStartGame}>
+              <RotateCcw size={20} className="mr-2 inline-block" /> เล่นอีกรอบ
+            </GiantButton>
+            <button onClick={handleBackToLobby} className="w-full py-4 text-[13px] font-black uppercase tracking-widest border border-slate-700 bg-slate-900 text-slate-400 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2">
+              <LogOut size={16} /> กลับ Lobby
             </button>
           </div>
         ) : (
           <button
-            className="btn btn-outline w-full py-3.5 text-[14px]"
+            className="w-full py-4 text-[13px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all mt-6 flex items-center justify-center gap-2"
             onClick={requestLeave}
           >
-            <LogOut size={15} /> ออกจากห้อง
+            <LogOut size={16} /> ออกจากห้อง
           </button>
         )}
       </div>
@@ -817,64 +826,64 @@ const Drawing: React.FC = () => {
   }
 
   const timerPercent = (timeLeft / roundTime) * 100;
-  const timerColor = timeLeft > 30 ? 'bg-sage-400' : timeLeft > 10 ? 'bg-amber-400' : 'bg-red-400';
+  const timerColor = timeLeft > 30 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]' : timeLeft > 10 ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]';
   const hint = currentWord ? `${currentWord.charAt(0)}${'＿'.repeat(currentWord.length - 1)}` : '';
 
   return (
-    <div className="fixed inset-0 z-40 bg-white dark:bg-olive-900 flex flex-col" style={{ height: '100dvh' }}>
+    <div className="fixed inset-0 z-40 bg-slate-950 flex flex-col" style={{ height: '100dvh' }}>
       {renderErrorToast()}
-      <div className="flex items-center justify-between px-2 h-9 bg-olive-50 dark:bg-olive-800 border-b border-olive-100 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-olive-400 bg-white dark:bg-olive-700 px-1.5 py-0.5 rounded-full">
+      <div className="flex items-center justify-between px-3 h-12 bg-slate-900 border-b border-slate-800 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 rounded-lg">
             {round + 1}/{totalRounds}
           </span>
-          <span className="text-[9px] font-bold text-pink-500 bg-pink-50 px-1.5 py-0.5 rounded-full mr-2">
+          <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-lg mr-2 uppercase tracking-widest">
             {{ easy: 'ง่าย', medium: 'กลาง', hard: 'ยาก', funny: 'ฮาๆ', random: 'สุ่ม', custom: 'กำหนดเอง' }[gameData.difficulty as keyof typeof ROUND_TIME] || 'ง่าย'}
           </span>
           <TimerDisplay timeLeft={timeLeft} />
         </div>
-        <div className="flex items-center gap-1.5">
-          <Pencil size={10} className="text-olive-400" />
-          <span className="text-[11px] font-bold text-olive-500">
+        <div className="flex items-center gap-2">
+          <Pencil size={12} className="text-slate-500" />
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
             {isDrawer ? 'คุณวาด' : currentDrawer}
           </span>
           {isDrawer ? (
-            <span className="text-[10px] font-bold text-sage-600 bg-sage-100 px-1.5 py-0.5 rounded-full">
+            <span className="text-[11px] font-black text-emerald-900 bg-emerald-400 px-3 py-1 rounded-xl shadow-[0_0_10px_rgba(52,211,153,0.5)] ml-1">
               {currentWord}
             </span>
           ) : (
-            <span className="text-[22px] font-black text-olive-800 bg-olive-100 px-3 py-1 rounded-full tracking-wide">
+            <span className="text-[18px] font-black text-slate-200 bg-slate-800 px-3 py-1 rounded-xl tracking-[0.2em] border border-slate-700 ml-1">
               {hint}
             </span>
           )}
         </div>
       </div>
 
-      <div className="h-[3px] bg-olive-100 shrink-0">
+      <div className="h-[3px] bg-slate-800 shrink-0 relative overflow-hidden">
         <motion.div
-          className={`h-full ${timerColor}`}
+          className={`absolute top-0 left-0 bottom-0 ${timerColor}`}
           animate={{ width: `${timerPercent}%` }}
           transition={{ duration: 0.3 }}
         />
       </div>
 
-      <div ref={containerRef} className="relative flex-1 min-h-0 overflow-hidden">
+      <div ref={containerRef} className="relative flex-1 min-h-0 overflow-hidden bg-slate-950">
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full touch-none"
-          style={{ cursor: isDrawer ? 'crosshair' : 'default' }}
+          style={{ cursor: isDrawer ? 'crosshair' : 'default', backgroundColor: '#ffffff' }}
           onMouseDown={handleDrawStart}
           onMouseMove={handleDrawMove}
           onMouseUp={handleDrawEnd}
           onMouseLeave={handleDrawEnd}
         />
         {Object.keys(guesses).length > 0 && (
-          <div className="absolute bottom-1 left-1 right-1 flex flex-wrap gap-0.5 pointer-events-none max-h-[30px] overflow-hidden">
+          <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 pointer-events-none max-h-[40px] overflow-hidden justify-end">
             {Object.entries(guesses).map(([name, g]: any) => (
               <span
                 key={name}
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm ${
-                  g.correct ? 'bg-green-50/90 text-green-600 border border-green-200' : 'bg-white/80 text-olive-400 border border-olive-100'
+                className={`text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-md shadow-md ${
+                  g.correct ? 'bg-emerald-500/90 text-slate-900 font-black' : 'bg-slate-900/80 text-slate-300 border border-slate-700'
                 }`}
               >
                 {name}: {g.correct ? '✅' : g.text}
@@ -884,34 +893,34 @@ const Drawing: React.FC = () => {
         )}
       </div>
 
-      <div className="shrink-0 bg-white dark:bg-olive-900 border-t border-olive-100 px-2 py-1.5" style={{ paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="shrink-0 bg-slate-900 border-t border-slate-800 p-3 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-10 relative" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
         {isDrawer && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-0.5 flex-1 overflow-x-auto">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 flex-1 overflow-x-auto hide-scrollbar pb-1">
               {COLORS.map((c) => (
                 <button
                   key={c}
                   onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full shrink-0 border-2 transition-transform ${
-                    color === c ? 'border-sage-500 scale-110' : 'border-transparent'
+                  className={`w-8 h-8 rounded-full shrink-0 transition-all ${
+                    color === c ? 'border-[3px] border-emerald-400 scale-110 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'border-2 border-slate-800 opacity-80 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}
                 />
               ))}
             </div>
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1 bg-slate-800 p-1.5 rounded-2xl border border-slate-700">
               {BRUSH_SIZES.map((s) => (
                 <button
                   key={s}
                   onClick={() => setBrushSize(s)}
-                  className={`w-6 h-6 rounded-lg flex-center ${brushSize === s ? 'bg-sage-100 border-2 border-sage-300' : 'bg-olive-50'}`}
+                  className={`w-8 h-8 rounded-xl flex-center transition-colors ${brushSize === s ? 'bg-slate-700 border border-slate-600 shadow-inner' : 'hover:bg-slate-700/50'}`}
                 >
-                  <div className="rounded-full bg-olive-600" style={{ width: s + 1, height: s + 1 }} />
+                  <div className="rounded-full bg-slate-300" style={{ width: s + 2, height: s + 2 }} />
                 </button>
               ))}
             </div>
-            <button onClick={handleClear} className="w-6 h-6 rounded-lg bg-red-50 border-2 border-red-200 flex-center text-red-500 active:scale-90">
-              <Eraser size={11} />
+            <button onClick={handleClear} className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/30 flex-center text-red-500 active:scale-90 transition-all hover:bg-red-500/20">
+              <Eraser size={18} />
             </button>
           </div>
         )}
@@ -919,14 +928,14 @@ const Drawing: React.FC = () => {
         {!isDrawer && (
           <div className="flex items-center gap-2">
             {hasGuessedCorrectly ? (
-              <div className="flex-1 flex-center gap-2 py-1">
-                <span className="text-[12px] font-bold text-green-600">✅ ทายถูกแล้ว!</span>
+              <div className="flex-1 flex-center gap-2 py-2 bg-emerald-500/10 rounded-2xl border border-emerald-500/30">
+                <span className="text-[14px] font-black text-emerald-400 tracking-widest drop-shadow-sm">✅ ทายถูกแล้ว!</span>
               </div>
             ) : (
               <>
                 <input
                   type="text"
-                  className="input-field !min-h-[36px] !py-1.5 !px-3 !rounded-full !text-[13px] flex-1"
+                  className="w-full py-3 px-5 bg-slate-950 border border-slate-700 rounded-full text-[14px] font-bold text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
                   placeholder="พิมพ์คำตอบ..."
                   value={guess}
                   onChange={(e) => setGuess(e.target.value)}
@@ -937,9 +946,9 @@ const Drawing: React.FC = () => {
                 <button
                   onClick={handleGuess}
                   disabled={!guess.trim()}
-                  className="w-9 h-9 rounded-full bg-gradient-to-br from-sage-400 to-sage-600 text-white flex-center shrink-0 active:scale-90 transition-transform disabled:opacity-40"
+                  className="w-12 h-12 rounded-full bg-emerald-500 text-slate-900 flex-center shrink-0 active:scale-90 transition-transform disabled:opacity-40 disabled:grayscale shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                 >
-                  <Send size={14} />
+                  <Send size={18} className="ml-1" />
                 </button>
               </>
             )}

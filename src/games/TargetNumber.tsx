@@ -12,6 +12,8 @@ import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { feedback } from '../utils/feedback';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 
 const TURN_TIME = 30;
 
@@ -30,7 +32,7 @@ const TargetNumber = () => {
   const renderErrorToast = () => {
     if (!errorMsg) return null;
     return (
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-danger text-white px-lg py-sm rounded-2xl font-bold text-sm shadow-xl animate-fade-in">
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 border border-red-500 text-white px-4 py-2 rounded-2xl font-bold text-sm shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-fade-in">
         {errorMsg}
       </div>
     );
@@ -292,38 +294,43 @@ const TargetNumber = () => {
   // Waiting screen
   if (gameStatus === 'waiting') {
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in bg-slate-950 text-slate-200 py-4 px-2">
         {renderErrorToast()}
-        <div className="glass-panel p-xl text-center">
-          <div className="flex-center mb-md">
-            <div className="p-lg bg-primary/20 rounded-full text-primary shadow-lg shadow-primary/10">
-              <Target size={48} />
-            </div>
-          </div>
-          <h2 className="text-3xl font-black mb-sm">{t('target.title')}</h2>
-          <p className="text-secondary leading-relaxed">
+        <div className="text-center">
+          <motion.div
+            className="text-8xl drop-shadow-[0_0_20px_rgba(239,68,68,0.5)] mb-4 flex-center"
+            animate={{ rotate: [0, 5, -5, 0], scale: [1, 1.05, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
+            🎯
+          </motion.div>
+          <h2 className="font-black text-[32px] uppercase tracking-widest text-white mb-2 drop-shadow-md">{t('target.title')}</h2>
+          <p className="text-slate-400 text-[12px] font-bold leading-relaxed max-w-xs mx-auto">
             {t('target.description')}
           </p>
 
-          <div className="mt-lg p-md bg-glass-dark/30 rounded-xl border border-glass">
-            <h4 className="text-xs font-black text-secondary uppercase tracking-widest mb-sm">{t('spyfall.timerTitle')}</h4>
-            <div className="text-left text-sm text-secondary space-y-xs">
+          <NeonCard color="rose" className="mt-6 p-4 text-left border-rose-500/30 bg-rose-950/20 text-sm text-slate-300 mx-4">
+            <h4 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3 text-center">{t('spyfall.timerTitle')}</h4>
+            <div className="space-y-3 font-medium text-[11px] leading-relaxed">
               <p>🎯 {t('target.description').split(' ')[0] === 'ทาย' ? 'คนหนึ่งจะถูกสุ่มให้ตั้งตัวเลขลับ 1-100' : 'One player will be randomly selected to set a secret number 1-100'}</p>
               <p>💡 {t('target.description').split(' ')[0] === 'ทาย' ? 'ผู้เล่นอื่นจะเห็นช่วงใบ้ (±5 จากเป้า)' : 'Other players will see a hint range (±5 from target)'}</p>
               <p>🔢 {t('target.description').split(' ')[0] === 'ทาย' ? 'ผลัดกันนับ +1, +2, หรือ +3' : 'Take turns counting +1, +2, or +3'}</p>
               <p>💀 {t('target.description').split(' ')[0] === 'ทาย' ? 'ใครนับถึงตัวเลขเป้า...แพ้!' : 'Whoever counts to the target number... loses!'}</p>
             </div>
-          </div>
+          </NeonCard>
         </div>
 
         {isHost ? (
-          <button className="btn btn-primary w-full py-xl text-xl font-black" onClick={startGame}>
-            <Play size={24} fill="currentColor" />
-            {t('target.startGame')}
-          </button>
+          <div className="mt-6 px-4">
+            <GiantButton color="rose" onClick={startGame} className="w-full">
+              <Play size={20} fill="currentColor" className="mr-2 inline-block mb-1" />
+              {t('target.startGame')}
+            </GiantButton>
+          </div>
         ) : (
-          <div className="glass-panel p-md text-center border-primary/30">
-            <p className="animate-pulse text-primary font-bold">{t('target.waitingHost')}</p>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <div className="w-8 h-8 border-4 border-slate-800 border-t-rose-500 rounded-full animate-spin shadow-[0_0_15px_rgba(244,63,94,0.5)]" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('target.waitingHost')}</span>
           </div>
         )}
       </div>
@@ -333,27 +340,25 @@ const TargetNumber = () => {
   // Choosing target screen
   if (gameStatus === 'choosing_target') {
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in bg-slate-950 text-slate-200 py-4 px-2 h-full">
         {renderErrorToast()}
-        <div className="glass-panel p-xl text-center">
-          <div className="flex-center mb-md">
-            <div className="p-lg bg-warning/20 rounded-full text-warning shadow-lg shadow-warning/10">
-              <Target size={40} />
-            </div>
+        <div className="text-center h-full flex flex-col justify-center">
+          <div className="flex-center mb-6">
+            <div className="text-7xl drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">🎯</div>
           </div>
 
           {isTargetChooser ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="flex flex-col gap-lg"
+              className="flex flex-col gap-6"
             >
               <div>
-                <h2 className="text-2xl font-black mb-xs">{t('target.setTarget')}</h2>
-                <p className="text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกตัวเลขระหว่าง 1 ถึง 100 ผู้เล่นอื่นจะเห็นช่วง ±5 เท่านั้น' : 'Choose a number between 1 and 100. Others will only see ±5 range.'}</p>
+                <h2 className="text-[28px] font-black mb-2 uppercase tracking-widest text-amber-500 drop-shadow-md">{t('target.setTarget')}</h2>
+                <p className="text-slate-400 text-[11px] font-black uppercase tracking-widest leading-relaxed max-w-[280px] mx-auto">{t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกตัวเลขระหว่าง 1 ถึง 100 ผู้เล่นอื่นจะเห็นช่วง ±5 เท่านั้น' : 'Choose a number between 1 and 100. Others will only see ±5 range.'}</p>
               </div>
 
-              <div className="flex flex-col gap-md items-center">
+              <div className="flex flex-col gap-6 items-center">
                 <TimerDisplay timeLeft={timeLeft} />
                 <input
                   type="number"
@@ -362,25 +367,26 @@ const TargetNumber = () => {
                   value={selectedTarget}
                   onChange={(e) => setSelectedTarget(e.target.value)}
                   placeholder="1-100"
-                  className="input-field py-lg text-center text-2xl font-black w-48"
+                  className="bg-slate-900 border-2 border-amber-500/50 text-white rounded-3xl py-4 text-center text-4xl font-black w-48 focus:outline-none focus:border-amber-400 focus:shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all font-mono placeholder:text-slate-700"
                 />
-                <button
-                  className="btn btn-primary py-lg px-xl font-black text-lg"
+                <GiantButton
+                  color="amber"
+                  className="px-8 w-48"
                   onClick={handleSetTarget}
                   disabled={!selectedTarget || parseInt(selectedTarget) < 1 || parseInt(selectedTarget) > 100}
                 >
                   {t('target.confirmTarget')}
-                </button>
+                </GiantButton>
               </div>
             </motion.div>
           ) : (
-            <div className="flex flex-col items-center gap-md">
-              <h2 className="text-2xl font-black">{t('target.choosingTarget')}</h2>
+            <div className="flex flex-col items-center gap-6">
+              <h2 className="text-[24px] font-black uppercase tracking-widest text-slate-300">{t('target.choosingTarget')}</h2>
               <TimerDisplay timeLeft={timeLeft} />
-              <p className="text-secondary">
+              <p className="text-amber-400 font-black text-[12px] uppercase tracking-widest bg-amber-500/10 border border-amber-500/30 px-4 py-2 rounded-xl">
                 {t('target.waitChooser', { name: targetChooser })}
               </p>
-              <div className="text-4xl animate-bounce mt-md">🎲</div>
+              <div className="text-6xl animate-bounce mt-4 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]">🎲</div>
             </div>
           )}
         </div>
@@ -396,46 +402,47 @@ const TargetNumber = () => {
     const lastMove = gameData.lastMove;
 
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in pb-20">
+      <div className="flex flex-col gap-3 w-full animate-fade-in bg-slate-950 text-slate-200 pb-20 px-2">
         {renderErrorToast()}
+        
         {/* Header */}
-        <div className="glass-panel p-md flex justify-between items-center border-primary/20">
-          <div className="flex items-center gap-sm">
-            <div className="p-sm rounded-lg bg-warning/20 text-warning">
-              <Target size={18} />
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex justify-between items-center shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30">
+              <Target size={20} />
             </div>
             <div>
-              <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'ตัวเลขปัจจุบัน' : 'Current Number'}</p>
-              <p className="font-black text-2xl text-white">{currentCount}</p>
+              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'ตัวเลขปัจจุบัน' : 'Current Number'}</p>
+              <p className="font-black text-3xl text-white font-mono">{currentCount}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] text-secondary font-bold uppercase tracking-widest">{t('taboo.currentScores').split(' ')[0] === 'คะแนน' ? 'คะแนนของคุณ' : 'Your Score'}</p>
-            <p className="font-black text-primary text-lg">{gameData.scores?.[userNickname] || 0}</p>
+          <div className="text-right bg-slate-950 px-3 py-2 rounded-xl border border-slate-800">
+            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{t('taboo.currentScores').split(' ')[0] === 'คะแนน' ? 'คะแนนของคุณ' : 'Your Score'}</p>
+            <p className="font-black text-rose-500 text-xl">{gameData.scores?.[userNickname] || 0}</p>
           </div>
         </div>
 
         {/* Hint Range */}
         {!isTargetChooser && (
-          <div className="glass-panel p-lg text-center border-warning/30 bg-warning/5">
-            <p className="text-xs font-bold text-warning uppercase tracking-widest mb-sm">💡 {t('target.description').split(' ')[0] === 'ทาย' ? 'ช่วงตัวเลขใบ้' : 'Hint Range'}</p>
-            <div className="flex items-center justify-center gap-md">
-              <span className="bg-warning/20 text-warning font-black text-2xl px-lg py-sm rounded-xl border border-warning/30">
+          <NeonCard color="amber" className="p-4 text-center border-amber-500/30 bg-amber-950/20">
+            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">💡 {t('target.description').split(' ')[0] === 'ทาย' ? 'ช่วงตัวเลขใบ้' : 'Hint Range'}</p>
+            <div className="flex items-center justify-center gap-4">
+              <span className="bg-amber-500/20 text-amber-400 font-black text-3xl font-mono px-4 py-2 rounded-xl border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                 {range.min}
               </span>
-              <span className="text-secondary font-bold">{t('target.description').split(' ')[0] === 'ทาย' ? 'ถึง' : 'to'}</span>
-              <span className="bg-warning/20 text-warning font-black text-2xl px-lg py-sm rounded-xl border border-warning/30">
+              <span className="text-slate-400 font-black text-[12px] uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'ถึง' : 'to'}</span>
+              <span className="bg-amber-500/20 text-amber-400 font-black text-3xl font-mono px-4 py-2 rounded-xl border border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                 {range.max}
               </span>
             </div>
-          </div>
+          </NeonCard>
         )}
 
         {isTargetChooser && (
-          <div className="glass-panel p-lg text-center border-accent/30 bg-accent/5">
-            <p className="text-xs font-bold text-accent uppercase tracking-widest mb-xs">🤫 {t('target.targetIs', { number: '' }).trim()}</p>
-            <p className="text-4xl font-black text-accent">{gameData.targetNumber}</p>
-          </div>
+          <NeonCard color="purple" className="p-4 text-center border-purple-500/30 bg-purple-950/20">
+            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">🤫 {t('target.targetIs', { number: '' }).trim()}</p>
+            <p className="text-5xl font-black text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] font-mono">{gameData.targetNumber}</p>
+          </NeonCard>
         )}
 
         {/* Last Move */}
@@ -446,12 +453,12 @@ const TargetNumber = () => {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="glass-panel p-md text-center border-glass"
+              className="bg-slate-900 border border-slate-800 p-4 text-center rounded-3xl"
             >
-              <p className="text-xs text-secondary font-bold mb-xs">{t('target.description').split(' ')[0] === 'ทาย' ? 'เมื่อกี้' : 'Just now'}</p>
-              <p className="font-bold">
-                <span className="text-primary">{lastMove.player}</span> {t('target.description').split(' ')[0] === 'ทาย' ? 'นับ' : 'counted'}{' '}
-                <span className="text-white font-black">
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-2">{t('target.description').split(' ')[0] === 'ทาย' ? 'เมื่อกี้' : 'Just now'}</p>
+              <p className="font-bold text-[14px]">
+                <span className="text-rose-400 font-black">{lastMove.player}</span> <span className="text-slate-400">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ' : 'counted'}</span>{' '}
+                <span className="text-white font-black bg-slate-800 px-2 py-1 rounded border border-slate-700">
                   {lastMove.numbers.join(', ')}
                 </span>
               </p>
@@ -460,74 +467,74 @@ const TargetNumber = () => {
         </AnimatePresence>
 
         {/* Turn Indicator */}
-        <div className={`glass-panel p-lg text-center ${isMyTurn ? 'border-success/40 bg-success/10' : 'border-glass'}`}>
-          <div className="flex justify-center mb-2">
+        <NeonCard color={isMyTurn ? 'emerald' : 'slate'} className={`p-4 text-center ${isMyTurn ? 'border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)] bg-emerald-950/20' : 'border-slate-800 bg-slate-900'}`}>
+          <div className="flex justify-center mb-3">
             <TimerDisplay timeLeft={timeLeft} />
           </div>
-          <p className="text-xs font-bold text-secondary uppercase tracking-widest mb-xs">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
             {isMyTurn ? t('target.yourTurn') : t('target.waitTurn', { name: '' }).trim()}
           </p>
-          <p className={`text-xl font-black ${isMyTurn ? 'text-success' : 'text-white'}`}>
+          <p className={`text-[16px] font-black uppercase tracking-widest ${isMyTurn ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'text-slate-300'}`}>
             {isMyTurn ? (t('target.description').split(' ')[0] === 'ทาย' ? 'เร็วเข้า! เลือกจำนวนเลขที่จะนับ' : 'Hurry! Select how many to count') : t('target.waitTurn', { name: currentPlayer })}
           </p>
-        </div>
+        </NeonCard>
 
         {/* Controls */}
         {isMyTurn ? (
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="flex flex-col gap-md"
+            className="flex flex-col gap-3 mt-2"
           >
-            <p className="text-center text-xs font-bold text-secondary uppercase tracking-widest">🎮 {t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกจำนวนเลขที่จะนับ' : 'Choose how many to count'}</p>
-            <div className="grid grid-cols-3 gap-md">
+            <p className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">🎮 {t('target.description').split(' ')[0] === 'ทาย' ? 'เลือกจำนวนเลขที่จะนับ' : 'Choose how many to count'}</p>
+            <div className="grid grid-cols-3 gap-2">
               <button
-                className="glass-panel p-lg flex flex-col items-center gap-xs border-2 border-blue-400/40 bg-blue-500/10 hover:bg-blue-500/20 active:scale-95 transition-all"
+                className="bg-blue-950/30 p-4 flex flex-col items-center gap-2 border-2 border-blue-500/40 rounded-3xl active:scale-95 transition-all hover:bg-blue-900/40 hover:border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
                 onClick={() => handleMove(1)}
               >
-                <span className="text-3xl font-black text-blue-400">+1</span>
-                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 1 ตัว' : 'Count 1'}</span>
-                <span className="text-xs text-blue-300 font-bold">{currentCount + 1}</span>
+                <span className="text-3xl font-black text-blue-400 drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">+1</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 1 ตัว' : 'Count 1'}</span>
+                <span className="text-[11px] text-blue-300 font-bold bg-blue-900/50 px-2 py-0.5 rounded-full border border-blue-500/30">{currentCount + 1}</span>
               </button>
               <button
-                className="glass-panel p-lg flex flex-col items-center gap-xs border-2 border-green-400/40 bg-green-500/10 hover:bg-green-500/20 active:scale-95 transition-all"
+                className="bg-emerald-950/30 p-4 flex flex-col items-center gap-2 border-2 border-emerald-500/40 rounded-3xl active:scale-95 transition-all hover:bg-emerald-900/40 hover:border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                 onClick={() => handleMove(2)}
               >
-                <span className="text-3xl font-black text-green-400">+2</span>
-                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 2 ตัว' : 'Count 2'}</span>
-                <span className="text-xs text-green-300 font-bold">{currentCount + 1}-{currentCount + 2}</span>
+                <span className="text-3xl font-black text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">+2</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 2 ตัว' : 'Count 2'}</span>
+                <span className="text-[11px] text-emerald-300 font-bold bg-emerald-900/50 px-2 py-0.5 rounded-full border border-emerald-500/30">{currentCount + 1}-{currentCount + 2}</span>
               </button>
               <button
-                className="glass-panel p-lg flex flex-col items-center gap-xs border-2 border-orange-400/40 bg-orange-500/10 hover:bg-orange-500/20 active:scale-95 transition-all"
+                className="bg-amber-950/30 p-4 flex flex-col items-center gap-2 border-2 border-amber-500/40 rounded-3xl active:scale-95 transition-all hover:bg-amber-900/40 hover:border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                 onClick={() => handleMove(3)}
               >
-                <span className="text-3xl font-black text-orange-400">+3</span>
-                <span className="text-[10px] font-bold text-secondary">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 3 ตัว' : 'Count 3'}</span>
-                <span className="text-xs text-orange-300 font-bold">{currentCount + 1}-{currentCount + 3}</span>
+                <span className="text-3xl font-black text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">+3</span>
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('target.description').split(' ')[0] === 'ทาย' ? 'นับ 3 ตัว' : 'Count 3'}</span>
+                <span className="text-[11px] text-amber-300 font-bold bg-amber-900/50 px-2 py-0.5 rounded-full border border-amber-500/30">{currentCount + 1}-{currentCount + 3}</span>
               </button>
             </div>
           </motion.div>
         ) : (
-          <div className="glass-panel p-xl flex-center flex-col gap-md">
-            <div className="text-4xl animate-bounce">⏳</div>
-            <p className="text-secondary font-bold">{t('target.waitTurn', { name: currentPlayer })}</p>
+          <div className="bg-slate-900 border border-slate-800 p-6 flex-center flex-col gap-4 rounded-3xl mt-2">
+            <div className="text-5xl animate-spin-slow">⏳</div>
+            <p className="text-slate-400 font-black text-[11px] uppercase tracking-widest">{t('target.waitTurn', { name: currentPlayer })}</p>
           </div>
         )}
 
         {/* Player Order */}
-        <div className="glass-panel p-md">
-          <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">{t('taboo.players')}</p>
-          <div className="flex flex-wrap gap-xs">
+        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl mt-2">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.players')}</p>
+          <div className="flex flex-wrap gap-2 justify-center">
             {playerOrder.map((name, idx) => (
               <div
                 key={name}
-                className={`px-sm py-xs rounded-lg text-xs font-bold flex items-center gap-xs ${
+                className={`px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black flex items-center gap-2 ${
                   idx === currentPlayerIndex
-                    ? 'bg-success/20 text-success border border-success/40'
-                    : 'bg-glass-dark/30 text-secondary border border-glass'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
                 }`}
               >
-                {idx === currentPlayerIndex && <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse"></span>}
+                {idx === currentPlayerIndex && <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_5px_rgba(16,185,129,0.8)]"></span>}
                 {name}
               </div>
             ))}
@@ -545,40 +552,40 @@ const TargetNumber = () => {
     const winners = playerOrder.filter(n => n !== loser);
 
     return (
-      <div className="flex flex-col gap-lg w-full animate-fade-in">
+      <div className="flex flex-col gap-4 w-full animate-fade-in bg-slate-950 text-slate-200 pb-24 h-full px-2">
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="glass-panel p-xl text-center"
+          className="text-center mt-6"
         >
-          <div className="text-4xl mb-md">🎊 🎉 🎊</div>
-          <h2 className="text-3xl font-black mb-lg">{t('target.gameOver')}</h2>
+          <div className="text-6xl mb-4 drop-shadow-[0_0_20px_rgba(239,68,68,0.5)]">🎯</div>
+          <h2 className="text-[28px] font-black mb-4 uppercase tracking-widest text-white drop-shadow-md">{t('target.gameOver')}</h2>
 
           {/* Loser */}
-          <div className={`p-xl rounded-2xl mb-lg ${isLoser ? 'bg-danger/10 border-2 border-danger/30' : 'bg-warning/10 border border-warning/30'}`}>
-            <div className="text-5xl mb-sm">{isLoser ? '😢' : '🎭'}</div>
-            <h3 className="text-2xl font-black mb-sm">
-              {isLoser ? (t('target.description').split(' ')[0] === 'ทาย' ? 'คุณแพ้!' : 'You Lost!') : t('target.loserIs', { name: loser })}
+          <NeonCard color={isLoser ? 'rose' : 'slate'} className={`p-6 text-center mx-4 mb-4 ${isLoser ? 'border-rose-500/50 bg-rose-950/20 shadow-[0_0_30px_rgba(225,29,72,0.15)]' : 'border-slate-800 bg-slate-900/50'}`}>
+            <div className="text-6xl mb-4">{isLoser ? '💥' : '💀'}</div>
+            <h3 className={`text-[20px] font-black uppercase tracking-widest mb-4 ${isLoser ? 'text-rose-400 drop-shadow-[0_0_10px_rgba(225,29,72,0.5)]' : 'text-slate-300'}`}>
+              {isLoser ? (t('target.description').split(' ')[0] === 'ทาย' ? 'ตู้ม! คุณระเบิดแล้ว' : 'BOOM! You Lost!') : t('target.loserIs', { name: loser })}
             </h3>
-            <div className="flex items-center justify-center gap-sm mt-md">
-              <span className="text-secondary">{t('taboo.secretWordWas')}</span>
-              <span className="bg-primary/20 text-primary font-black text-2xl px-lg py-sm rounded-xl border border-primary/30">
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('taboo.secretWordWas')}</span>
+              <span className="bg-rose-500/20 text-rose-400 font-black text-3xl font-mono px-4 py-2 rounded-xl border border-rose-500/50 shadow-[0_0_15px_rgba(225,29,72,0.3)]">
                 {gameData.targetNumber}
               </span>
             </div>
-          </div>
+          </NeonCard>
 
           {/* Winners */}
-          <div className="p-lg rounded-2xl bg-success/10 border border-success/30 mb-lg">
-            <div className="flex items-center justify-center gap-sm mb-md">
-              <Trophy size={20} className="text-success" />
-              <h4 className="font-black text-success">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</h4>
+          <div className="p-4 mx-4 rounded-3xl bg-emerald-950/20 border border-emerald-500/30 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Trophy size={16} className="text-emerald-400" />
+              <h4 className="font-black text-emerald-400 text-[10px] uppercase tracking-widest">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้รอดชีวิต' : 'Survivors'}</h4>
             </div>
-            <div className="flex flex-wrap gap-sm justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {winners.map(name => (
-                <span key={name} className="bg-success/20 text-success font-bold px-md py-xs rounded-lg border border-success/30">
+                <span key={name} className="bg-emerald-500/10 text-emerald-300 font-black text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-lg border border-emerald-500/30">
                   {name}
                 </span>
               ))}
@@ -586,33 +593,40 @@ const TargetNumber = () => {
           </div>
 
           {/* Scores */}
-          <div className="space-y-sm">
-            <p className="text-[10px] font-bold text-secondary uppercase tracking-widest mb-sm">{t('taboo.totalScores')}</p>
-            {Object.entries(gameData.scores || {}).sort((a: any, b: any) => b[1] - a[1]).map(([name, score]) => (
-              <div key={name} className="flex justify-between items-center p-md bg-glass-dark/30 rounded-xl border border-glass">
-                <div className="flex items-center gap-sm">
-                  {name === loser ? <Skull size={16} className="text-danger" /> : <Crown size={16} className="text-warning" />}
-                  <span className="font-bold">{name}</span>
+          <div className="p-4 mx-4 bg-slate-900/50 border border-slate-800 rounded-3xl">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">{t('taboo.totalScores')}</p>
+            <div className="space-y-2">
+              {Object.entries(gameData.scores || {}).sort((a: any, b: any) => b[1] - a[1]).map(([name, score]) => (
+                <div key={name} className="flex justify-between items-center p-3 bg-slate-900 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-3">
+                    {name === loser ? <Skull size={16} className="text-rose-500" /> : <Crown size={16} className="text-amber-500" />}
+                    <span className="font-black text-[12px] uppercase tracking-widest text-slate-300">{name}</span>
+                  </div>
+                  <span className="font-black text-amber-400 text-[14px] drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]">{score as number} <span className="text-[10px] text-slate-500">{t('taboo.pointsGuesser').split(' ')[1]}</span></span>
                 </div>
-                <span className="font-black text-primary">{score as number} {t('taboo.pointsGuesser').split(' ')[1]}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </motion.div>
 
-        {isHost ? (
-          <button className="btn btn-primary w-full py-xl text-xl font-black" onClick={nextRound}>
-            <RotateCcw size={24} />
-            {t('taboo.playAgain')}
-          </button>
-        ) : (
-          <button
-            className="btn btn-outline w-full py-lg font-black"
-            onClick={requestLeave}
-          >
-            <LogOut size={18} /> {t('taboo.leaveRoom')}
-          </button>
-        )}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
+          {isHost ? (
+            <>
+              <GiantButton color="rose" className="flex-1" onClick={nextRound}>
+                <RotateCcw size={18} className="mr-2 inline-block mb-0.5" />
+                {t('taboo.playAgain')}
+              </GiantButton>
+              <button className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all hover:border-slate-500" onClick={requestLeave}>
+                <LogOut size={16} className="mr-2 inline-block mb-0.5" />
+                {t('taboo.leaveRoom')}
+              </button>
+            </>
+          ) : (
+            <button className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20" onClick={requestLeave}>
+              <LogOut size={16} /> {t('taboo.leaveRoom')}
+            </button>
+          )}
+        </div>
       </div>
     );
   }

@@ -189,7 +189,7 @@ const GameGuide = ({ gameId }) => {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="btn btn-outline py-2 px-3 text-[12px] min-h-[42px]"
+        className="bg-slate-800 border border-slate-700 text-slate-300 font-bold rounded-xl py-2 px-3 text-[12px] min-h-[42px]"
       >
         <BookOpen size={14} />
         คู่มือ
@@ -202,8 +202,7 @@ const GameGuide = ({ gameId }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="fixed inset-0 z-50 flex items-end justify-center p-0"
-            style={{ background: 'rgba(47,42,34,0.4)' }}
+            className="fixed inset-0 z-50 flex items-end justify-center p-0 bg-slate-950/80 backdrop-blur-sm"
             onClick={() => setOpen(false)}
           >
             <motion.div
@@ -211,15 +210,15 @@ const GameGuide = ({ gameId }) => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="bg-white rounded-t-3xl w-full max-w-[460px] max-h-[85dvh] flex flex-col"
+              className="bg-slate-900 rounded-t-3xl w-full max-w-[460px] max-h-[85dvh] flex flex-col"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex-between p-5 pb-3 border-b border-olive-100">
-                <h2 className="font-display font-bold text-lg text-olive-800">{guide.title}</h2>
+              <div className="flex justify-between items-center p-5 pb-3 border-b border-slate-700">
+                <h2 className="font-display font-bold text-lg text-white">{guide.title}</h2>
                 <button
                   onClick={() => setOpen(false)}
-                  className="w-9 h-9 rounded-xl bg-olive-50 flex-center text-olive-400 active:bg-olive-100"
+                  className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 active:bg-slate-700"
                 >
                   <X size={18} />
                 </button>
@@ -229,14 +228,14 @@ const GameGuide = ({ gameId }) => {
               <div className="flex-1 overflow-y-auto p-5 space-y-5" style={{ WebkitOverflowScrolling: 'touch' }}>
                 {/* Steps */}
                 <div>
-                  <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2.5">วิธีเล่น</h3>
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">วิธีเล่น</h3>
                   <div className="space-y-2">
                     {guide.steps.map((step, i) => (
                       <div key={i} className="flex gap-3 items-start">
-                        <span className="w-6 h-6 rounded-lg bg-sage-100 flex-center text-[11px] font-extrabold text-sage-600 shrink-0">
+                        <span className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px] font-extrabold text-neon-green shrink-0">
                           {i + 1}
                         </span>
-                        <p className="text-[13px] text-olive-700 font-medium leading-relaxed pt-0.5">{step}</p>
+                        <p className="text-[13px] text-slate-200 font-medium leading-relaxed pt-0.5">{step}</p>
                       </div>
                     ))}
                   </div>
@@ -245,14 +244,14 @@ const GameGuide = ({ gameId }) => {
                 {/* Card Rules (Drinking) */}
                 {guide.rules && (
                   <div>
-                    <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2.5">กฎแต่ละใบ</h3>
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">กฎแต่ละใบ</h3>
                     <div className="space-y-1.5">
                       {guide.rules.map((r) => (
-                        <div key={r.card} className="flex items-center gap-2.5 p-2 rounded-xl bg-cream-50 border border-cream-200">
-                          <span className="w-8 h-8 rounded-lg bg-white border-2 border-olive-100 flex-center text-[13px] font-black text-olive-700 shrink-0">
+                        <div key={r.card} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-800 border border-slate-700">
+                          <span className="w-8 h-8 rounded-lg bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-[13px] font-black text-slate-200 shrink-0">
                             {r.card}
                           </span>
-                          <p className="text-[12px] text-olive-600 font-semibold leading-snug">{r.text}</p>
+                          <p className="text-[12px] text-slate-300 font-semibold leading-snug">{r.text}</p>
                         </div>
                       ))}
                     </div>
@@ -262,12 +261,12 @@ const GameGuide = ({ gameId }) => {
                 {/* Tips */}
                 {guide.tips && (
                   <div>
-                    <h3 className="text-[11px] font-bold text-olive-400 uppercase tracking-wider mb-2.5">เคล็ดลับ</h3>
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">เคล็ดลับ</h3>
                     <div className="space-y-1.5">
                       {guide.tips.map((tip, i) => (
-                        <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-warm-50 border border-warm-200">
+                        <div key={i} className="flex gap-2.5 items-start p-2.5 rounded-xl bg-slate-800/50 border border-slate-700">
                           <span className="text-sm shrink-0"></span>
-                          <p className="text-[12px] text-olive-600 font-semibold leading-snug">{tip}</p>
+                          <p className="text-[12px] text-slate-300 font-semibold leading-snug">{tip}</p>
                         </div>
                       ))}
                     </div>
@@ -277,7 +276,7 @@ const GameGuide = ({ gameId }) => {
 
               {/* Bottom safe area */}
               <div className="p-4 pt-2">
-                <button onClick={() => setOpen(false)} className="btn btn-primary w-full py-3.5 text-[15px]">
+                <button onClick={() => setOpen(false)} className="bg-neon-blue text-white font-bold rounded-xl w-full py-3.5 text-[15px]">
                   เข้าใจแล้ว!
                 </button>
               </div>
