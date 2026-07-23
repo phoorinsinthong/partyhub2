@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   Moon, Sun, Volume2, VolumeX, Users, Check, 
   RotateCcw, Skull, Play, ChevronRight, ChevronLeft, 
@@ -39,6 +39,21 @@ const getSavedSession = () => {
 
 export const WerewolfModerator: React.FC = () => {
   const savedSession = getSavedSession();
+  const navigate = useNavigate();
+
+  const handleExit = () => {
+    const sessionStr = localStorage.getItem('partyhub_session');
+    if (sessionStr) {
+      try {
+        const session = JSON.parse(sessionStr);
+        if (session?.roomId) {
+          navigate(`/lobby/${session.roomId}`);
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    navigate('/');
+  };
   
   // Game Setup State
   const [phase, setPhase] = useState<'setup' | 'game' | 'finished'>(() => savedSession?.phase || 'setup');
@@ -286,13 +301,13 @@ export const WerewolfModerator: React.FC = () => {
             {enableTTS ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
           
-          <Link
-            to="/"
+          <button
+            onClick={handleExit}
             className="p-2.5 rounded-xl bg-slate-700/50 border border-slate-600 text-slate-300 hover:bg-slate-700 transition-all"
-            title="กลับหน้าหลัก"
+            title="กลับหน้าหลักหรือหน้าล็อบบี้"
           >
             <Home size={18} />
-          </Link>
+          </button>
         </div>
       </div>
 
