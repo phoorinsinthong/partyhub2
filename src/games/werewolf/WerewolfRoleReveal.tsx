@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGame } from '../../contexts/GameContext';
 import { useWerewolf } from './WerewolfContext';
-import { WOLF_ROLES } from '../logic/werewolfLogic';
+import { WOLF_ROLES } from './werewolfLogic';
 import GiantButton from '../../components/GiantButton';
 
 export const WerewolfRoleReveal: React.FC = () => {

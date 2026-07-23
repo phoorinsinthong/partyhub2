@@ -4,7 +4,7 @@ import { useGame } from '../../contexts/GameContext';
 import { useGameLeave } from '../../hooks/useGameLeave';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
-import { ROLES } from '../logic/werewolfData';
+import { ROLES } from './werewolfData';
 import NeonCard from '../../components/NeonCard';
 import GiantButton from '../../components/GiantButton';
 import EpicPopup from '../../components/EpicPopup';

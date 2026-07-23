@@ -2,17 +2,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update } from 'firebase/database';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { RotateCcw, ChevronRight, LogOut, Users, Heart, Sparkles } from 'lucide-react';
-import { recordPersonalGame } from '../components/PersonalStats';
-import { useGameLeave } from '../hooks/useGameLeave';
-import { useGame } from '../contexts/GameContext';
-import { useGameUpdate } from '../hooks/useGameUpdate';
+import { recordPersonalGame } from '../../components/PersonalStats';
+import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import { getRandomStatement } from './logic/neverData';
-import NeonCard from '../components/NeonCard';
-import GiantButton from '../components/GiantButton';
+import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import { getRandomStatement } from './neverData';
+import NeonCard from '../../components/NeonCard';
+import GiantButton from '../../components/GiantButton';
 
 const NeverHaveIEver: React.FC = () => {
   const { t } = useTranslation();

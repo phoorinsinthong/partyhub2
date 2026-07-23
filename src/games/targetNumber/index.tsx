@@ -1,21 +1,21 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ref, update, get } from 'firebase/database';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { Target, User, Trophy, Play, RotateCcw, Crown, Skull, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { recordWin } from '../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
-import { useGameLeave } from '../hooks/useGameLeave';
-import { useGame } from '../contexts/GameContext';
-import { useGameUpdate } from '../hooks/useGameUpdate';
-import { useGameTimer } from '../hooks/useGameTimer';
-import { TimerDisplay } from '../components/game-ui/TimerDisplay';
+import { recordWin } from '../../components/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
+import { useGameTimer } from '../../hooks/useGameTimer';
+import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import { feedback } from '../utils/feedback';
-import NeonCard from '../components/NeonCard';
-import GiantButton from '../components/GiantButton';
+import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import { feedback } from '../../utils/feedback';
+import NeonCard from '../../components/NeonCard';
+import GiantButton from '../../components/GiantButton';
 
 const TURN_TIME = 30;
 

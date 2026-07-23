@@ -5,7 +5,7 @@ import { useGame } from '../../contexts/GameContext';
 import { useWerewolf } from './WerewolfContext';
 import NeonCard from '../../components/NeonCard';
 import GiantButton from '../../components/GiantButton';
-import { ROLE_CATEGORIES, ROLES } from '../logic/werewolfData';
+import { ROLE_CATEGORIES, ROLES } from './werewolfData';
 
 export const WerewolfSetupPhase: React.FC = () => {
   const { t } = useTranslation();

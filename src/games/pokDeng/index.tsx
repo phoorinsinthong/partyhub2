@@ -1,19 +1,19 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
-import { db } from '../firebase';
-import { useGameLeave } from '../hooks/useGameLeave';
-import { useGame } from '../contexts/GameContext';
-import { useGameUpdate } from '../hooks/useGameUpdate';
+import { db } from '../../firebase';
+import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
-import PlayingCard from '../components/PlayingCard';
-import { createDeck, shuffleDeck, calculatePokDeng } from './logic/cards';
-import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import PlayingCard from '../../components/PlayingCard';
+import { createDeck, shuffleDeck, calculatePokDeng } from '../../utils/cards';
+import LeaveConfirmModal from '../../components/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { recordWin } from '../components/Scoreboard';
-import NeonCard from '../components/NeonCard';
-import GiantButton from '../components/GiantButton';
-import { SwipeableHand } from '../components/SwipeableHand';
+import { recordWin } from '../../components/Scoreboard';
+import NeonCard from '../../components/NeonCard';
+import GiantButton from '../../components/GiantButton';
+import { SwipeableHand } from '../../components/SwipeableHand';
 
 const PokDeng: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();

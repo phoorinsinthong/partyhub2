@@ -17,8 +17,8 @@ import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import NeonCard from '../components/NeonCard';
 import GiantButton from '../components/GiantButton';
-import { WORD_CATEGORIES, ALL_WORDS, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from '../logic/fakeArtistData';
-import { shuffle, getRandomWord } from '../logic/fakeArtistLogic';
+import { WORD_CATEGORIES, ALL_WORDS, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from './fakeArtistData';
+import { shuffle, getRandomWord } from './fakeArtistLogic';
 import { WaitingPhase, RevealPhase, DrawingPhase, VotingPhase, FakeGuessPhase, FinishedPhase } from './phases';
 
 

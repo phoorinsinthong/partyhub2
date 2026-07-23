@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameState } from '../../hooks/useGameState';
-import { WOLF_ROLES } from '../logic/werewolfLogic';
-import { ROLES } from '../logic/werewolfData';
+import { WOLF_ROLES } from './werewolfLogic';
+import { ROLES } from './werewolfData';
 
 interface WerewolfContextType {
   wwData: any;

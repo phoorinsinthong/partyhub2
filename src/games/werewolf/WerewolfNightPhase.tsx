@@ -3,8 +3,8 @@ import { Moon, Eye, Skull } from 'lucide-react';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import GiantButton from '../../components/GiantButton';
-import { VOICE_SCRIPTS, ROLES } from '../logic/werewolfData';
-import { resolveNightActions, WOLF_ROLES } from '../logic/werewolfLogic';
+import { VOICE_SCRIPTS, ROLES } from './werewolfData';
+import { resolveNightActions, WOLF_ROLES } from './werewolfLogic';
 
 export const WerewolfNightPhase: React.FC = () => {
   const { wwData, isGM, myRole, myIsAlive, dayCount, activeScriptIndex, setActiveScriptIndex, safeUpdate } = useWerewolf();

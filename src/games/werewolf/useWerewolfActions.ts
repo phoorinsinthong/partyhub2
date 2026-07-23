@@ -1,6 +1,6 @@
 import { useWerewolf } from './WerewolfContext';
 import { useGame } from '../../contexts/GameContext';
-import { handleDeathSideEffects, WOLF_ROLES } from '../logic/werewolfLogic';
+import { handleDeathSideEffects, WOLF_ROLES } from './werewolfLogic';
 
 export const useWerewolfActions = () => {
   const { roomId, userNickname } = useGame();

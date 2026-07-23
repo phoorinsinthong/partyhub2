@@ -2,17 +2,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ref, update } from 'firebase/database';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { RotateCcw, ChevronRight, LogOut, Users, CheckCircle2 } from 'lucide-react';
-import { recordPersonalGame } from '../components/PersonalStats';
-import { useGameLeave } from '../hooks/useGameLeave';
-import { useGame } from '../contexts/GameContext';
-import { useGameUpdate } from '../hooks/useGameUpdate';
+import { recordPersonalGame } from '../../components/PersonalStats';
+import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../components/LeaveConfirmModal';
-import { getShuffledWyrQuestions } from './logic/wyrData';
-import NeonCard from '../components/NeonCard';
-import GiantButton from '../components/GiantButton';
+import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import { getShuffledWyrQuestions } from './wyrData';
+import NeonCard from '../../components/NeonCard';
+import GiantButton from '../../components/GiantButton';
 
 const WouldYouRather: React.FC = () => {
   const { t } = useTranslation();

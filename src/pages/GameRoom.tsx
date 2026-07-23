@@ -17,24 +17,24 @@ import { useGame } from '../contexts/GameContext';
 const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wouldyourather', 'wordbomb', 'mathrace'];
 
 // Lazy-load game components
-const DrinkingGame = lazy(() => import('../games/DrinkingGame'));
+const DrinkingGame = lazy(() => import('../games/drinkingGame'));
 const Spyfall = lazy(() => import('../games/spyfall'));
-const TargetNumber = lazy(() => import('../games/TargetNumber'));
+const TargetNumber = lazy(() => import('../games/targetNumber'));
 const Werewolf = lazy(() => import('../games/Werewolf'));
-const TruthOrDare = lazy(() => import('../games/TruthOrDare'));
-const Quiz = lazy(() => import('../games/Quiz'));
+const TruthOrDare = lazy(() => import('../games/truthOrDare'));
+const Quiz = lazy(() => import('../games/quiz'));
 const Drawing = lazy(() => import('../games/drawing'));
-const WouldYouRather = lazy(() => import('../games/WouldYouRather'));
-const WordBomb = lazy(() => import('../games/WordBomb'));
-const NeverHaveIEver = lazy(() => import('../games/NeverHaveIEver'));
+const WouldYouRather = lazy(() => import('../games/wouldYouRather'));
+const WordBomb = lazy(() => import('../games/wordBomb'));
+const NeverHaveIEver = lazy(() => import('../games/neverHaveIEver'));
 const Taboo = lazy(() => import('../games/taboo'));
-const MathRace = lazy(() => import('../games/MathRace'));
-const TwentyQuestions = lazy(() => import('../games/TwentyQuestions'));
+const MathRace = lazy(() => import('../games/mathRace'));
+const TwentyQuestions = lazy(() => import('../games/twentyQuestions'));
 const FakeArtist = lazy(() => import('../games/fakeArtist'));
-const Blackjack = lazy(() => import('../games/Blackjack'));
-const Slaves = lazy(() => import('../games/Slaves'));
-const Poker = lazy(() => import('../games/Poker'));
-const PokDeng = lazy(() => import('../games/PokDeng'));
+const Blackjack = lazy(() => import('../games/blackjack'));
+const Slaves = lazy(() => import('../games/slaves'));
+const Poker = lazy(() => import('../games/poker'));
+const PokDeng = lazy(() => import('../games/pokDeng'));
 
 const GameLoadingFallback = () => (
   <div className="flex items-center justify-center flex-1 flex-col gap-3 py-20">
