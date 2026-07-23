@@ -9,7 +9,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/firebase')) return 'firebase';
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router') || id.includes('node_modules/framer-motion')) return 'vendor';
+          if (id.includes('node_modules/framer-motion')) return 'framer-motion';
+          if (id.includes('node_modules/canvas-confetti')) return 'confetti';
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'vendor';
         },
       },
     },

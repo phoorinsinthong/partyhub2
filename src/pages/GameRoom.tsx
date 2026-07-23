@@ -14,6 +14,7 @@ import { GAME_NAMES, GAME_ICONS } from '../utils/gameData';
 import { fireConfetti } from '../utils/confetti';
 import { GAME_COMPONENTS } from '../utils/gameRegistry';
 import { useGame } from '../contexts/GameContext';
+import ErrorBoundary from '../components/core/ErrorBoundary';
 
 const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wouldyourather', 'wordbomb', 'mathrace'];
 
@@ -317,10 +318,30 @@ const GameRoom: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0">
-        <Suspense fallback={<GameLoadingFallback />}>
-          {renderGame()}
-        </Suspense>
+      <div className="flex-1 flex flex-col min-h-0 relative">
+        <ErrorBoundary 
+          fallback={
+            <div className="bg-slate-900/80 border border-red-500/30 rounded-3xl p-8 flex flex-col items-center justify-center text-center m-4 shadow-xl">
+              <span className="text-5xl mb-4">💥</span>
+              <h3 className="text-xl font-bold text-red-400 mb-2">เกมนี้เกิดข้อผิดพลาด</h3>
+              <p className="text-slate-400 text-sm mb-6 max-w-[280px]">อาจจะบั๊กหรือเน็ตหลุด ลองเปลี่ยนเกมหรือเริ่มเกมใหม่</p>
+              {isHost ? (
+                <button 
+                  onClick={() => setShowGameSwitcher(true)}
+                  className="bg-red-500/20 text-red-400 hover:bg-red-500/30 font-bold py-3 px-6 rounded-xl transition-colors"
+                >
+                  เลือกเกมอื่น
+                </button>
+              ) : (
+                <p className="text-slate-500 text-xs italic">รอโฮสต์เปลี่ยนเกม...</p>
+              )}
+            </div>
+          }
+        >
+          <Suspense fallback={<GameLoadingFallback />}>
+            {renderGame()}
+          </Suspense>
+        </ErrorBoundary>
       </div>
 
     </div>

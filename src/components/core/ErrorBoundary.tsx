@@ -1,22 +1,35 @@
-// @ts-nocheck
-import React from 'react';
+import React, { ReactNode } from 'react';
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+  onReset?: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
       return (
         <div style={{
           display: 'flex',
@@ -29,10 +42,10 @@ class ErrorBoundary extends React.Component {
           fontFamily: "'Nunito', sans-serif",
         }}>
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>😵</div>
-          <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#2f2a22', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#f8fafc', marginBottom: '8px' }}>
             อุ๊ปส์! เกิดข้อผิดพลาด
           </h2>
-          <p style={{ fontSize: '14px', color: '#8a7e6a', marginBottom: '16px', maxWidth: '340px' }}>
+          <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '16px', maxWidth: '340px' }}>
             มีบางอย่างผิดพลาด ลองรีเฟรชหน้านี้อีกครั้งนะ
           </p>
           {this.state.error && (
@@ -42,7 +55,7 @@ class ErrorBoundary extends React.Component {
               borderRadius: '12px',
               padding: '10px 14px',
               fontSize: '12px',
-              color: '#b91c1c',
+              color: '#ef4444',
               marginBottom: '20px',
               maxWidth: '360px',
               wordBreak: 'break-word',
@@ -52,7 +65,14 @@ class ErrorBoundary extends React.Component {
             </div>
           )}
           <button
-            onClick={() => { localStorage.removeItem('partyhub_session'); window.location.reload(); }}
+            onClick={() => { 
+              if (this.props.onReset) {
+                this.props.onReset();
+              } else {
+                localStorage.removeItem('partyhub_session'); 
+                window.location.reload(); 
+              }
+            }}
             style={{
               padding: '14px 28px',
               borderRadius: '16px',
