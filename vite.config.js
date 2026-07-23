@@ -18,7 +18,52 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: false,
+      manifest: {
+        name: "Party Hub — เกมปาร์ตี้ออนไลน์",
+        short_name: "Party Hub",
+        description: "รวมเกมปาร์ตี้สุดสนุก เล่นกับเพื่อนได้ทุกที่ทุกเวลา — วงเหล้า, สปายฟอล, เลขเป้า, หมาป่า",
+        display: "standalone",
+        orientation: "portrait",
+        theme_color: "#f4f5ee",
+        background_color: "#f4f5ee",
+        lang: "th",
+        dir: "ltr",
+        categories: ["games", "entertainment"],
+        icons: [
+          {
+            src: "icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "icons/icon-maskable-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
+          },
+          {
+            src: "icons/icon-maskable-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable"
+          }
+        ],
+        shortcuts: [
+          {
+            name: "สร้างห้องใหม่",
+            short_name: "สร้างห้อง",
+            url: "./",
+            icons: [{ src: "icons/icon-192.png", sizes: "192x192" }]
+          }
+        ]
+      },
       workbox: {
         cleanupOutdatedCaches: true,
         skipWaiting: true,
