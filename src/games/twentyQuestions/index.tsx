@@ -1,28 +1,24 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { ref, update, increment } from 'firebase/database';
 import { db } from '../../firebase';
-import { Crown, RotateCcw, LogOut, Play, Clock, Shuffle } from 'lucide-react';
-import { getRandomWord, ALL_CATEGORIES } from './insiderData';
+import { getRandomWord } from './insiderData';
 import { recordWin } from '../../components/features/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameTimer } from '../../hooks/useGameTimer';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 import { feedback } from '../../utils/feedback';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
 
-const DISCUSSION_TIME_OPTIONS = (t: any) => [
-  { label: t('insider.discussionTime') + ' 5 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 300 },
-  { label: t('insider.discussionTime') + ' 8 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 480 },
-  { label: t('insider.discussionTime') + ' 10 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 600 },
-];
+import WaitingPhase from './WaitingPhase';
+import RevealPhase from './RevealPhase';
+import DiscussionPhase from './DiscussionPhase';
+import VotingPhase from './VotingPhase';
+import ResultPhase from './ResultPhase';
+import FinishedPhase from './FinishedPhase';
+
 const VOTE_TIME = 180;
 
 const TwentyQuestions = () => {
@@ -31,7 +27,7 @@ const TwentyQuestions = () => {
   const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const [votedFor, setVotedFor] = useState('');
-    const [selectedTime, setSelectedTime] = useState(300);
+  const [selectedTime, setSelectedTime] = useState(300);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showCategorySetting, setShowCategorySetting] = useState(true);
   const [confirmGuesser, setConfirmGuesser] = useState<string | null>(null);
@@ -49,7 +45,6 @@ const TwentyQuestions = () => {
     </div>
   ) : null;
 
-  
   const handleTimeUp = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
@@ -261,6 +256,25 @@ const TwentyQuestions = () => {
     }
   };
 
+  const handleConfirmGuesser = async () => {
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    feedback('correctGuess');
+    const p = confirmGuesser;
+    setConfirmGuesser(null);
+    try {
+      await safeUpdate(`rooms/${roomId}/gameData`, {
+        wordGuessed: true,
+        guesser: p,
+        phase: 'voting',
+        timerEnd: Date.now() + VOTE_TIME * 1000,
+        votes: {},
+      });
+    } finally {
+      advancingRef.current = false;
+    }
+  };
+
   const handleNextRound = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;
@@ -349,442 +363,113 @@ const TwentyQuestions = () => {
   // ════════════════════════════════════════════════════════════════
   if (phase === 'waiting') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-8 animate-fade-in bg-slate-950 text-slate-200 px-4">
-        {renderErrorToast()}
-        <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} className="text-7xl select-none drop-shadow-[0_0_20px_rgba(168,85,247,0.5)]">
-          🕵️
-        </motion.div>
-
-        <div className="text-center">
-          <h2 className="font-black text-[28px] uppercase tracking-widest text-white mb-2 drop-shadow-md">{t('insider.title')}</h2>
-          <p className="text-slate-400 text-[12px] font-bold leading-relaxed px-4 max-w-sm">
-            {t('insider.description')}
-          </p>
-        </div>
-
-        <NeonCard color="purple" className="p-4 w-full max-w-xs text-left bg-purple-950/20 border-purple-500/30">
-          <div className="space-y-3 font-medium text-[11px] leading-relaxed text-slate-300">
-            <div className="flex items-center gap-3">
-              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">👑</span><span><strong className="text-amber-400">{t('insider.roleMaster')}</strong> {t('insider.roleMasterDesc')}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">🕵️</span><span><strong className="text-purple-400">{t('insider.roleInsider')}</strong> {t('insider.roleInsiderDesc')}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[16px] drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">❓</span><span><strong className="text-emerald-400">{t('insider.roleCommon')}</strong> {t('insider.roleCommonDesc')}</span>
-            </div>
-          </div>
-        </NeonCard>
-
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl w-full max-w-xs">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.players')} {players.length} {t('spyfall.startGame').split(' ')[1]}</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {players.map(p => (
-              <span key={p} className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border ${p === roomData.host ? 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                {p === roomData.host ? `👑 ${p}` : p === userNickname ? `${p} (${t('taboo.you')})` : p}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {isHost ? (
-          <>
-            <div className="w-full max-w-xs">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('insider.categoryTitle')}</p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <button
-                  onClick={() => setSelectedCategories([])}
-                  className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
-                    selectedCategories.length === 0
-                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
-                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
-                  }`}
-                >
-                  {t('taboo.cardPackAll')}
-                </button>
-                {ALL_CATEGORIES.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategories(prev =>
-                      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
-                    )}
-                    className={`py-2 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-colors ${
-                      selectedCategories.includes(cat)
-                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
-                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="w-full max-w-xs bg-slate-900/50 p-4 rounded-3xl border border-slate-800">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">แสดงหมวดหมู่ระหว่างเล่น</p>
-                <button
-                  onClick={() => setShowCategorySetting(!showCategorySetting)}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${showCategorySetting ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' : 'bg-slate-700'}`}
-                >
-                  <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${showCategorySetting ? 'translate-x-6' : 'translate-x-0.5'}`} />
-                </button>
-              </div>
-            </div>
-            <div className="w-full max-w-xs">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('taboo.roundTime')}</p>
-              <div className="flex gap-2">
-                {DISCUSSION_TIME_OPTIONS(t).map(opt => (
-                  <button
-                    key={opt.seconds}
-                    onClick={() => setSelectedTime(opt.seconds)}
-                    className={`flex-1 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-colors ${
-                      selectedTime === opt.seconds
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <GiantButton color="purple" onClick={handleStartGame} className="w-full max-w-xs" disabled={nonHostPlayers.length < 2}>
-              <Play size={20} fill="currentColor" className="mr-2 inline-block mb-1" /> {t('insider.startGame')}
-            </GiantButton>
-            {nonHostPlayers.length < 2 && (
-              <p className="text-center text-[11px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl mt-2 w-full max-w-xs">
-                {t('taboo.minPlayers')} (ไม่นับ Host)
-              </p>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-4 mt-8">
-            <div className="w-8 h-8 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
-          </div>
-        )}
-      </div>
+      <WaitingPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        players={players}
+        roomData={roomData}
+        userNickname={userNickname}
+        isHost={isHost}
+        selectedCategories={selectedCategories}
+        setSelectedCategories={setSelectedCategories}
+        showCategorySetting={showCategorySetting}
+        setShowCategorySetting={setShowCategorySetting}
+        selectedTime={selectedTime}
+        setSelectedTime={setSelectedTime}
+        handleStartGame={handleStartGame}
+        nonHostPlayers={nonHostPlayers}
+      />
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  // REVEAL — Show roles
+  // REVEAL
   // ════════════════════════════════════════════════════════════════
   if (phase === 'reveal') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6 animate-fade-in bg-slate-950 text-slate-200 px-4">
-        {renderErrorToast()}
-        <div className="text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-500/10 border border-purple-500/30 px-4 py-2 rounded-xl">
-          {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
-        </div>
-
-        {isModerator && (
-          <NeonCard color="amber" className="p-8 w-full max-w-xs text-center border-amber-500/30 bg-amber-950/20">
-            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-3">{t('insider.roleMaster')} 👑</p>
-            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
-            <p className="font-black text-[36px] text-white drop-shadow-[0_0_15px_rgba(245,158,11,0.5)] mb-4 leading-tight">{secretWord}</p>
-            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleMasterDesc').split('!')[1].trim()}</p>
-            <div className="flex flex-col gap-3 mt-6 w-full">
-              <button onClick={handleRerollWord} className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-amber-500/50 bg-amber-500/10 text-amber-400 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-                <Shuffle size={16} /> {t('spyfall.actualLocation').split(' ')[0] === 'สถานที่' ? 'สุ่มใหม่' : 'Reroll'}
-              </button>
-              <GiantButton color="emerald" onClick={handleStartDiscussion} className="w-full">
-                <Clock size={20} className="mr-2 inline-block mb-1" /> {t('taboo.startNow')} ({Math.floor(discussionTime / 60)} {t('taboo.roundTime').includes('Time') ? 'min' : 'นาที'})
-              </GiantButton>
-            </div>
-          </NeonCard>
-        )}
-
-        {isInsider && !isModerator && (
-          <NeonCard color="purple" className="p-8 w-full max-w-xs text-center border-purple-500/30 bg-purple-950/20">
-            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3">{t('insider.roleInsider')} 🕵️</p>
-            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
-            <p className="font-black text-[36px] text-white drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] mb-4 leading-tight">{secretWord}</p>
-            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleInsiderDesc')}</p>
-            <div className="flex flex-col items-center gap-3 mt-8">
-              <div className="w-6 h-6 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_10px_rgba(168,85,247,0.5)]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
-            </div>
-          </NeonCard>
-        )}
-
-        {!isModerator && !isInsider && (
-          <NeonCard color="emerald" className="p-8 w-full max-w-xs text-center border-emerald-500/30 bg-emerald-950/20">
-            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3">{t('insider.roleCommon')} 🏘️</p>
-            {showCategory && <p className="text-[11px] font-bold text-slate-400 mb-4">{t('insider.category', { name: category })}</p>}
-            <p className="font-black text-[42px] text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4">???</p>
-            <p className="text-[11px] font-medium text-slate-400 bg-slate-900/50 p-3 rounded-xl border border-slate-800">{t('insider.roleCommonDesc')}</p>
-            <div className="flex flex-col items-center gap-3 mt-8">
-              <div className="w-6 h-6 border-4 border-slate-800 border-t-emerald-500 rounded-full animate-spin shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 animate-pulse">{t('insider.waitingHost')}</span>
-            </div>
-          </NeonCard>
-        )}
-      </div>
+      <RevealPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        roundNumber={roundNumber}
+        nonHostPlayers={nonHostPlayers}
+        isModerator={isModerator}
+        showCategory={showCategory}
+        category={category}
+        secretWord={secretWord}
+        handleRerollWord={handleRerollWord}
+        handleStartDiscussion={handleStartDiscussion}
+        discussionTime={discussionTime}
+        isInsider={isInsider}
+      />
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  // DISCUSSION — Ask questions + guess
+  // DISCUSSION
   // ════════════════════════════════════════════════════════════════
   if (phase === 'discussion') {
     return (
-      <div className="flex-1 flex flex-col gap-3 min-h-0 animate-fade-in bg-slate-950 text-slate-200 px-4 py-4">
-        {renderErrorToast()}
-        {/* Header */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex justify-between items-center shadow-sm">
-          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
-            {t('taboo.round')} {roundNumber}/{nonHostPlayers.length}
-          </span>
-          <TimerDisplay timeLeft={timeLeft} />
-        </div>
-
-        {/* Category + Word hints */}
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center justify-between">
-          {showCategory && (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('insider.categoryTitle')}:</span>
-              <span className="text-[14px] font-black text-slate-300">{category}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            {(isModerator || isInsider) && (
-              <span className={`text-[10px] font-black uppercase tracking-widest border px-3 py-1.5 rounded-xl ${
-                isModerator ? 'text-amber-400 bg-amber-500/10 border-amber-500/30' : 'text-purple-400 bg-purple-500/10 border-purple-500/30'
-              }`}>
-                {t('insider.secretWord')}: <span className="text-[14px]">{secretWord}</span>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="bg-slate-900/50 border border-slate-800 p-4 text-center rounded-3xl">
-          {isModerator ? (
-            <div>
-              <p className="text-[12px] font-black text-amber-400 uppercase tracking-widest mb-2">{t('insider.roleMasterDesc')}</p>
-              <p className="text-[11px] font-bold text-slate-500">{t('taboo.selectWhoCorrect')}</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest mb-2">{t('insider.roleCommonDesc')}</p>
-              <p className="text-[11px] font-bold text-slate-500">{t('taboo.shoutAnswer')}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Host: mark who guessed correctly */}
-        {isModerator && !wordGuessed && (
-          <NeonCard color="emerald" className="p-4 border-emerald-500/30 bg-emerald-950/20">
-            {!confirmGuesser ? (
-              <>
-                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-3 text-center">{t('taboo.whoCorrect')}</p>
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {nonHostPlayers.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setConfirmGuesser(p)}
-                      className="text-[12px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 active:scale-95 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
-                    >
-                      ✓ {p}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="text-center">
-                <p className="text-[12px] font-black text-slate-300 mb-4">{t('taboo.someoneCorrect')} <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]">{confirmGuesser}</span> {t('taboo.correct')}</p>
-                <div className="flex gap-3 justify-center">
-                  <button
-                    onClick={() => setConfirmGuesser(null)}
-                    className="flex-1 py-3 text-[11px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-400 rounded-2xl active:scale-95 transition-all hover:border-slate-500"
-                  >
-                    {t('taboo.cancel')}
-                  </button>
-                  <GiantButton
-                    color="emerald"
-                    className="flex-1"
-                    onClick={async () => {
-                      if (advancingRef.current) return;
-                      advancingRef.current = true;
-                      feedback('correctGuess');
-                      const p = confirmGuesser;
-                      setConfirmGuesser(null);
-                      try {
-                        await safeUpdate(`rooms/${roomId}/gameData`, {
-                          wordGuessed: true,
-                          guesser: p,
-                          phase: 'voting',
-                          timerEnd: Date.now() + VOTE_TIME * 1000,
-                          votes: {},
-                        });
-                      } finally {
-                        advancingRef.current = false;
-                      }
-                    }}
-                  >
-                    {t('target.confirmTarget')}
-                  </GiantButton>
-                </div>
-              </div>
-            )}
-          </NeonCard>
-        )}
-
-        {/* Non-host: waiting indicator */}
-        {!isModerator && !wordGuessed && (
-          <div className="bg-slate-900/50 border border-slate-800 p-6 text-center rounded-3xl flex flex-col items-center gap-3">
-            <div className="text-4xl animate-bounce">🗣️</div>
-            <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 animate-pulse">{t('taboo.listenAndAnswer')}</p>
-          </div>
-        )}
-      </div>
+      <DiscussionPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        roundNumber={roundNumber}
+        nonHostPlayers={nonHostPlayers}
+        timeLeft={timeLeft}
+        showCategory={showCategory}
+        category={category}
+        isModerator={isModerator}
+        isInsider={isInsider}
+        secretWord={secretWord}
+        wordGuessed={wordGuessed}
+        confirmGuesser={confirmGuesser}
+        setConfirmGuesser={setConfirmGuesser}
+        handleConfirmGuesser={handleConfirmGuesser}
+      />
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  // VOTING — Vote for suspected insider
+  // VOTING
   // ════════════════════════════════════════════════════════════════
   if (phase === 'voting') {
-    const voteCount = Object.keys(votes).length;
-    const totalVoters = nonHostPlayers.length;
-
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4">
-        {renderErrorToast()}
-        <div className="text-center">
-          <span className="text-5xl drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]">🗳️</span>
-          <h3 className="font-black text-[24px] uppercase tracking-widest text-white mt-4 drop-shadow-md">{t('insider.votingPhase')}</h3>
-          <p className="text-[12px] font-bold text-slate-400 mt-2 bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl inline-block">{t('insider.voteInsider')}</p>
-        </div>
-
-        <div className="flex-center gap-4 mt-2">
-          <TimerDisplay timeLeft={timeLeft} />
-          <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-500/10 border border-rose-500/30 px-4 py-2 rounded-xl">
-            🗳️ {voteCount}/{totalVoters}
-          </span>
-        </div>
-
-        <NeonCard color="emerald" className="p-4 text-center border-emerald-500/30 bg-emerald-950/20">
-          <p className="text-[12px] font-medium text-slate-300">{t('insider.wordGuessedDesc', { name: guesser })} "<span className="font-black text-emerald-400">{secretWord}</span>" {t('taboo.correct')}</p>
-        </NeonCard>
-
-        {/* Vote buttons */}
-        {!isModerator && (
-          <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 text-center">{t('spyfall.votePanelDesc')}:</p>
-            <div className="space-y-2">
-              {nonHostPlayers.filter(p => p !== userNickname).map(p => (
-                <button
-                  key={p}
-                  onClick={() => handleVote(p)}
-                  disabled={!!votedFor}
-                  className={`w-full p-4 rounded-2xl text-left font-black text-[14px] uppercase tracking-widest border transition-all ${
-                    votedFor === p
-                      ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-[0_0_15px_rgba(225,29,72,0.3)]'
-                      : votedFor
-                        ? 'bg-slate-900 border-slate-800 text-slate-600'
-                        : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:text-white active:scale-95'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {votedFor === p ? <span className="text-xl">🗳️</span> : <span className="w-5" />}
-                    {p}
-                  </div>
-                </button>
-              ))}
-            </div>
-            {votedFor && <p className="text-[10px] text-rose-400 font-black uppercase tracking-widest mt-4 text-center animate-pulse">{t('insider.voted')}</p>}
-          </div>
-        )}
-
-        {isModerator && (
-          <NeonCard color="slate" className="p-6 text-center border-slate-800 bg-slate-900">
-            <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-4">{t('insider.voted')} <span className="text-white">{voteCount}/{totalVoters}</span></p>
-            <GiantButton
-              color="rose"
-              onClick={handleVoteEnd}
-              disabled={voteCount === 0}
-              className="w-full"
-            >
-              {t('quiz.viewResults')}
-            </GiantButton>
-          </NeonCard>
-        )}
-      </div>
+      <VotingPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        nonHostPlayers={nonHostPlayers}
+        timeLeft={timeLeft}
+        votes={votes}
+        guesser={guesser}
+        secretWord={secretWord}
+        isModerator={isModerator}
+        userNickname={userNickname}
+        votedFor={votedFor}
+        handleVote={handleVote}
+        handleVoteEnd={handleVoteEnd}
+      />
     );
   }
 
   // ════════════════════════════════════════════════════════════════
-  // RESULT — Show who was the insider
+  // RESULT
   // ════════════════════════════════════════════════════════════════
   if (phase === 'result') {
-    const caughtInsider = gameData.caughtInsider;
-    const topVoted = gameData.topVoted || '';
-
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4 h-full pb-24">
-        {renderErrorToast()}
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center mt-4">
-          <span className={`text-6xl drop-shadow-[0_0_20px_rgba(${caughtInsider ? '16,185,129' : wordGuessed ? '168,85,247' : '239,68,68'},0.5)]`}>
-            {caughtInsider ? '🎉' : wordGuessed ? '🕵️' : '⏰'}
-          </span>
-          <h3 className="font-black text-[24px] uppercase tracking-widest text-white mt-4 drop-shadow-md">
-            {!wordGuessed ? t('taboo.timeUp') : caughtInsider ? t('insider.commonsWin') : t('insider.insiderWin')}
-          </h3>
-        </motion.div>
-
-        <NeonCard color="purple" className="p-6 text-center border-purple-500/30 bg-purple-950/20 mt-2">
-          <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-3">{t('insider.insiderWas', { name: '' }).trim()}</p>
-          <p className="font-black text-[32px] text-white drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] leading-tight">{insiderName}</p>
-          {wordGuessed && topVoted && (
-            <div className="mt-4 bg-slate-900/50 p-3 rounded-xl border border-slate-800">
-              <p className="text-[11px] font-bold text-slate-400">
-                {t('spyfall.spyGuessed').split(' ')[0] === 'สายลับ' ? 'โดนโหวตมากสุด' : 'Top Voted'}: <span className="font-black text-slate-200">{topVoted}</span>
-                {caughtInsider ? ' ✅' : ' ❌'}
-              </p>
-            </div>
-          )}
-        </NeonCard>
-
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-3xl text-center">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('insider.secretWord')}</p>
-          <p className="font-black text-[24px] text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">{secretWord}</p>
-          <p className="text-[11px] font-bold text-slate-500 mt-1">{category}</p>
-        </div>
-
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl">
-          <h3 className="font-black text-[10px] text-slate-500 uppercase tracking-widest mb-3 text-center">📊 {t('taboo.currentScores')}</h3>
-          <div className="space-y-2">
-            {sortedScores.map(([name, score], idx) => (
-              <div key={name} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800">
-                <span className="text-[11px] font-black text-slate-500 w-4">{idx + 1}</span>
-                <span className="flex-1 font-black text-[13px] text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                  {name}
-                  {name === insiderName && <span className="text-[8px] text-purple-400 bg-purple-500/10 border border-purple-500/30 px-2 py-0.5 rounded-md">Insider</span>}
-                </span>
-                <span className="font-black text-[16px] text-emerald-400">{score as number}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50">
-          {isHost ? (
-            <GiantButton color="emerald" onClick={handleNextRound} className="w-full">
-              {roundNumber >= nonHostPlayers.length ? t('taboo.viewResults') : t('taboo.nextRound')}
-            </GiantButton>
-          ) : (
-            <div className="flex-center gap-3 py-3">
-              <div className="w-5 h-5 border-2 border-slate-800 border-t-emerald-500 rounded-full animate-spin" />
-              <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">{t('insider.waitingHost')}</span>
-            </div>
-          )}
-        </div>
-      </div>
+      <ResultPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        caughtInsider={gameData.caughtInsider}
+        wordGuessed={wordGuessed}
+        insiderName={insiderName}
+        topVoted={gameData.topVoted || ''}
+        secretWord={secretWord}
+        category={category}
+        sortedScores={sortedScores}
+        isHost={isHost}
+        handleNextRound={handleNextRound}
+        roundNumber={roundNumber}
+        nonHostPlayers={nonHostPlayers}
+      />
     );
   }
 
@@ -794,62 +479,19 @@ const TwentyQuestions = () => {
   if (phase === 'finished') {
     const topPlayer = sortedScores[0];
     return (
-      <div className="flex-1 flex flex-col gap-4 py-4 animate-fade-in bg-slate-950 text-slate-200 px-4 pb-24 h-full">
-        {renderErrorToast()}
-        {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
-        
-        <div className="text-center mt-6">
-          <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }} className="text-6xl mb-4 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]">
-            🏆
-          </motion.div>
-          <h2 className="font-black text-[28px] uppercase tracking-widest text-white drop-shadow-md">{t('quiz.finished')}</h2>
-        </div>
-
-        {topPlayer && (
-          <NeonCard color="amber" className="p-8 text-center border-amber-500/50 bg-amber-950/20 shadow-[0_0_30px_rgba(245,158,11,0.15)] mt-4">
-            <Crown size={32} className="text-amber-400 mx-auto mb-4 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
-            <p className="font-black text-[10px] text-amber-500 uppercase tracking-widest mb-2">{t('spyfall.citizenWin').split(' ')[0] === 'พลเมือง' ? 'ผู้ชนะ' : 'Winner'}</p>
-            <p className="font-black text-[32px] text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] leading-tight">{topPlayer[0]}</p>
-            <p className="text-[16px] font-black text-amber-400 mt-2">{topPlayer[1]} <span className="text-[10px] text-amber-500/70">{t('taboo.pointsGuesser').split(' ')[1]}</span></p>
-          </NeonCard>
-        )}
-
-        <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-3xl mt-4">
-          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 text-center">{t('taboo.totalScores')}</h3>
-          <div className="space-y-2">
-            {sortedScores.map(([name, score], idx) => (
-              <div key={name} className={`flex justify-between items-center p-4 rounded-2xl border ${
-                idx === 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-slate-900 border-slate-800'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl drop-shadow-md">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : <span className="text-slate-600 text-sm font-black w-8 text-center inline-block">#{idx + 1}</span>}</span>
-                  <span className={`font-black text-[14px] uppercase tracking-widest ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{name}</span>
-                </div>
-                <span className={`font-black text-[18px] ${idx === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>{score as number}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 z-50 flex gap-3">
-          {isHost ? (
-            <>
-              <GiantButton color="emerald" className="flex-1" onClick={handlePlayAgain}>
-                <RotateCcw size={18} className="mr-2 inline-block mb-0.5" />
-                {t('taboo.playAgain')}
-              </GiantButton>
-              <button className="flex-1 py-4 text-[12px] font-black uppercase tracking-widest border border-slate-700 bg-slate-800 text-slate-300 rounded-2xl active:scale-95 transition-all hover:border-slate-500" onClick={handleBackToLobby}>
-                <LogOut size={16} className="mr-2 inline-block mb-0.5" />
-                {t('quiz.backToLobby')}
-              </button>
-            </>
-          ) : (
-            <button className="w-full py-4 text-[12px] font-black uppercase tracking-widest border border-red-500/50 bg-red-500/10 text-red-500 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-red-500/20" onClick={requestLeave}>
-              <LogOut size={16} /> {t('taboo.leaveRoom')}
-            </button>
-          )}
-        </div>
-      </div>
+      <FinishedPhase
+        t={t}
+        renderErrorToast={renderErrorToast}
+        showConfirm={showConfirm}
+        confirmLeave={confirmLeave}
+        cancelLeave={cancelLeave}
+        topPlayer={topPlayer}
+        sortedScores={sortedScores}
+        isHost={isHost}
+        handlePlayAgain={handlePlayAgain}
+        handleBackToLobby={handleBackToLobby}
+        requestLeave={requestLeave}
+      />
     );
   }
 
