@@ -16,6 +16,9 @@ export function saveSession(roomId, nickname) {
 
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('lastRoomId');
+  localStorage.removeItem('lastActiveTime');
+  localStorage.removeItem('lastPath');
 }
 
 const ReconnectBanner = () => {
