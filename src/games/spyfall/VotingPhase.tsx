@@ -1,8 +1,8 @@
 import React from 'react';
 import { Vote, CheckCircle2, ChevronDown } from 'lucide-react';
-import EpicPopup from '../../components/EpicPopup';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import EpicPopup from '../../components/ui/EpicPopup';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface VotingPhaseProps {

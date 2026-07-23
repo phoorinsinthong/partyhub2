@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { ref, remove } from 'firebase/database';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { clearSession } from '../components/ReconnectBanner';
+import { clearSession } from '../components/core/ReconnectBanner';
 
 export function useGameLeave(roomId, userNickname) {
   const navigate = useNavigate();

@@ -10,13 +10,13 @@ import { useGameTimer } from '../../hooks/useGameTimer';
 import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 import { Trophy, Clock, CheckCircle, XCircle, Crown, RotateCcw, LogOut } from 'lucide-react';
 import { getShuffledQuestions, CATEGORY_LABELS } from './quizData';
-import { recordWin } from '../../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { recordWin } from '../../components/features/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 import { feedback } from '../../utils/feedback';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 const QUESTION_TIME = 15;
 const TOTAL_QUESTIONS = 10;

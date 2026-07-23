@@ -6,13 +6,13 @@ import { useGameLeave } from '../../hooks/useGameLeave';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
-import PlayingCard from '../../components/PlayingCard';
+import PlayingCard from '../../components/ui/PlayingCard';
 import { createDeck, shuffleDeck, calculateBlackjackScore } from '../../utils/cards';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import { recordWin } from '../../components/Scoreboard';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import { recordWin } from '../../components/features/Scoreboard';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 const Blackjack: React.FC = () => {
   const { t } = useTranslation();

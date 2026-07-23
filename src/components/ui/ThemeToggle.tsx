@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme } from '../../hooks/useTheme';
 
 const ThemeToggle = ({ className = '' }) => {
   const { isDark, toggle } = useTheme();

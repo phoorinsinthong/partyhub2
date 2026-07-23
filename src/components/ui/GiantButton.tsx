@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { useHaptics } from '../hooks/useHaptics';
+import { useHaptics } from '../../hooks/useHaptics';
 
 interface GiantButtonProps extends HTMLMotionProps<"button"> {
   children: React.ReactNode;

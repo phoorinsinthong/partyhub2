@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useHaptics } from '../hooks/useHaptics';
+import { useHaptics } from '../../hooks/useHaptics';
 
 interface EpicPopupProps {
   isOpen: boolean;

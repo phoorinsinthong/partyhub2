@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Trophy, X, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GAME_NAMES, GAME_ICONS } from '../utils/gameData';
+import { GAME_NAMES, GAME_ICONS } from '../../utils/gameData';
 
 const STATS_KEY = 'partyhub_personal_stats';
 

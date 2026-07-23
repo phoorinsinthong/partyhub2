@@ -1,10 +1,10 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, update, get, remove } from 'firebase/database';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { Trophy, Medal, Star, X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GAME_NAMES } from '../utils/gameData';
+import { GAME_NAMES } from '../../utils/gameData';
 
 export async function recordWin(roomId, winnerName, gameName) {
   const scoreRef = ref(db, `rooms/${roomId}/scoreboard/${winnerName}`);

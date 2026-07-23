@@ -7,12 +7,12 @@ import { db } from '../firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePresence, usePlayerCleanup, useHostPromotedToast } from '../hooks/usePresence';
 import { getAvatarUrl, getRandomGradient } from '../utils/avatars';
-import Scoreboard from '../components/Scoreboard';
-import PersonalStats from '../components/PersonalStats';
-import ConnectionIndicator from '../components/ConnectionIndicator';
-import { saveSession, clearSession } from '../components/ReconnectBanner';
-import EpicPopup from '../components/EpicPopup';
-import SmartTutorialOverlay, { TutorialStep } from '../components/SmartTutorialOverlay';
+import Scoreboard from '../components/features/Scoreboard';
+import PersonalStats from '../components/features/PersonalStats';
+import ConnectionIndicator from '../components/core/ConnectionIndicator';
+import { saveSession, clearSession } from '../components/core/ReconnectBanner';
+import EpicPopup from '../components/ui/EpicPopup';
+import SmartTutorialOverlay, { TutorialStep } from '../components/features/SmartTutorialOverlay';
 import { useGame } from '../contexts/GameContext';
 import { useHaptics } from '../hooks/useHaptics';
 

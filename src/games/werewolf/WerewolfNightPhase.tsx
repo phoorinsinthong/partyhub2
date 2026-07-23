@@ -2,7 +2,7 @@ import React from 'react';
 import { Moon, Eye, Skull } from 'lucide-react';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
-import GiantButton from '../../components/GiantButton';
+import GiantButton from '../../components/ui/GiantButton';
 import { VOICE_SCRIPTS, ROLES } from './werewolfData';
 import { resolveNightActions, WOLF_ROLES } from './werewolfLogic';
 

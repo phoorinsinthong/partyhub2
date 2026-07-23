@@ -1,8 +1,8 @@
 import React from 'react';
 import { Timer, Search, ChevronDown } from 'lucide-react';
-import EpicPopup from '../../components/EpicPopup';
-import HoldToRevealCard from '../../components/HoldToRevealCard';
-import GiantButton from '../../components/GiantButton';
+import EpicPopup from '../../components/ui/EpicPopup';
+import HoldToRevealCard from '../../components/ui/HoldToRevealCard';
+import GiantButton from '../../components/ui/GiantButton';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface PlayingPhaseProps {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import GiantButton from '../../components/GiantButton';
+import GiantButton from '../../components/ui/GiantButton';
 
 interface RoundEndPhaseProps {
   renderErrorToast: () => React.ReactNode;

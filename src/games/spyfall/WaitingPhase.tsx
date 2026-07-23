@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, LogOut, MapPin, Clock, Shield } from 'lucide-react';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 import { CAT_META } from './spyfallCats';
 import { TIMER_PRESETS } from '../../hooks/useGameTimer';
 

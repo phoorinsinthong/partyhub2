@@ -1,12 +1,12 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { ref, get } from 'firebase/database';
-import { db, authReady } from '../firebase';
+import { db, authReady } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, X } from 'lucide-react';
-import { GAME_NAMES } from '../utils/gameData';
-import { useGame } from '../contexts/GameContext';
+import { GAME_NAMES } from '../../utils/gameData';
+import { useGame } from '../../contexts/GameContext';
 
 const SESSION_KEY = 'partyhub_session';
 

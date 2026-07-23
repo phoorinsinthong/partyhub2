@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   generateRandomSeed, getAvatarUrl, AVATAR_GRADIENTS, getRandomGradient,
   saveAvatar, loadAvatar 
-} from '../utils/avatars';
+} from '../../utils/avatars';
 import { Shuffle, Check, Edit3 } from 'lucide-react';
-import { useHaptics } from '../hooks/useHaptics';
+import { useHaptics } from '../../hooks/useHaptics';
 
 interface AvatarPickerProps {
   onSelect: (seed: string, gradient: string) => void;

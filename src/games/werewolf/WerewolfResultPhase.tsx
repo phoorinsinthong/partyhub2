@@ -5,10 +5,10 @@ import { useGameLeave } from '../../hooks/useGameLeave';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import { ROLES } from './werewolfData';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
-import EpicPopup from '../../components/EpicPopup';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
+import EpicPopup from '../../components/ui/EpicPopup';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 
 export const WerewolfResultPhase: React.FC = () => {
   const { roomId, userNickname, isHost } = useGame();

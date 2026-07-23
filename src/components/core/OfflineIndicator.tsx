@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, Zap } from 'lucide-react';
-import { useHaptics } from '../hooks/useHaptics';
+import { useHaptics } from '../../hooks/useHaptics';
 
 const OfflineIndicator = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);

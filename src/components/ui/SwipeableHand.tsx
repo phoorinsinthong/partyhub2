@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, PanInfo } from 'framer-motion';
-import PlayingCard from './PlayingCard';
+import PlayingCard from '../ui/PlayingCard';
 
 interface SwipeableHandProps {
   cards: any[];

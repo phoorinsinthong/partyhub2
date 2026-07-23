@@ -5,18 +5,18 @@ import { ref, update, increment } from 'firebase/database';
 import { db } from '../../firebase';
 import { Crown, RotateCcw, LogOut, Play, Clock, Shuffle } from 'lucide-react';
 import { getRandomWord, ALL_CATEGORIES } from './insiderData';
-import { recordWin } from '../../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { recordWin } from '../../components/features/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 import { feedback } from '../../utils/feedback';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 const DISCUSSION_TIME_OPTIONS = (t: any) => [
   { label: t('insider.discussionTime') + ' 5 ' + (t('insider.discussionTime').includes('Time') ? 'min' : 'นาที'), seconds: 300 },

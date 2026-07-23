@@ -1,6 +1,6 @@
 import React from 'react';
 import { Maximize2 } from 'lucide-react';
-import GiantButton from '../../../components/GiantButton';
+import GiantButton from '../../../components/ui/GiantButton';
 
 export const VotingPhase = ({
   players, votes, userNickname, colorMap, voteTarget, setVoteTarget,

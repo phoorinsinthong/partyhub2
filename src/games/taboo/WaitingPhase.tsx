@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 interface WaitingPhaseProps {
   renderErrorToast: () => React.ReactNode;

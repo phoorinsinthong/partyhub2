@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SkipForward } from 'lucide-react';
-import GiantButton from '../../components/GiantButton';
+import GiantButton from '../../components/ui/GiantButton';
 
 interface ChoosingPhaseProps {
   renderErrorToast: () => React.ReactNode;

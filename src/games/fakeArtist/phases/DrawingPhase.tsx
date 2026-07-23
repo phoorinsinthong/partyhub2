@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pencil } from 'lucide-react';
-import NeonCard from '../../../components/NeonCard';
+import NeonCard from '../../../components/ui/NeonCard';
 import { TimerDisplay } from '../../../components/game-ui/TimerDisplay';
 
 export const DrawingPhase = ({

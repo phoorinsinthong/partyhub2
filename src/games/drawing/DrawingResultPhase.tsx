@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Share2, Trophy, RotateCcw, LogOut } from 'lucide-react';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 
 interface Props {
   phase: string;

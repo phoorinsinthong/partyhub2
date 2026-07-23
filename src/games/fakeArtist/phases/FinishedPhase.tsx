@@ -1,7 +1,7 @@
 import React from 'react';
 import { Maximize2, LogOut } from 'lucide-react';
-import NeonCard from '../../../components/NeonCard';
-import GiantButton from '../../../components/GiantButton';
+import NeonCard from '../../../components/ui/NeonCard';
+import GiantButton from '../../../components/ui/GiantButton';
 
 export const FinishedPhase = ({
   voteResult, fakeArtist, secretWord, fakeGuess, players, colorMap,

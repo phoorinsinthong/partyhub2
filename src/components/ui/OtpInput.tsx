@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useRef, useState, useEffect } from 'react';
-import { useHaptics } from '../hooks/useHaptics';
+import { useHaptics } from '../../hooks/useHaptics';
 
 interface OtpInputProps {
   length?: number;

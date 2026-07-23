@@ -1,6 +1,6 @@
 import React from 'react';
-import NeonCard from '../../../components/NeonCard';
-import GiantButton from '../../../components/GiantButton';
+import NeonCard from '../../../components/ui/NeonCard';
+import GiantButton from '../../../components/ui/GiantButton';
 import { Pencil } from 'lucide-react';
 import { WORD_CATEGORIES, TURN_TIME_OPTIONS, ROUNDS_OPTIONS } from '../fakeArtistData';
 

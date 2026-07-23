@@ -5,8 +5,8 @@ import { ref, update } from 'firebase/database';
 import { db } from '../../firebase';
 import { Crown, RotateCcw, LogOut } from 'lucide-react';
 import { getRandomCategories } from './wordBombData';
-import { recordWin } from '../../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { recordWin } from '../../components/features/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
 import { useTurnNotification } from '../../hooks/useTurnNotification';
 import { useGame } from '../../contexts/GameContext';
@@ -14,10 +14,10 @@ import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 import { feedback } from '../../utils/feedback';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 const MAX_LIVES = 3;
 

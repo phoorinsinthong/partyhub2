@@ -6,35 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../firebase';
 import { RefreshCw, LogOut, Crown, ArrowLeftRight } from 'lucide-react';
 import { usePresence, usePlayerCleanup, useHostPromotedToast } from '../hooks/usePresence';
-import GameGuide from '../components/GameGuide';
-import Scoreboard from '../components/Scoreboard';
-import ConnectionIndicator from '../components/ConnectionIndicator';
-import { saveSession, clearSession } from '../components/ReconnectBanner';
+import GameGuide from '../components/features/GameGuide';
+import Scoreboard from '../components/features/Scoreboard';
+import ConnectionIndicator from '../components/core/ConnectionIndicator';
+import { saveSession, clearSession } from '../components/core/ReconnectBanner';
 import { GAME_NAMES, GAME_ICONS } from '../utils/gameData';
 import { fireConfetti } from '../utils/confetti';
+import { GAME_COMPONENTS } from '../utils/gameRegistry';
 import { useGame } from '../contexts/GameContext';
 
 const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wouldyourather', 'wordbomb', 'mathrace'];
 
 // Lazy-load game components
-const DrinkingGame = lazy(() => import('../games/drinkingGame'));
-const Spyfall = lazy(() => import('../games/spyfall'));
-const TargetNumber = lazy(() => import('../games/targetNumber'));
-const Werewolf = lazy(() => import('../games/werewolf'));
-const TruthOrDare = lazy(() => import('../games/truthOrDare'));
-const Quiz = lazy(() => import('../games/quiz'));
-const Drawing = lazy(() => import('../games/drawing'));
-const WouldYouRather = lazy(() => import('../games/wouldYouRather'));
-const WordBomb = lazy(() => import('../games/wordBomb'));
-const NeverHaveIEver = lazy(() => import('../games/neverHaveIEver'));
-const Taboo = lazy(() => import('../games/taboo'));
-const MathRace = lazy(() => import('../games/mathRace'));
-const TwentyQuestions = lazy(() => import('../games/twentyQuestions'));
-const FakeArtist = lazy(() => import('../games/fakeArtist'));
-const Blackjack = lazy(() => import('../games/blackjack'));
-const Slaves = lazy(() => import('../games/slaves'));
-const Poker = lazy(() => import('../games/poker'));
-const PokDeng = lazy(() => import('../games/pokDeng'));
 
 const GameLoadingFallback = () => (
   <div className="flex items-center justify-center flex-1 flex-col gap-3 py-20">
@@ -218,35 +201,17 @@ const GameRoom: React.FC = () => {
   };
 
   const renderGame = () => {
-    const props = { roomId, roomData, userNickname };
-    switch (roomData.currentGame) {
-      case 'drinking': return <DrinkingGame />;
-      case 'spyfall': return <Spyfall />;
-      case 'target': return <TargetNumber />;
-      case 'werewolf':
-      case 'werewolf_physical': return <Werewolf />;
-      case 'truthordare': return <TruthOrDare />;
-      case 'quiz': return <Quiz />;
-      case 'drawing': return <Drawing />;
-      case 'wouldyourather': return <WouldYouRather />;
-      case 'wordbomb': return <WordBomb />;
-      case 'neverhaveiever': return <NeverHaveIEver />;
-      case 'taboo': return <Taboo />;
-      case 'mathrace': return <MathRace />;
-      case 'twentyquestions': return <TwentyQuestions />;
-      case 'fakeartist': return <FakeArtist />;
-      case 'blackjack': return <Blackjack />;
-      case 'slaves': return <Slaves />;
-      case 'poker': return <Poker />;
-      case 'pokdeng': return <PokDeng />;
-      default: return (
-        <div className="bg-slate-900 border border-slate-700 rounded-2xl flex items-center justify-center flex-col p-8 text-center flex-1 gap-3">
-          <span className="text-4xl">🔨</span>
-          <p className="font-bold text-slate-200">กำลังรอสักครู่...</p>
-          <p className="text-slate-400 text-sm">รอหัวห้องเลือกเกม!</p>
-        </div>
-      );
+    const GameComponent = GAME_COMPONENTS[roomData.currentGame as keyof typeof GAME_COMPONENTS];
+    if (GameComponent) {
+      return <GameComponent />;
     }
+    return (
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl flex items-center justify-center flex-col p-8 text-center flex-1 gap-3">
+        <span className="text-4xl">🔨</span>
+        <p className="font-bold text-slate-200">กำลังรอสักครู่...</p>
+        <p className="text-slate-400 text-sm">รอหัวห้องเลือกเกม!</p>
+      </div>
+    );
   };
 
   return (

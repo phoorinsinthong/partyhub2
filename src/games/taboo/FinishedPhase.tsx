@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown, LogOut, RotateCcw } from 'lucide-react';
-import GiantButton from '../../components/GiantButton';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
+import GiantButton from '../../components/ui/GiantButton';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
 
 interface FinishedPhaseProps {
   renderErrorToast: () => React.ReactNode;

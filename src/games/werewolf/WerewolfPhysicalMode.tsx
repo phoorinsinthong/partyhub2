@@ -5,8 +5,8 @@ import { useGameLeave } from '../../hooks/useGameLeave';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import { WerewolfNightPhase } from './WerewolfNightPhase';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 
 export const WerewolfPhysicalMode: React.FC = () => {
   const { roomId, userNickname } = useGame();

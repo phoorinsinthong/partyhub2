@@ -18,16 +18,16 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { TIMER_PRESETS } from '../../hooks/useGameTimer';
 import { feedback } from '../../utils/feedback';
-import { recordWin } from '../../components/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/PersonalStats';
+import { recordWin } from '../../components/features/Scoreboard';
+import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
 import { useGameLeave } from '../../hooks/useGameLeave';
 import { useGame } from '../../contexts/GameContext';
 import { useGameUpdate } from '../../hooks/useGameUpdate';
-import LeaveConfirmModal from '../../components/LeaveConfirmModal';
-import EpicPopup from '../../components/EpicPopup';
-import GiantButton from '../../components/GiantButton';
-import NeonCard from '../../components/NeonCard';
-import HoldToRevealCard from '../../components/HoldToRevealCard';
+import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import EpicPopup from '../../components/ui/EpicPopup';
+import GiantButton from '../../components/ui/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import HoldToRevealCard from '../../components/ui/HoldToRevealCard';
 import { useHaptics } from '../../hooks/useHaptics';
 
 // ─── Main Component ──────────────────────────────────────────────────────────

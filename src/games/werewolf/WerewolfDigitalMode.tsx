@@ -9,8 +9,8 @@ import { WerewolfRoleReveal } from './WerewolfRoleReveal';
 import { StarsBackground, AmbientMist } from './WerewolfVFX';
 import { ROLES, VOICE_SCRIPTS } from './werewolfData';
 import { WOLF_ROLES, resolveNightActions } from './werewolfLogic';
-import NeonCard from '../../components/NeonCard';
-import GiantButton from '../../components/GiantButton';
+import NeonCard from '../../components/ui/NeonCard';
+import GiantButton from '../../components/ui/GiantButton';
 import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
 
 // Dummy components for VFX until we pass them in or extract them
