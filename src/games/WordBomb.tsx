@@ -437,7 +437,7 @@ const WordBomb: React.FC = () => {
         {isHost && (
           <div className="flex flex-col gap-3 w-full max-w-sm px-6">
             <GiantButton
-              color="emerald"
+              color="green"
               onClick={handleCorrectAnswer}
               className="w-full"
             >

@@ -98,13 +98,13 @@ const WouldYouRather: React.FC = () => {
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
         
-        <NeonCard color="indigo" className="p-8 flex flex-col items-center text-center max-w-sm w-full mx-auto">
+        <NeonCard color="blue" className="p-8 flex flex-col items-center text-center max-w-sm w-full mx-auto">
           <div className="text-6xl animate-pulse mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">⚖️</div>
           <h2 className="font-display font-black text-2xl text-white mb-2 uppercase tracking-widest">{t('wouldYouRather.title') || 'Would You Rather'}</h2>
           <p className="text-slate-400 text-sm mb-8 leading-relaxed">{t('wouldYouRather.description') || 'เลือกสิ่งที่คุณชอบมากกว่า และดูว่าเพื่อนเลือกเหมือนกันไหม!'}</p>
           
           {isHost ? (
-            <GiantButton color="indigo" onClick={handleStart} className="w-full">
+            <GiantButton color="blue" onClick={handleStart} className="w-full">
               {t('wouldYouRather.startGame') || 'เริ่มเกมเลย!'}
             </GiantButton>
           ) : (
@@ -123,12 +123,12 @@ const WouldYouRather: React.FC = () => {
         {renderErrorToast()}
         {showConfirm && <LeaveConfirmModal onConfirm={confirmLeave} onCancel={cancelLeave} />}
 
-        <NeonCard color="neon" className="p-8 text-center max-w-sm w-full">
+        <NeonCard color="pink" className="p-8 text-center max-w-sm w-full">
           <div className="text-6xl mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">🏁</div>
           <h2 className="font-display font-black text-3xl text-white mb-6 uppercase tracking-widest">{t('common.finished') || 'จบเกม!'}</h2>
           {isHost ? (
             <div className="flex flex-col gap-3">
-              <GiantButton color="neon" onClick={handleStart}>
+              <GiantButton color="pink" onClick={handleStart}>
                 <RotateCcw size={18} /> {t('common.playAgain') || 'เล่นอีกรอบ'}
               </GiantButton>
               <GiantButton color="slate" onClick={handleBackToLobby}>
@@ -241,7 +241,7 @@ const WouldYouRather: React.FC = () => {
       <div className="mt-8 pb-20">
         {isHost && totalVotes >= 1 && (
           <GiantButton 
-            color={currentQIndex + 1 >= questions.length ? "neon" : "indigo"} 
+            color={currentQIndex + 1 >= questions.length ? "pink" : "blue"} 
             onClick={nextQuestion} 
             className="w-full"
           >

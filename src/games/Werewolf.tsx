@@ -9,6 +9,8 @@ import { useGameLeave } from '../hooks/useGameLeave';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { useGame } from '../contexts/GameContext';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
+import NeonCard from '../components/NeonCard';
+import GiantButton from '../components/GiantButton';
 import { useTranslation } from 'react-i18next';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { 
@@ -1207,7 +1209,7 @@ const Werewolf: React.FC = () => {
       {/* Last Elimination Banner */}
       {wwData.lastElimination && wwData.lastElimination.playerName && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <NeonCard color="red" className="p-4 text-center bg-red-500/10">
+          <NeonCard color="pink" className="p-4 text-center bg-red-500/10">
             <p className="text-red-400 font-black text-sm uppercase tracking-widest">
               {wwData.lastElimination.reason === 'vote' && `🗳️ ${wwData.lastElimination.playerName} ถูกโหวตไล่ออก!`}
               {wwData.lastElimination.reason === 'prince_saved' && `👑 ${wwData.lastElimination.playerName} ถูกโหวต แต่เจ้าชายรอดชีวิต!`}
@@ -1370,7 +1372,7 @@ const Werewolf: React.FC = () => {
           {/* Day Controls */}
           {phase === 'day' && (
             <div className="border-t border-slate-700 pt-4">
-              <GiantButton color="red" onClick={startVotingPhase}>
+              <GiantButton color="pink" onClick={startVotingPhase}>
                 🗳️ เริ่มโหวต
               </GiantButton>
             </div>
@@ -1392,7 +1394,7 @@ const Werewolf: React.FC = () => {
                 })}
               </div>
               <div className="flex flex-col gap-3 mt-4">
-                <GiantButton color="red" onClick={resolveVotes}>✅ อนุมัติผลโหวต</GiantButton>
+                <GiantButton color="pink" onClick={resolveVotes}>✅ อนุมัติผลโหวต</GiantButton>
                 <GiantButton color="slate" onClick={gmSkipVote}>⏭️ ข้าม</GiantButton>
               </div>
             </div>
@@ -1401,7 +1403,7 @@ const Werewolf: React.FC = () => {
           {/* Standby Controls */}
           {phase === 'standby' && (
             <div className="space-y-4 border-t border-slate-700 pt-4">
-              <GiantButton color="indigo" onClick={startNextNight}>
+              <GiantButton color="blue" onClick={startNextNight}>
                 🌙 เริ่มคืนถัดไป
               </GiantButton>
               <div className="border-t border-slate-700 pt-4 mt-2">
@@ -1439,7 +1441,7 @@ const Werewolf: React.FC = () => {
 
           {/* Wolf allies */}
           {WOLF_ROLES.includes(myRole) && (
-            <NeonCard color="red" className="p-3 bg-red-500/10 border-red-500/30">
+            <NeonCard color="pink" className="p-3 bg-red-500/10 border-red-500/30">
               <p className="text-[11px] text-red-400 font-black uppercase tracking-widest flex items-center gap-2">
                 <Users size={14} /> เพื่อนหมาป่า: <span className="text-white normal-case font-bold">{Object.entries(wwPlayers).filter(([n, p]: [string, any]) => WOLF_ROLES.includes(p.role) && n !== userNickname && p.role !== 'gm').map(([n]) => n).join(', ') || 'ไม่มี'}</span>
               </p>
@@ -1461,7 +1463,7 @@ const Werewolf: React.FC = () => {
 
           {/* Night: Action Panel */}
           {phase === 'night' && myIsAlive && (
-            <NeonCard color="indigo" className="p-5 border-indigo-500/30 bg-indigo-500/5">
+            <NeonCard color="blue" className="p-5 border-indigo-500/30 bg-indigo-500/5">
               {(() => {
                 const cfg = ROLES[myRole];
                 if (!cfg || cfg.actionPhase === 'none' || (cfg.actionPhase === 'firstNight' && dayCount > 1)) {
@@ -1570,7 +1572,7 @@ const Werewolf: React.FC = () => {
 
           {/* Voting Panel */}
           {phase === 'voting' && (
-            <NeonCard color="red" className="p-5 border-red-500/30 bg-red-500/10">
+            <NeonCard color="pink" className="p-5 border-red-500/30 bg-red-500/10">
               <p className="text-[11px] font-black text-red-400 uppercase tracking-widest mb-4 flex items-center gap-2 drop-shadow-md"><Users size={14} /> 🗳️ เลือกคนที่จะแขวนคอ</p>
               {myIsAlive && !myPlayerData?.status?.silenced && !myPlayerData?.status?.banned ? (
                 <div className="grid grid-cols-2 gap-2">

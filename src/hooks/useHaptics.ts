@@ -33,10 +33,18 @@ export function useHaptics() {
     }
   }, []);
 
+  // สั่นเมื่อสำเร็จ (Success)
+  const vibrateSuccess = useCallback(() => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([30, 50, 30]);
+    }
+  }, []);
+
   return {
     vibrateLight,
     vibrateMedium,
     vibrateHeavy,
     vibrateHeartbeat,
+    vibrateSuccess,
   };
 }

@@ -212,8 +212,8 @@ const GameRoom: React.FC = () => {
   );
 
   const meta = {
-    icon: GAME_ICONS[roomData.currentGame] || '🎮',
-    name: GAME_NAMES[roomData.currentGame] || roomData.currentGame,
+    icon: GAME_ICONS[roomData.currentGame as keyof typeof GAME_ICONS] || '🎮',
+    name: GAME_NAMES[roomData.currentGame as keyof typeof GAME_NAMES] || roomData.currentGame,
   };
 
   const renderGame = () => {
@@ -315,8 +315,8 @@ const GameRoom: React.FC = () => {
                     onClick={() => handleSwitchGame(id)}
                     className="flex items-center gap-2 p-3 rounded-2xl border-2 border-slate-700 active:bg-slate-800 active:border-slate-600 transition-all"
                   >
-                    <span className="text-xl">{GAME_ICONS[id]}</span>
-                    <span className="font-bold text-[12px] text-slate-200">{GAME_NAMES[id]}</span>
+                    <span className="text-xl">{GAME_ICONS[id as keyof typeof GAME_ICONS]}</span>
+                    <span className="font-bold text-[12px] text-slate-200">{GAME_NAMES[id as keyof typeof GAME_NAMES]}</span>
                   </button>
                 ))}
               </div>
