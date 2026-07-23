@@ -1,11 +1,13 @@
 // Sound effects utility using Web Audio API (no audio files needed)
 
-let audioCtx = null;
+const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+
+let audioCtx: AudioContext | null = null;
 let soundEnabled = localStorage.getItem('partyhub_sound') !== 'false';
 
-function getContext() {
+function getContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = new AudioCtx();
   }
   // Resume if suspended (browsers require user gesture)
   if (audioCtx.state === 'suspended') {
@@ -14,7 +16,7 @@ function getContext() {
   return audioCtx;
 }
 
-export function setSoundEnabled(enabled) {
+export function setSoundEnabled(enabled: boolean) {
   soundEnabled = !!enabled;
   localStorage.setItem('partyhub_sound', soundEnabled ? 'true' : 'false');
 }

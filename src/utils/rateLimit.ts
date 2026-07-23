@@ -1,17 +1,19 @@
 const LS_KEY = 'partyhub_ratelimit';
 
-function getBuckets() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+type RateBuckets = Record<string, number[]>;
+
+function getBuckets(): RateBuckets {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') as RateBuckets; } catch { return {}; }
 }
 
-function saveBuckets(buckets) {
+function saveBuckets(buckets: RateBuckets) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(buckets)); } catch { /* ignore */ }
 }
 
-export function rateLimit(key, maxActions, windowMs) {
+export function rateLimit(key: string, maxActions: number, windowMs: number): boolean {
   const now = Date.now();
   const buckets = getBuckets();
-  buckets[key] = (buckets[key] || []).filter((t) => now - t < windowMs);
+  buckets[key] = (buckets[key] || []).filter((t: number) => now - t < windowMs);
 
   if (buckets[key].length >= maxActions) {
     saveBuckets(buckets);

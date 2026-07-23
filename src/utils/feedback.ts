@@ -45,11 +45,13 @@ export const haptic = {
  * No external files needed — pure synthesized tones.
  */
 
-let audioCtx = null;
+const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
-function getCtx() {
+let audioCtx: AudioContext | null = null;
+
+function getCtx(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioCtx = new AudioCtx();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
@@ -59,7 +61,9 @@ function isSoundEnabled() {
   return localStorage.getItem('partyhub_sound_enabled') !== 'false';
 }
 
-function playTone(freq, duration = 0.15, volume = 0.2, type = 'sine') {
+type OscillatorKind = OscillatorType;
+
+function playTone(freq: number, duration = 0.15, volume = 0.2, type: OscillatorKind = 'sine') {
   try {
     if (!isSoundEnabled()) return;
     const ctx = getCtx();
@@ -176,7 +180,9 @@ export const sounds = {
   },
 };
 
-export function feedback(type) {
+type FeedbackType = 'tap' | 'success' | 'error' | 'gameStart' | 'victory' | 'countdown' | 'timeUp' | 'correctGuess' | 'newRound' | 'playerJoin' | 'spyReveal';
+
+export function feedback(type: FeedbackType) {
   switch (type) {
     case 'tap': sounds.tap(); haptic.light(); break;
     case 'success': sounds.success(); haptic.success(); break;

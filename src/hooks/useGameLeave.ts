@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { clearSession } from '../components/core/ReconnectBanner';
 
-export function useGameLeave(roomId, userNickname) {
+export function useGameLeave(roomId: string, userNickname: string) {
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
 

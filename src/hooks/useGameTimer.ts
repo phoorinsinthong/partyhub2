@@ -4,11 +4,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * Reusable game timer hook.
  * Reads `timerEnd` from Firebase gameData and counts down.
  *
- * @param {number|null} timerEnd - Unix timestamp when timer expires
- * @param {function|null} onExpire - Callback when timer hits 0
- * @returns {{ timeLeft, formatTime, isUrgent, progress }}
+ * @param timerEnd - Unix timestamp when timer expires
+ * @param onExpire - Callback when timer hits 0
+ * @returns {{ timeLeft, formatTime, isUrgent, isExpired }}
  */
-export function useGameTimer(timerEnd, onExpire = null) {
+export function useGameTimer(timerEnd: number | null, onExpire: (() => void) | null = null) {
   const [timeLeft, setTimeLeft] = useState(() => {
     if (!timerEnd) return 0;
     return Math.max(0, Math.floor((timerEnd - Date.now()) / 1000));
@@ -65,7 +65,7 @@ export function useGameTimer(timerEnd, onExpire = null) {
     timeLeft,
     formatTime,
     isUrgent: timeLeft > 0 && timeLeft < 60,
-    isExpired: timerEnd && timeLeft === 0,
+    isExpired: timerEnd !== null && timeLeft === 0,
   };
 }
 

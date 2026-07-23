@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useEffect, useRef, useState } from 'react';
-import { ref, onValue, onDisconnect, update, set, serverTimestamp, remove, get } from 'firebase/database';
+import { ref, onValue, onDisconnect, update, set, serverTimestamp, remove, get, OnDisconnect } from 'firebase/database';
 import { db } from '../firebase';
 
 const GRACE_PERIOD_MS = 600000;
@@ -20,7 +19,7 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
   const visibilityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wasOfflineDueToVisibilityRef = useRef(false);
   const kickedRef = useRef(false);
-  const onDisconnectRefs = useRef<any[]>([]);
+  const onDisconnectRefs = useRef<OnDisconnect[]>([]);
   const cleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasBeenOnlineRef = useRef(false);
@@ -174,7 +173,7 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
 
         const players = playersSnap.val();
         const onlinePlayers = Object.entries(players)
-          .filter(([, p]: [string, any]) => p.online === true)
+          .filter(([, p]: [string, Record<string, unknown>]) => p.online === true)
           .sort(([a], [b]) => a.localeCompare(b));
 
         if (onlinePlayers.length === 0) {
@@ -205,7 +204,7 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
         const newHostName = firstOnlineName;
 
         // Perform atomic update for all changes to prevent race conditions or invalid states
-        const updates: Record<string, any> = {};
+        const updates: Record<string, unknown> = {};
         updates['host'] = newHostName;
         updates['hostDisconnectedAt'] = null;
         updates[`players/${newHostName}/isHost`] = true;
@@ -254,7 +253,7 @@ export function usePlayerCleanup(roomId: string): void {
       const gracePeriod = isPlayingRef.current ? GRACE_PERIOD_PLAYING_MS : GRACE_PERIOD_MS;
       const now = Date.now();
 
-      Object.entries(players).forEach(([name, data]: [string, any]) => {
+      Object.entries(players).forEach(([name, data]: [string, Record<string, unknown>]) => {
         if (data.online === false && data.lastSeen) {
           const elapsed = now - data.lastSeen;
           const remaining = gracePeriod - elapsed;

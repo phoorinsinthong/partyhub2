@@ -3,8 +3,8 @@ import { feedback } from '../utils/feedback';
 
 const TITLE_FLASH_INTERVAL = 1000;
 
-export function useTurnNotification(isMyTurn, phase) {
-  const flashIntervalRef = useRef(null);
+export function useTurnNotification(isMyTurn: boolean, phase: string) {
+  const flashIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const originalTitleRef = useRef(document.title);
   const prevIsMyTurnRef = useRef(false);
 

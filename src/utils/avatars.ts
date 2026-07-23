@@ -9,7 +9,7 @@ export const generateRandomSeed = () => {
 };
 
 // Get the DiceBear SVG URL for a given seed
-export const getAvatarUrl = (seed) => {
+export const getAvatarUrl = (seed: string) => {
   if (!seed) return '';
   // You can also use other styles like 'bottts' or 'adventurer'
   return `https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
@@ -29,7 +29,7 @@ export const getRandomGradient = () => {
   return AVATAR_GRADIENTS[Math.floor(Math.random() * AVATAR_GRADIENTS.length)];
 };
 
-export const saveAvatar = (seed, gradient) => {
+export const saveAvatar = (seed: string, gradient: string) => {
   localStorage.setItem('avatarSeed', seed);
   localStorage.setItem('avatarGradient', gradient);
   // Backwards compatibility with old system so it doesn't break everything instantly

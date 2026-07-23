@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { ref, onValue, update, get } from 'firebase/database';
 import { db } from '../firebase';
@@ -68,7 +67,7 @@ export function useGameState<T extends GameState>(roomId: string | undefined) {
   );
   
   const updatePlayer = useCallback(
-    async (nickname: string, updates: any) => {
+    async (nickname: string, updates: Record<string, unknown>) => {
         if (!roomId) return false;
         try {
             await update(ref(db, `rooms/${roomId}/players/${nickname}`), updates);

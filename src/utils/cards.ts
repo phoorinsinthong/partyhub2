@@ -1,12 +1,39 @@
-// @ts-nocheck
-// src/utils/cards.js
+// src/utils/cards.ts
 
-export const SUITS = ['spades', 'hearts', 'diamonds', 'clubs'];
-export const VALUES = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
+export type Suit = 'spades' | 'hearts' | 'diamonds' | 'clubs';
+export type CardValue = '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A' | '2';
+
+export interface Card {
+  id: string;
+  suit: Suit;
+  value: CardValue;
+  suitRank: number;
+  valueRank: number;
+}
+
+export interface PlayResult {
+  type: string;
+  highestCard: Card;
+  count: number;
+}
+
+export interface TableState {
+  cards: Card[];
+  type: PlayResult;
+  highestCard: Card;
+}
+
+export interface GameSettings {
+  allowStraight: boolean;
+  enableBomb: boolean;
+}
+
+export const SUITS: Suit[] = ['spades', 'hearts', 'diamonds', 'clubs'];
+export const VALUES: CardValue[] = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
 
 // Slaves rankings: Spades > Hearts > Diamonds > Clubs
 // Actually, in Thai Slaves (สลาฟ): โพดำ > โพแดง > ข้าวหลามตัด > ดอกจิก
-export const SUIT_RANKS = {
+export const SUIT_RANKS: Record<Suit, number> = {
   'spades': 4,
   'hearts': 3,
   'diamonds': 2,
@@ -14,14 +41,14 @@ export const SUIT_RANKS = {
 };
 
 // Slaves values: 2 is highest, 3 is lowest
-export const VALUE_RANKS = {
+export const VALUE_RANKS: Record<CardValue, number> = {
   '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, '10': 8,
   'J': 9, 'Q': 10, 'K': 11, 'A': 12, '2': 13
 };
 
 // Generate a standard 52-card deck
-export function createDeck() {
-  const deck = [];
+export function createDeck(): Card[] {
+  const deck: Card[] = [];
   for (const suit of SUITS) {
     for (const value of VALUES) {
       deck.push({
@@ -37,7 +64,7 @@ export function createDeck() {
 }
 
 // Shuffle deck using Fisher-Yates algorithm
-export function shuffleDeck(deck) {
+export function shuffleDeck(deck: Card[]): Card[] {
   const newDeck = [...deck];
   for (let i = newDeck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -47,7 +74,7 @@ export function shuffleDeck(deck) {
 }
 
 // Sort cards for Slaves (from lowest to highest)
-export function sortCardsSlaves(cards) {
+export function sortCardsSlaves(cards: Card[]): Card[] {
   return [...cards].sort((a, b) => {
     if (a.valueRank !== b.valueRank) {
       return a.valueRank - b.valueRank;
@@ -57,7 +84,7 @@ export function sortCardsSlaves(cards) {
 }
 
 // Calculate Blackjack score
-export function calculateBlackjackScore(hand) {
+export function calculateBlackjackScore(hand: Card[]): number {
   let score = 0;
   let aces = 0;
 
@@ -82,16 +109,18 @@ export function calculateBlackjackScore(hand) {
 }
 
 // --- PokDeng Logic ---
-export const calculatePokDeng = (cards) => {
-  if (!cards || cards.length === 0) return { score: 0, deng: 1, type: 'Normal' };
+export const calculatePokDeng = (cards: Card[]) => {
+  if (!cards || cards.length === 0) return { score: 0, deng: 1, type: 'Normal', weight: 0 };
   
-  const getVal = (c) => {
+  const valueOrder: Record<string, number> = {'A':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13};
+
+  const getVal = (c: Card): number => {
     if (['10', 'J', 'Q', 'K'].includes(c.value)) return 0;
     if (c.value === 'A') return 1;
     return parseInt(c.value);
   };
   
-  const total = cards.reduce((sum, c) => sum + getVal(c), 0);
+  const total = cards.reduce((sum: number, c: Card) => sum + getVal(c), 0);
   const score = total % 10;
   
   let deng = 1;
@@ -116,8 +145,7 @@ export const calculatePokDeng = (cards) => {
     const isFace = ['J','Q','K'].includes(cards[0].value) && ['J','Q','K'].includes(cards[1].value) && ['J','Q','K'].includes(cards[2].value);
     
     // Straight detection
-    const valueOrder = {'A':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13};
-    const sortedValues = cards.map(c => valueOrder[c.value]).sort((a,b) => a - b);
+    const sortedValues = cards.map(c => valueOrder[c.value]).sort((a, b) => a - b);
     
     let isStraight = false;
     // Check normal straight
@@ -150,7 +178,7 @@ export const calculatePokDeng = (cards) => {
 };
 
 // --- Slaves Logic ---
-export const analyzePlay = (cards) => {
+export const analyzePlay = (cards: Card[]): PlayResult | null => {
   if (!cards || cards.length === 0) return null;
   const sorted = sortCardsSlaves(cards);
   const highestCard = sorted[sorted.length - 1];
@@ -185,7 +213,7 @@ export const analyzePlay = (cards) => {
   return null;
 };
 
-export const validatePlay = (selectedCards, table, settings) => {
+export const validatePlay = (selectedCards: Card[], table: TableState | null, settings: GameSettings): boolean => {
   const play = analyzePlay(selectedCards);
   if (!play) return false;
 
@@ -237,7 +265,7 @@ export const validatePlay = (selectedCards, table, settings) => {
 };
 
 // Get display symbol and color for suit
-export function getSuitInfo(suit) {
+export function getSuitInfo(suit: Suit) {
   switch (suit) {
     case 'spades': return { symbol: '♠', color: 'text-stone-800', rawColor: '#292524' };
     case 'hearts': return { symbol: '♥', color: 'text-red-500', rawColor: '#ef4444' };
