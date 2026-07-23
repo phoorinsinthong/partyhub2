@@ -124,7 +124,7 @@ const Lobby: React.FC = () => {
       if (roomData.status === 'playing' || roomData.status === 'finished') {
         if (!isHost) {
           if (!startingPopup) {
-            setStartingPopup(true);
+            setTimeout(() => setStartingPopup(true), 0);
             vibrateSuccess();
             setTimeout(() => {
               navigate(`/game/${roomId}`);
