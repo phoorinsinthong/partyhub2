@@ -4,6 +4,7 @@ import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck, calculatePokDeng } from './logic/cards';
@@ -16,11 +17,11 @@ import { SwipeableHand } from '../components/SwipeableHand';
 
 const PokDeng: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { t } = useTranslation();
   const { confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
 
-  const [errorMsg, setErrorMsg] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
   const [localSettings, setLocalSettings] = useState({ startingChips: 1000 });
   const advancingRef = useRef(false);
 
@@ -48,15 +49,7 @@ const PokDeng: React.FC = () => {
     );
   };
 
-  const safeUpdate = async (updates: any) => {
-    try {
-      await update(ref(db, `rooms/${roomId}/gameData`), updates);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const startGame = async () => {
     if (!isHost) return;
     const newDeck = shuffleDeck(createDeck());

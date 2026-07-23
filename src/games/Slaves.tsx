@@ -4,6 +4,7 @@ import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck, sortCardsSlaves, analyzePlay, validatePlay } from './logic/cards';
@@ -17,9 +18,9 @@ import { LogOut, RotateCcw } from 'lucide-react';
 const Slaves: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
-  const [errorMsg, setErrorMsg] = useState('');
-  const [selectedCards, setSelectedCards] = useState<any[]>([]);
+    const [selectedCards, setSelectedCards] = useState<any[]>([]);
   const [localSettings] = useState({ enableBomb: true, allowStraight: true });
   const advancingRef = useRef(false);
 
@@ -45,15 +46,7 @@ const Slaves: React.FC = () => {
   const ranks = gameData.ranks || []; // Ordered list of nicknames who finished
   const playerNames = Object.keys(roomData?.players || {});
 
-  const safeUpdate = async (updates: any) => {
-    try {
-      await update(ref(db, `rooms/${roomId}/gameData`), updates);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const startGame = async () => {
     if (!isHost) return;
     if (playerNames.length < 2) {

@@ -8,6 +8,7 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +22,10 @@ const TURN_TIME = 30;
 const TargetNumber = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const [selectedTarget, setSelectedTarget] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const personalRecordedRef = useRef(false);
+    const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
   const startGameRef = useRef(false);
 
@@ -39,15 +40,7 @@ const TargetNumber = () => {
     );
   };
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleTimeUp = useCallback(async () => {
     if (!isHost) return;
     feedback('timeUp');

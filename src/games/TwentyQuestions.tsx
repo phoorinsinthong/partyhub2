@@ -9,6 +9,7 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
@@ -27,10 +28,10 @@ const VOTE_TIME = 180;
 const TwentyQuestions = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const [votedFor, setVotedFor] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [selectedTime, setSelectedTime] = useState(300);
+    const [selectedTime, setSelectedTime] = useState(300);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [showCategorySetting, setShowCategorySetting] = useState(true);
   const [confirmGuesser, setConfirmGuesser] = useState<string | null>(null);
@@ -48,15 +49,7 @@ const TwentyQuestions = () => {
     </div>
   ) : null;
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleTimeUp = async () => {
     if (!isHost || advancingRef.current) return;
     advancingRef.current = true;

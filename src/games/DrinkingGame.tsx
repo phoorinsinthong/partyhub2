@@ -7,6 +7,7 @@ import { RotateCcw, ChevronRight, LogOut, Settings, X, Layers } from 'lucide-rea
 import { recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useHaptics } from '../hooks/useHaptics';
 import NeonCard from '../components/NeonCard';
 import GiantButton from '../components/GiantButton';
@@ -22,12 +23,12 @@ const DEFAULT_RULES: Record<string, string> = {
 
 const DrinkingGame: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { vibrateLight, vibrateMedium, vibrateSuccess, vibrateHeavy } = useHaptics();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
   const [isDrawing, setIsDrawing] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [showRuleEditor, setShowRuleEditor] = useState(false);
+    const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [editingRules, setEditingRules] = useState<Record<string, string>>({});
   const [rulePopup, setRulePopup] = useState<{show: boolean, card: any}>({show: false, card: null});
 
@@ -76,16 +77,7 @@ const DrinkingGame: React.FC = () => {
 
   if (!roomData) return null;
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      vibrateHeavy();
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleBackToLobby = async () => {
     if (!isHost) return;
     vibrateMedium();

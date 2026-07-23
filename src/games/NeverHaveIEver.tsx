@@ -7,6 +7,7 @@ import { RotateCcw, ChevronRight, LogOut, Users, Heart, Sparkles } from 'lucide-
 import { recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { getRandomStatement } from './logic/neverData';
@@ -16,10 +17,10 @@ import GiantButton from '../components/GiantButton';
 const NeverHaveIEver: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
-  const [errorMsg, setErrorMsg] = useState('');
-  const advancingRef = useRef(false);
+    const advancingRef = useRef(false);
 
   useEffect(() => {
     recordPersonalGame('neverhaveiever');
@@ -49,15 +50,7 @@ const NeverHaveIEver: React.FC = () => {
     );
   };
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleStart = async () => {
     if (!isHost) return;
     const stmt = getRandomStatement();

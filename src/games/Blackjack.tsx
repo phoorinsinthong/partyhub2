@@ -4,6 +4,7 @@ import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck, calculateBlackjackScore } from './logic/cards';
@@ -16,6 +17,7 @@ import GiantButton from '../components/GiantButton';
 const Blackjack: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const gameData = roomData.gameData || {};
   const phase = gameData.phase || 'waiting'; // waiting, playing, dealerTurn, result
@@ -23,21 +25,12 @@ const Blackjack: React.FC = () => {
   const dealer = gameData.dealer || { hand: [] };
   const playersData = gameData.players || {};
   const currentTurn = gameData.currentTurn || null;
-  const [errorMsg, setErrorMsg] = useState('');
-  const advancingRef = useRef(false);
+    const advancingRef = useRef(false);
 
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
   const playerNames = Object.keys(roomData.players || {});
 
-  const safeUpdate = async (updates: any) => {
-    try {
-      await update(ref(db, `rooms/${roomId}/gameData`), updates);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const startGame = async () => {
     if (!isHost) return;
     

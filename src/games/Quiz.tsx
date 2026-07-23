@@ -5,6 +5,7 @@ import { ref, update, onValue, increment } from 'firebase/database';
 import { db } from '../firebase';
 import { useTranslation } from 'react-i18next';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { Trophy, Clock, CheckCircle, XCircle, Crown, RotateCcw, LogOut } from 'lucide-react';
@@ -23,12 +24,12 @@ const TOTAL_QUESTIONS = 10;
 const Quiz: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-
+  
   const personalRecordedRef = useRef(false);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const answerSubmittingRef = useRef(false);
@@ -66,15 +67,7 @@ const Quiz: React.FC = () => {
   const question = questions[currentQ];
   const usedQuestionIds = gameData.usedQuestionIds || [];
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleStartQuiz = async () => {
     if (!isHost || startQuizRef.current) return;
     startQuizRef.current = true;

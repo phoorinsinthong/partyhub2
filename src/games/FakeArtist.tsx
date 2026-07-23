@@ -12,6 +12,7 @@ import { useTurnNotification } from '../hooks/useTurnNotification';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { useTranslation } from 'react-i18next';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import NeonCard from '../components/NeonCard';
@@ -61,11 +62,11 @@ const countSyllables = (text: string) => {
 
 const FakeArtist: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { t } = useTranslation();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId || '', userNickname || '');
   
-  const [errorMsg, setErrorMsg] = useState('');
-  const [voteTarget, setVoteTarget] = useState<string | null>(null);
+    const [voteTarget, setVoteTarget] = useState<string | null>(null);
   const [guessInput, setGuessInput] = useState('');
   const [customWord, setCustomWord] = useState('');
   const [wordMode, setWordMode] = useState('random');
@@ -273,15 +274,7 @@ const FakeArtist: React.FC = () => {
     </div>
   ) : null;
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg('เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const getPos = (e: any) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;

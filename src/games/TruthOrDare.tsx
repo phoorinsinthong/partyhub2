@@ -7,6 +7,7 @@ import { RotateCcw, Zap, Heart, ChevronRight, LogOut } from 'lucide-react';
 import { recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { TRUTHS, DARES } from './logic/truthData';
@@ -16,9 +17,9 @@ import GiantButton from '../components/GiantButton';
 const TruthOrDare: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
-  const [errorMsg, setErrorMsg] = useState('');
-  const advancingRef = useRef(false);
+    const advancingRef = useRef(false);
   const drawingRef = useRef(false);
 
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
@@ -48,15 +49,7 @@ const TruthOrDare: React.FC = () => {
 
   const isMyTurn = userNickname === currentTarget;
 
-  const safeUpdate = async (refPath: string, data: any) => {
-    try {
-      await update(ref(db, refPath), data);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const handleBackToLobby = async () => {
     if (!isHost) return;
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });

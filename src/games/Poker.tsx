@@ -4,6 +4,7 @@ import { ref, update } from 'firebase/database';
 import { db } from '../firebase';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import PlayingCard from '../components/PlayingCard';
 import { createDeck, shuffleDeck } from './logic/cards';
@@ -19,11 +20,11 @@ const STARTING_CHIPS = 1000;
 
 const Poker: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { t } = useTranslation();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname);
 
-  const [errorMsg, setErrorMsg] = useState('');
-  const [raiseAmount, setRaiseAmount] = useState(10);
+    const [raiseAmount, setRaiseAmount] = useState(10);
   const [localSettings] = useState({ startingChips: 1000 });
   const advancingRef = useRef(false);
 
@@ -58,15 +59,7 @@ const Poker: React.FC = () => {
     );
   };
 
-  const safeUpdate = async (updates: any) => {
-    try {
-      await update(ref(db, `rooms/${roomId}/gameData`), updates);
-    } catch {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
+  
   const startGame = async () => {
     if (!isHost) return;
     

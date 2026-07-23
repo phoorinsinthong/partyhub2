@@ -15,6 +15,7 @@ import { useGameTimer } from '../hooks/useGameTimer';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import NeonCard from '../components/NeonCard';
 import GiantButton from '../components/GiantButton';
 
@@ -33,6 +34,7 @@ function shuffle(arr: any[]) {
 
 const Drawing: React.FC = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { t } = useTranslation();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
@@ -59,8 +61,7 @@ const Drawing: React.FC = () => {
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const [difficulty, setDifficulty] = useState('easy');
   const [customWordInput, setCustomWordInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-
+  
   // Derived variables
   const gameData = roomData?.gameData || {};
   const players = Object.keys(roomData?.players || {});
@@ -86,98 +87,7 @@ const Drawing: React.FC = () => {
     </div>
   ) : null;
 
-  const safeUpdate = async (path: string, updates: any) => {
-    try {
-      await update(ref(db, path), updates);
-    } catch (e) {
-      setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด');
-      setTimeout(() => setErrorMsg(''), 3000);
-    }
-  };
-
-  const generateShareImage = async () => {
-    const size = 600;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size + 120;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return canvas;
-
-    // Background
-    ctx.fillStyle = '#faf9f6';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw border
-    ctx.strokeStyle = '#d4cfbe';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-
-    // Draw paths
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    localPaths.forEach((path) => {
-      if (!path.points || path.points.length < 2) return;
-      ctx.strokeStyle = path.color || '#000';
-      ctx.lineWidth = (path.size || 4) * (size / 300);
-      ctx.beginPath();
-      ctx.moveTo(path.points[0].x * size, path.points[0].y * size);
-      for (let i = 1; i < path.points.length; i++) {
-        ctx.lineTo(path.points[i].x * size, path.points[i].y * size);
-      }
-      ctx.stroke();
-    });
-
-    // Bottom bar
-    ctx.fillStyle = '#f0ede6';
-    ctx.fillRect(0, size, canvas.width, 120);
-    ctx.strokeStyle = '#d4cfbe';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, size);
-    ctx.lineTo(canvas.width, size);
-    ctx.stroke();
-
-    // Answer text
-    ctx.fillStyle = '#2f2a22';
-    ctx.font = 'bold 28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`คำตอบ: ${currentWord}`, size / 2, size + 45);
-
-    // Drawer + branding
-    ctx.fillStyle = '#8a8070';
-    ctx.font = '16px sans-serif';
-    ctx.fillText(`วาดโดย ${currentDrawer}`, size / 2, size + 75);
-    ctx.fillStyle = '#b0a89a';
-    ctx.font = '14px sans-serif';
-    ctx.fillText('🎮 Party Hub — วาดรูปทายคำ', size / 2, size + 105);
-
-    return canvas;
-  };
-
-  const handleShare = async () => {
-    try {
-      const canvas = await generateShareImage();
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        if (navigator.share && navigator.canShare?.({ files: [new File([blob], 'drawing.png', { type: 'image/png' })] })) {
-          await navigator.share({
-            title: `วาดรูปทายคำ — ${currentWord}`,
-            files: [new File([blob], 'partyhub-drawing.png', { type: 'image/png' })],
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `partyhub-${currentWord}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
-    } catch {
-      /* ignore */
-    }
-  };
-
+  
   const handleStartGame = async () => {
     if (!isHost) return;
     feedback('gameStart');
