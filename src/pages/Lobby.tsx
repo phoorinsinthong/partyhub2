@@ -17,21 +17,42 @@ import { useHaptics } from '../hooks/useHaptics';
 
 const gameCategories = [
   {
-    label: 'บอร์ดเกม',
+    label: 'บอร์ดเกม & บลัฟ',
     games: [
       { id: 'spyfall', name: 'สปายฟอล', icon: '🕵️‍♂️', minPlayers: 3 },
-      { id: 'werewolf', name: 'หมาป่า (แอป)', icon: '🐺', minPlayers: 4 },
+      { id: 'werewolf', name: 'หมาป่า (ดิจิทัล)', icon: '🐺', minPlayers: 4 },
+      { id: 'werewolf_physical', name: 'หมาป่า GM (ไพ่จริง)', icon: '🎴', minPlayers: 1 },
       { id: 'twentyquestions', name: 'Insider', icon: '🕵️', minPlayers: 4 },
       { id: 'drawing', name: 'วาดรูปทายคำ', icon: '🎨', minPlayers: 2 },
       { id: 'fakeartist', name: 'ศิลปินปลอม', icon: '🎭', minPlayers: 4 },
+      { id: 'taboo', name: 'ใบ้คำ (Taboo)', icon: '🤫', minPlayers: 2 },
     ],
   },
   {
-    label: 'วงเหล้า',
+    label: 'ปาร์ตี้ & วงเหล้า',
     games: [
       { id: 'drinking', name: 'วงเหล้า', icon: '🍺', minPlayers: 1 },
       { id: 'truthordare', name: 'จริงหรือกล้า', icon: '🎭', minPlayers: 2 },
       { id: 'wordbomb', name: 'บอมบ์คำ', icon: '💣', minPlayers: 2 },
+      { id: 'neverhaveiever', name: 'ไม่เคย...', icon: '🙋', minPlayers: 2 },
+      { id: 'wouldyourather', name: 'เลือกข้าง', icon: '⚖️', minPlayers: 2 },
+    ],
+  },
+  {
+    label: 'คาสิโน & การ์ด',
+    games: [
+      { id: 'pokdeng', name: 'ป๊อกเด้ง', icon: '💰', minPlayers: 2 },
+      { id: 'poker', name: 'โป๊กเกอร์', icon: '💵', minPlayers: 2 },
+      { id: 'slaves', name: 'สลาฟ', icon: '👑', minPlayers: 3 },
+      { id: 'blackjack', name: 'แบล็คแจ็ค', icon: '🃏', minPlayers: 2 },
+    ],
+  },
+  {
+    label: 'ลับสมอง & ประลองปัญญา',
+    games: [
+      { id: 'quiz', name: 'ควิซ', icon: '🧠', minPlayers: 2 },
+      { id: 'mathrace', name: 'คำนวณเร็ว', icon: '🔢', minPlayers: 2 },
+      { id: 'target', name: 'เลขเป้า', icon: '🎯', minPlayers: 2 },
     ],
   }
 ];
