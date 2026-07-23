@@ -9,6 +9,7 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
 import { useTranslation } from 'react-i18next';
@@ -22,14 +23,14 @@ const TOTAL_QUESTIONS = 10;
 
 const MathRace = () => {
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { t } = useTranslation();
   const { requestLeave, confirmLeave, cancelLeave, showConfirm } = useGameLeave(roomId, userNickname || '');
   
   const [selectedDifficulty, setSelectedDifficulty] = useState('easy');
   const [inputValue, setInputValue] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  
+    
   const inputRef = useRef<HTMLInputElement>(null);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advancingRef = useRef(false);

@@ -4,6 +4,7 @@ import { ref, update, increment } from 'firebase/database';
 import { db } from '../../firebase';
 import { useTranslation } from 'react-i18next';
 import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { getRandomCards } from './logic/tabooData';
 import { recordWin } from '../../components/Scoreboard';
@@ -33,10 +34,10 @@ function shuffle(arr: any[]) {
 const Taboo = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const [showGuesserPicker, setShowGuesserPicker] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [cardMode, setCardMode] = useState('all');
+    const [cardMode, setCardMode] = useState('all');
   const lastCountdownRef = useRef<number | null>(null);
   const advancingRef = useRef(false);
   const skipRef = useRef(false);

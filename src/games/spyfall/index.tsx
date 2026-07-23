@@ -22,6 +22,7 @@ import { recordWin } from '../components/Scoreboard';
 import { recordPersonalWin, recordPersonalGame } from '../components/PersonalStats';
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import LeaveConfirmModal from '../components/LeaveConfirmModal';
 import EpicPopup from '../components/EpicPopup';
 import GiantButton from '../components/GiantButton';
@@ -34,6 +35,7 @@ import { useHaptics } from '../hooks/useHaptics';
 const Spyfall: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { vibrateLight, vibrateMedium, vibrateSuccess, vibrateHeavy } = useHaptics();
   
   const nickname = userNickname || '';
@@ -56,8 +58,7 @@ const Spyfall: React.FC = () => {
   const [voteTarget, setVoteTarget] = useState('');
   const [timerMinutes, setTimerMinutes] = useState(8);
 
-  const [errorMsg, setErrorMsg] = useState('');
-  const personalRecordedRef = useRef(false);
+    const personalRecordedRef = useRef(false);
   const advancingRef = useRef(false);
   const guessRef = useRef(false);
   const submitVoteRef = useRef(false);

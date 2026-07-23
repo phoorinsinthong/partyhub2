@@ -7,10 +7,11 @@ export const useGameUpdate = (roomId: string | null) => {
   const { t } = useTranslation();
   const [errorMsg, setErrorMsg] = useState('');
 
-  const safeUpdate = useCallback(async (updates: any) => {
+  const safeUpdate = useCallback(async (updates: any, customRefPath?: string) => {
     if (!roomId) return;
     try {
-      await update(ref(db, `rooms/${roomId}/gameData`), updates);
+      const targetRef = customRefPath ? ref(db, customRefPath) : ref(db, `rooms/${roomId}/gameData`);
+      await update(targetRef, updates);
     } catch (error) {
       console.error("Game update failed", error);
       setErrorMsg(t('common.error') || 'เกิดข้อผิดพลาด ลองอีกครั้ง');

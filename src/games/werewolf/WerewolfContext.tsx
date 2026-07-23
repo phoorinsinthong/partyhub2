@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGame } from '../../contexts/GameContext';
+import { useGameUpdate } from '../../hooks/useGameUpdate';
 import { useGameState } from '../../hooks/useGameState';
 import { WOLF_ROLES } from '../logic/werewolfLogic';
 import { ROLES } from '../logic/werewolfData';
@@ -40,6 +41,7 @@ const WerewolfContext = createContext<WerewolfContextType | undefined>(undefined
 export const WerewolfProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { errorMsg, setErrorMsg } = useGameUpdate(roomId);
   const { updateRoom } = useGameState(roomId || '');
   
   const gameData = roomData?.gameData || {};
@@ -53,8 +55,7 @@ export const WerewolfProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
   const [showRoleReveal, setShowRoleReveal] = useState(false);
   const [showDeckSetup, setShowDeckSetup] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [activeScriptIndex, setActiveScriptIndex] = useState(0);
+    const [activeScriptIndex, setActiveScriptIndex] = useState(0);
   const [guestName, setGuestName] = useState('');
 
   const myPlayerData = wwData.players?.[userNickname || ''];

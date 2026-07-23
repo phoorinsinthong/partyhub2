@@ -10,6 +10,7 @@ import { recordPersonalWin, recordPersonalGame } from '../components/PersonalSta
 import { useGameLeave } from '../hooks/useGameLeave';
 import { useTurnNotification } from '../hooks/useTurnNotification';
 import { useGame } from '../contexts/GameContext';
+import { useGameUpdate } from '../hooks/useGameUpdate';
 import { useTranslation } from 'react-i18next';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { TimerDisplay } from '../components/game-ui/TimerDisplay';
@@ -125,6 +126,7 @@ function TimerArc({ timeLeft, bombTime }: { timeLeft: number, bombTime: number }
 const WordBomb: React.FC = () => {
   const { t } = useTranslation();
   const { roomId, roomData, userNickname, isHost } = useGame();
+  const { safeUpdate, errorMsg, setErrorMsg } = useGameUpdate(roomId);
   
   const gameData = roomData?.gameData || {};
   const players = Object.keys(roomData?.players || {});
@@ -146,8 +148,7 @@ const WordBomb: React.FC = () => {
   useTurnNotification(isMyTurn, phase);
 
   const [exploding, setExploding] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const explodedRef = useRef(false);
+    const explodedRef = useRef(false);
   const advancingRef = useRef(false);
   const personalRecordedRef = useRef(false);
 
