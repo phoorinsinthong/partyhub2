@@ -18,19 +18,19 @@ const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wou
 
 // Lazy-load game components
 const DrinkingGame = lazy(() => import('../games/DrinkingGame'));
-const Spyfall = lazy(() => import('../games/Spyfall'));
+const Spyfall = lazy(() => import('../games/spyfall'));
 const TargetNumber = lazy(() => import('../games/TargetNumber'));
 const Werewolf = lazy(() => import('../games/Werewolf'));
 const TruthOrDare = lazy(() => import('../games/TruthOrDare'));
 const Quiz = lazy(() => import('../games/Quiz'));
-const Drawing = lazy(() => import('../games/Drawing'));
+const Drawing = lazy(() => import('../games/drawing'));
 const WouldYouRather = lazy(() => import('../games/WouldYouRather'));
 const WordBomb = lazy(() => import('../games/WordBomb'));
 const NeverHaveIEver = lazy(() => import('../games/NeverHaveIEver'));
-const Taboo = lazy(() => import('../games/Taboo'));
+const Taboo = lazy(() => import('../games/taboo'));
 const MathRace = lazy(() => import('../games/MathRace'));
 const TwentyQuestions = lazy(() => import('../games/TwentyQuestions'));
-const FakeArtist = lazy(() => import('../games/FakeArtist'));
+const FakeArtist = lazy(() => import('../games/fakeArtist'));
 const Blackjack = lazy(() => import('../games/Blackjack'));
 const Slaves = lazy(() => import('../games/Slaves'));
 const Poker = lazy(() => import('../games/Poker'));
