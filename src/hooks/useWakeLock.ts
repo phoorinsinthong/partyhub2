@@ -5,13 +5,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
  * ใช้ในหน้า GameRoom เพื่อให้ผู้เล่นวางมือถือทิ้งไว้ได้โดยที่จอไม่ดับ
  */
 export function useWakeLock() {
-  const [isSupported, setIsSupported] = useState(false);
+  const [isSupported] = useState(() => typeof navigator !== 'undefined' && 'wakeLock' in navigator);
   const [isLocked, setIsLocked] = useState(false);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-
-  useEffect(() => {
-    setIsSupported('wakeLock' in navigator);
-  }, []);
 
   const requestWakeLock = useCallback(async () => {
     if (isSupported && !wakeLockRef.current) {

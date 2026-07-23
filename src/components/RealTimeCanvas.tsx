@@ -41,9 +41,11 @@ export const RealTimeCanvas: React.FC<RealTimeCanvasProps> = ({
   const lastPointRef = useRef<Point | null>(null);
 
   // Sync with remote paths
-  useEffect(() => {
+  const [prevPaths, setPrevPaths] = useState(paths);
+  if (paths !== prevPaths) {
+    setPrevPaths(paths);
     setLocalPaths(paths);
-  }, [paths]);
+  }
 
   const drawPaths = (ctx: CanvasRenderingContext2D, pathsToDraw: DrawingPath[]) => {
     ctx.lineCap = 'round';

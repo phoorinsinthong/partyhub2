@@ -65,8 +65,11 @@ const DrinkingGame: React.FC = () => {
   // Trigger popup when a new card is drawn by someone else
   useEffect(() => {
     if (currentCard && gameData.lastAction?.by !== userNickname && gameData.lastAction?.time > Date.now() - 3000) {
-      setRulePopup({ show: true, card: currentCard });
-      vibrateMedium();
+      const timer = setTimeout(() => {
+        setRulePopup({ show: true, card: currentCard });
+        vibrateMedium();
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [currentCard, gameData.lastAction, userNickname, vibrateMedium]);
 
