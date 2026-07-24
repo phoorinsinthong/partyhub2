@@ -157,7 +157,8 @@ export function usePresence(roomId: string, nickname: string, isHost: boolean): 
 
       if (!disconnectedAt) return;
 
-      const elapsed = Date.now() - disconnectedAt;
+      const hostDisconnectedTime = typeof disconnectedAt === 'number' ? disconnectedAt : Date.now();
+      const elapsed = Date.now() - hostDisconnectedTime;
       const remaining = GRACE_PERIOD_MS - elapsed;
 
       const GM_GAMES = ['werewolf', 'twentyquestions'];
@@ -255,7 +256,8 @@ export function usePlayerCleanup(roomId: string): void {
 
       Object.entries(players).forEach(([name, data]: [string, Record<string, unknown>]) => {
         if (data.online === false && data.lastSeen) {
-          const elapsed = now - data.lastSeen;
+          const lastSeenTime = typeof data.lastSeen === 'number' ? data.lastSeen : Date.now();
+          const elapsed = now - lastSeenTime;
           const remaining = gracePeriod - elapsed;
 
           if (!cleanupTimersRef.current[name]) {
