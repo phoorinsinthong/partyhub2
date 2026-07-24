@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useGame } from '../contexts/GameContext';
+import { useGame } from '@/contexts/GameContext';
 
 /**
  * Hook สำหรับคืนชีพสถานะ (Seamless Recovery)
