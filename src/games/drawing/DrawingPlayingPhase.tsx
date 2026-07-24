@@ -110,6 +110,10 @@ const DrawingPlayingPhase: React.FC<Props> = ({
           onMouseMove={handleDrawMove}
           onMouseUp={handleDrawEnd}
           onMouseLeave={handleDrawEnd}
+          onTouchStart={handleDrawStart}
+          onTouchMove={handleDrawMove}
+          onTouchEnd={handleDrawEnd}
+          onTouchCancel={handleDrawEnd}
         />
         {Object.keys(guesses).length > 0 && (
           <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 pointer-events-none max-h-[40px] overflow-hidden justify-end">

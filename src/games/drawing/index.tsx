@@ -219,34 +219,47 @@ const Drawing: React.FC = () => {
     await safeUpdate(`rooms/${roomId}`, { status: 'waiting', currentGame: null, gameData: null });
   };
 
+  const localPathsRef = useRef<any[]>(localPaths);
+  useEffect(() => {
+    localPathsRef.current = localPaths;
+  }, [localPaths]);
+
   const getPos = (e: any) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const touch = e.touches?.[0] || e.changedTouches?.[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
     return { x: (clientX - rect.left) / rect.width, y: (clientY - rect.top) / rect.height };
   };
 
   const handleDrawStart = (e: any) => {
     if (!isDrawer) return;
-    if (e.type === 'touchstart') e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     setIsDrawing(true);
     const pos = getPos(e);
     lastPointRef.current = pos;
     const newPath = { color, size: brushSize, points: [pos] };
-    setLocalPaths((prev) => [...prev, newPath]);
+    setLocalPaths((prev) => {
+      const next = [...prev, newPath];
+      localPathsRef.current = next;
+      return next;
+    });
   };
 
   const handleDrawMove = (e: any) => {
     if (!isDrawer || !isDrawing) return;
-    if (e.type === 'touchmove') e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const pos = getPos(e);
     setLocalPaths((prev) => {
+      if (prev.length === 0) return prev;
       const updated = [...prev];
-      const last = { ...updated[updated.length - 1] };
-      last.points = [...last.points, pos];
-      updated[updated.length - 1] = last;
+      const lastIdx = updated.length - 1;
+      const last = { ...updated[lastIdx] };
+      last.points = [...(last.points || []), pos];
+      updated[lastIdx] = last;
+      localPathsRef.current = updated;
       return updated;
     });
     lastPointRef.current = pos;
@@ -254,10 +267,10 @@ const Drawing: React.FC = () => {
 
   const handleDrawEnd = async (e: any) => {
     if (!isDrawer || !isDrawing) return;
-    if (e.type === 'touchend') e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     setIsDrawing(false);
     lastPointRef.current = null;
-    await safeUpdate(`rooms/${roomId}`, { drawingStrokes: localPaths });
+    await safeUpdate(`rooms/${roomId}`, { drawingStrokes: localPathsRef.current });
   };
 
   const drawHandlersRef = useRef({ handleDrawStart, handleDrawMove, handleDrawEnd });
