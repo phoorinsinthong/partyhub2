@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { WerewolfProvider, useWerewolf } from './WerewolfContext';
 import { WerewolfSetupPhase } from './WerewolfSetupPhase';

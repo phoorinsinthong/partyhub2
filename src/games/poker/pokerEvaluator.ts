@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const evaluatePokerHand = (holeCards, communityCards) => {
   const allCards = [...holeCards, ...communityCards];
   if (allCards.length < 5) return { score: 0, name: "Invalid" };

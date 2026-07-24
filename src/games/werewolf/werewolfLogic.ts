@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Werewolf Game Logic Utilities
  */

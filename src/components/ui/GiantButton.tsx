@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { useHaptics } from '../../hooks/useHaptics';

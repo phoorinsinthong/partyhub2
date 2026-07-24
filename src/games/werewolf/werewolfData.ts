@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const VOICE_SCRIPTS: Record<string, string> = {
   werewolf: "หมาป่า ลืมตาขึ้นมา... เลือกเหยื่อของคุณ",
   seer: "เทพพยากรณ์ ลืมตาขึ้นมา... เลือกตรวจสอบผู้เล่น 1 คน",

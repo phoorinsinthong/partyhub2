@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const TABOO_CARDS = [
   // สัตว์
   { word: "แมว", taboo: ["ขน", "เหมียว", "ร้อง", "นม", "ฝน"] },

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useRef } from 'react';
 import { increment } from 'firebase/database';
 import { useTranslation } from 'react-i18next';

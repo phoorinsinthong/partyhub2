@@ -1,4 +1,3 @@
-// @ts-nocheck
 export const NEVER_STATEMENTS = [
   // เบาๆ / ทั่วไป
   "ร้องไห้ดูหนังหรือซีรีส์",

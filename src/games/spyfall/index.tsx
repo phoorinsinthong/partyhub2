@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { WaitingPhase } from './WaitingPhase';
 import { PlayingPhase } from './PlayingPhase';

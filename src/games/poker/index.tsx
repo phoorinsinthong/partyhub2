@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
 import { db } from '../../firebase';

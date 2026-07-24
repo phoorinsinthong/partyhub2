@@ -1,4 +1,3 @@
-// @ts-nocheck
 const words = [
   // สัตว์
   { word: 'ช้าง', category: 'สัตว์' },

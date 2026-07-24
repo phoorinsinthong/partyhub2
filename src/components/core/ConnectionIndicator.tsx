@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { useConnectionQuality } from '../../hooks/useConnectionQuality';
 import { Wifi, WifiOff, Signal } from 'lucide-react';

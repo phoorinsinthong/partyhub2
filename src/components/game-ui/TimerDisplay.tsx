@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React from 'react';
 import { Timer } from 'lucide-react';
 
