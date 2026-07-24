@@ -1,18 +1,11 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/home';
-import Lobby from './pages/lobby';
-import GameRoom from './pages/GameRoom';
-import ErrorBoundary from './components/core/ErrorBoundary';
-import OfflineIndicator from './components/core/OfflineIndicator';
-import InstallPrompt from './components/core/InstallPrompt';
-import { ThemeProvider } from './hooks/useTheme';
-import { GameProvider } from './contexts/GameContext';
-import { useKeyboardResize } from './hooks/useKeyboardResize';
-import { useSessionRecovery } from './hooks/useSessionRecovery';
-import './index.css';
-
-import WerewolfModerator from './games/werewolf/WerewolfModerator';
+import { Home, Lobby, GameRoom } from '@/pages';
+import { ErrorBoundary, OfflineIndicator, InstallPrompt } from '@/components/core';
+import { ThemeProvider, useKeyboardResize, useSessionRecovery } from '@/hooks';
+import { GameProvider } from '@/contexts/GameContext';
+import WerewolfModerator from '@/games/werewolf/WerewolfModerator';
+import '@/index.css';
 
 // Wrapper component to use router hooks
 function SessionManager() {
