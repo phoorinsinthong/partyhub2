@@ -88,6 +88,10 @@ export const DrawingPhase = ({
         onMouseMove={moveDraw}
         onMouseUp={endDraw}
         onMouseLeave={endDraw}
+        onTouchStart={startDraw}
+        onTouchMove={moveDraw}
+        onTouchEnd={endDraw}
+        onTouchCancel={endDraw}
       />
     </div>
 

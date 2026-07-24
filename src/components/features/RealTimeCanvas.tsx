@@ -113,10 +113,12 @@ export const RealTimeCanvas: React.FC<RealTimeCanvasProps> = ({
     const rect = canvas.getBoundingClientRect();
     
     let clientX, clientY;
-    if ('touches' in e) {
-      if (e.touches.length === 0) return null;
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
+    if ('touches' in e || 'changedTouches' in e) {
+      const touchEv = e as any;
+      const touch = touchEv.touches?.[0] || touchEv.changedTouches?.[0];
+      if (!touch) return null;
+      clientX = touch.clientX;
+      clientY = touch.clientY;
     } else {
       clientX = (e as React.MouseEvent).clientX;
       clientY = (e as React.MouseEvent).clientY;

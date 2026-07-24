@@ -276,12 +276,18 @@ const FakeArtist: React.FC = () => {
   ) : null;
 
   
+  const localPathsRef = useRef<any[]>(localPaths);
+  useEffect(() => {
+    localPathsRef.current = localPaths;
+  }, [localPaths]);
+
   const getPos = (e: any) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const touch = e.touches?.[0] || e.changedTouches?.[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    const clientY = touch ? touch.clientY : e.clientY;
     return {
       x: (clientX - rect.left) / rect.width,
       y: (clientY - rect.top) / rect.height,
@@ -290,34 +296,39 @@ const FakeArtist: React.FC = () => {
 
   const startDraw = (e: any) => {
     if (!isMyTurn || phase !== 'drawing') return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const pos = getPos(e);
     if (!pos) return;
     setIsDrawing(true);
     lastPointRef.current = pos;
-    setLocalPaths([{ color: colorMap[userNickname || ''] || '#000', points: [pos] }]);
+    const newPaths = [{ color: colorMap[userNickname || ''] || '#000', points: [pos] }];
+    localPathsRef.current = newPaths;
+    setLocalPaths(newPaths);
   };
 
   const moveDraw = (e: any) => {
     if (!isDrawing || !isMyTurn) return;
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const pos = getPos(e);
     if (!pos) return;
     setLocalPaths((prev) => {
       const current = prev[0];
       if (!current) return prev;
-      return [{ ...current, points: [...current.points, pos] }];
+      const updated = [{ ...current, points: [...current.points, pos] }];
+      localPathsRef.current = updated;
+      return updated;
     });
     lastPointRef.current = pos;
   };
 
   const endDraw = async (e?: any) => {
     if (!isDrawing || !isMyTurn) return;
-    e?.preventDefault();
+    if (e?.cancelable) e.preventDefault();
     setIsDrawing(false);
-    const myPath = localPaths[0];
-    if (!myPath || myPath.points.length < 2) {
+    const myPath = localPathsRef.current[0];
+    if (!myPath || !myPath.points || myPath.points.length < 2) {
       setLocalPaths([]);
+      localPathsRef.current = [];
       return;
     }
 
