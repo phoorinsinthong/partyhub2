@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircle2, XCircle } from 'lucide-react';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 export interface FinishedPhaseProps {
   renderErrorToast: () => React.ReactNode;

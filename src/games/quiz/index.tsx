@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { increment } from 'firebase/database';
 import { useTranslation } from 'react-i18next';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
-import { useGameTimer } from '../../hooks/useGameTimer';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
+import { useGameTimer } from '@/hooks';
 import { getShuffledQuestions } from './quizData';
-import { recordWin } from '../../components/features/Scoreboard';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { feedback } from '../../utils/feedback';
+import { recordWin } from '@/components/features';
+import { useGameLeave } from '@/hooks';
+import { feedback } from '@/utils/feedback';
 import { LogOut } from 'lucide-react';
 
 import WaitingPhase from './WaitingPhase';

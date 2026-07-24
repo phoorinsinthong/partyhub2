@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGame } from '../../contexts/GameContext';
+import { useGame } from '@/contexts/GameContext';
 import { useWerewolf } from './WerewolfContext';
 import { WOLF_ROLES } from './werewolfLogic';
-import GiantButton from '../../components/ui/GiantButton';
+import { GiantButton } from '@/components/ui';
 
 export const WerewolfRoleReveal: React.FC = () => {
   const { userNickname } = useGame();

@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, ArrowLeft } from 'lucide-react';
 import OtpInput from '../../components/ui/OtpInput';
-import { useHaptics } from '../../hooks/useHaptics';
+import { useHaptics } from '@/hooks';
 
 interface JoinStepProps {
   error: string;

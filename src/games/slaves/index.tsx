@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, update } from 'firebase/database';
-import { db } from '../../firebase';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
+import { db } from '@/firebase';
+import { useGameLeave } from '@/hooks';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
 import { useTranslation } from 'react-i18next';
-import PlayingCard from '../../components/ui/PlayingCard';
-import { createDeck, shuffleDeck, sortCardsSlaves, analyzePlay, validatePlay } from '../../utils/cards';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { PlayingCard } from '@/components/ui';
+import { createDeck, shuffleDeck, sortCardsSlaves, analyzePlay, validatePlay } from '@/utils/cards';
+import { LeaveConfirmModal } from '@/components/ui';
 import { motion, AnimatePresence } from 'framer-motion';
-import { recordWin } from '../../components/features/Scoreboard';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { recordWin } from '@/components/features';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 import { LogOut, RotateCcw } from 'lucide-react';
 
 const Slaves: React.FC = () => {

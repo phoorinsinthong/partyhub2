@@ -2,18 +2,18 @@ import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 
 import { useParams, useNavigate } from 'react-router-dom';
 import { ref, update, remove } from 'firebase/database';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../firebase';
+import { db } from '@/firebase';
 import { RefreshCw, LogOut, Crown, ArrowLeftRight } from 'lucide-react';
-import { usePresence, usePlayerCleanup, useHostPromotedToast } from '../hooks/usePresence';
-import GameGuide from '../components/features/GameGuide';
-import Scoreboard from '../components/features/Scoreboard';
-import ConnectionIndicator from '../components/core/ConnectionIndicator';
+import { usePresence, usePlayerCleanup, useHostPromotedToast } from '@/hooks';
+import { GameGuide } from '@/components/features';
+import { Scoreboard } from '@/components/features';
+import { ConnectionIndicator } from '@/components/core';
 import { saveSession, clearSession } from '../components/core/ReconnectBanner';
-import { GAME_NAMES, GAME_ICONS } from '../utils/gameData';
-import { fireConfetti } from '../utils/confetti';
-import { GAME_COMPONENTS } from '../utils/gameRegistry';
-import { useGame } from '../contexts/GameContext';
-import ErrorBoundary from '../components/core/ErrorBoundary';
+import { GAME_NAMES, GAME_ICONS } from '@/utils/gameData';
+import { fireConfetti } from '@/utils/confetti';
+import { GAME_COMPONENTS } from '@/utils/gameRegistry';
+import { useGame } from '@/contexts/GameContext';
+import { ErrorBoundary } from '@/components/core';
 
 const PARTY_GAMES = ['drinking', 'truthordare', 'neverhaveiever', 'target', 'wouldyourather', 'wordbomb', 'mathrace'];
 

@@ -2,8 +2,8 @@ import React from 'react';
 import { Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
-import NeonCard from '../../components/ui/NeonCard';
+import { TimerDisplay } from '@/components/game-ui';
+import { NeonCard } from '@/components/ui';
 
 interface PlayingPhaseProps {
   errorMsg: string | null;

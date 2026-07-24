@@ -2,8 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, UserPlus, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getAvatarUrl } from '../../utils/avatars';
-import { useHaptics } from '../../hooks/useHaptics';
+import { getAvatarUrl } from '@/utils/avatars';
+import { useHaptics } from '@/hooks';
 
 interface ActionStepProps {
   nickname: string;

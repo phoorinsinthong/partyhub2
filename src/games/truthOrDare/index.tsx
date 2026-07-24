@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update } from 'firebase/database';
-import { db } from '../../firebase';
+import { db } from '@/firebase';
 import { RotateCcw, Zap, Heart, ChevronRight, LogOut } from 'lucide-react';
 import { recordPersonalGame } from '../../components/features/PersonalStats';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
+import { useGameLeave } from '@/hooks';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { LeaveConfirmModal } from '@/components/ui';
 import { TRUTHS, DARES } from './truthData';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 const TruthOrDare: React.FC = () => {
   const { t } = useTranslation();

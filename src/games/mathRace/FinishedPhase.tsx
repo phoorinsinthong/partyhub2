@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown, RotateCcw, LogOut } from 'lucide-react';
-import GiantButton from '../../components/ui/GiantButton';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { GiantButton } from '@/components/ui';
+import { LeaveConfirmModal } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
 interface FinishedPhaseProps {

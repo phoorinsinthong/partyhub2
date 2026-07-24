@@ -1,8 +1,8 @@
 import React, { RefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
-import GiantButton from '../../components/ui/GiantButton';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
+import { GiantButton } from '@/components/ui';
+import { TimerDisplay } from '@/components/game-ui';
 import { useTranslation } from 'react-i18next';
 
 interface PlayingPhaseProps {

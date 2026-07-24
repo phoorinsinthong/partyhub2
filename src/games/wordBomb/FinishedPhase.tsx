@@ -1,5 +1,5 @@
 import React from 'react';
-import GiantButton from '../../components/ui/GiantButton';
+import { GiantButton } from '@/components/ui';
 
 interface FinishedPhaseProps {
   isHost: boolean;

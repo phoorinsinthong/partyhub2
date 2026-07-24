@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getAvatarUrl, getRandomGradient } from '../../utils/avatars';
+import { getAvatarUrl, getRandomGradient } from '@/utils/avatars';
 
 interface Player {
   key: string;

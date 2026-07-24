@@ -2,8 +2,8 @@ import React from 'react';
 import { Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 interface WaitingPhaseProps {
   errorMsg: string | null;

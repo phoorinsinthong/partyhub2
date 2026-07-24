@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ref, update } from 'firebase/database';
-import { db } from '../../firebase';
+import { db } from '@/firebase';
 import { RotateCcw, ChevronRight, LogOut, Settings, X, Layers } from 'lucide-react';
 import { recordPersonalGame } from '../../components/features/PersonalStats';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
-import { useHaptics } from '../../hooks/useHaptics';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
-import EpicPopup from '../../components/ui/EpicPopup';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { useGameLeave } from '@/hooks';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
+import { useHaptics } from '@/hooks';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { EpicPopup } from '@/components/ui';
+import { LeaveConfirmModal } from '@/components/ui';
 
 const DEFAULT_RULES: Record<string, string> = {
   'A':'ดื่มคนเดียว','2':'เลือกเพื่อนดื่ม 1 คน','3':'เลือกเพื่อนดื่ม 2 คน','4':'คนทางซ้ายดื่ม',

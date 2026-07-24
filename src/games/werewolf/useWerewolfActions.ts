@@ -1,5 +1,5 @@
 import { useWerewolf } from './WerewolfContext';
-import { useGame } from '../../contexts/GameContext';
+import { useGame } from '@/contexts/GameContext';
 import { handleDeathSideEffects, WOLF_ROLES } from './werewolfLogic';
 
 export const useWerewolfActions = () => {

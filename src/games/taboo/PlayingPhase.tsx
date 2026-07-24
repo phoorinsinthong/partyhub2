@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EyeOff } from 'lucide-react';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
-import GiantButton from '../../components/ui/GiantButton';
+import { TimerDisplay } from '@/components/game-ui';
+import { GiantButton } from '@/components/ui';
 
 interface PlayingPhaseProps {
   renderErrorToast: () => React.ReactNode;

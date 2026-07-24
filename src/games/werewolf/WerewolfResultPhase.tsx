@@ -1,14 +1,14 @@
 import React from 'react';
 import { Skull, CheckCircle2, Eye, LogOut } from 'lucide-react';
-import { useGame } from '../../contexts/GameContext';
-import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '@/contexts/GameContext';
+import { useGameLeave } from '@/hooks';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import { ROLES } from './werewolfData';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
-import EpicPopup from '../../components/ui/EpicPopup';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { EpicPopup } from '@/components/ui';
+import { LeaveConfirmModal } from '@/components/ui';
 
 export const WerewolfResultPhase: React.FC = () => {
   const { roomId, userNickname, isHost } = useGame();

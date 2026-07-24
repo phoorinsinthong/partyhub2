@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { TimerDisplay } from '@/components/game-ui';
 import { CATEGORY_LABELS } from './quizData';
 
 interface PlayingPhaseProps {

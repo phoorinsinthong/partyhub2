@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import GiantButton from '../../components/ui/GiantButton';
+import { GiantButton } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
 interface ResultsPhaseProps {

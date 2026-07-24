@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { RotateCcw } from 'lucide-react';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
-import GiantButton from '../../components/ui/GiantButton';
+import { TimerDisplay } from '@/components/game-ui';
+import { LeaveConfirmModal } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 const MAX_LIVES = 3;
 

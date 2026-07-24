@@ -4,10 +4,10 @@ import { PlayingPhase } from './PlayingPhase';
 import { VotingPhase } from './VotingPhase';
 import { FinishedPhase } from './FinishedPhase';
 import { ref, update } from 'firebase/database';
-import { db } from '../../firebase';
+import { db } from '@/firebase';
 import { useTranslation } from 'react-i18next';
 import { generateInitialState, checkVoteResult } from './spyfallLogic';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
+import { TimerDisplay } from '@/components/game-ui';
 import { CAT_META } from './logic/spyfallCats';
 import {
   MapPin, User, Timer, AlertCircle, CheckCircle2, XCircle,
@@ -15,19 +15,19 @@ import {
   Users, Shield, Clock, LogOut, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TIMER_PRESETS } from '../../hooks/useGameTimer';
-import { feedback } from '../../utils/feedback';
-import { recordWin } from '../../components/features/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
-import EpicPopup from '../../components/ui/EpicPopup';
-import GiantButton from '../../components/ui/GiantButton';
-import NeonCard from '../../components/ui/NeonCard';
-import HoldToRevealCard from '../../components/ui/HoldToRevealCard';
-import { useHaptics } from '../../hooks/useHaptics';
+import { TIMER_PRESETS } from '@/hooks';
+import { feedback } from '@/utils/feedback';
+import { recordWin } from '@/components/features';
+import { recordPersonalWin, recordPersonalGame } from '@/components/features';
+import { useGameLeave } from '@/hooks';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
+import { LeaveConfirmModal } from '@/components/ui';
+import { EpicPopup } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { NeonCard } from '@/components/ui';
+import { HoldToRevealCard } from '@/components/ui';
+import { useHaptics } from '@/hooks';
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 

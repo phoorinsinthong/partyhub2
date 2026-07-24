@@ -2,9 +2,9 @@ import React from 'react';
 import { Trophy, RotateCcw, Crown, Skull, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { LeaveConfirmModal } from '@/components/ui';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 interface ResultPhaseProps {
   errorMsg: string | null;

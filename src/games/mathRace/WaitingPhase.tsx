@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Crown, Play } from 'lucide-react';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 import { useTranslation } from 'react-i18next';
 
 interface WaitingPhaseProps {

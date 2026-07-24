@@ -1,7 +1,7 @@
 import React from 'react';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { TimerDisplay } from '@/components/game-ui';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 interface VotingPhaseProps {
   t: any;

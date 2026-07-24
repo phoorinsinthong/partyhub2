@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, Users, Eye, Skull, CheckCircle2, Shield, Heart, LogOut, Info } from 'lucide-react';
-import { useGame } from '../../contexts/GameContext';
-import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '@/contexts/GameContext';
+import { useGameLeave } from '@/hooks';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import { WerewolfRoleReveal } from './WerewolfRoleReveal';
 import { StarsBackground, AmbientMist } from './WerewolfVFX';
 import { ROLES, VOICE_SCRIPTS } from './werewolfData';
 import { WOLF_ROLES, resolveNightActions } from './werewolfLogic';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { TimerDisplay } from '@/components/game-ui';
 
 // Dummy components for VFX until we pass them in or extract them
 

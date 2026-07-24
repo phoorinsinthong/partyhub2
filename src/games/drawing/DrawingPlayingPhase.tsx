@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Eraser, Send, Pencil } from 'lucide-react';
-import { TimerDisplay } from '../../components/game-ui/TimerDisplay';
+import { TimerDisplay } from '@/components/game-ui';
 
 const COLORS = ['#2f2a22', '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#ecf0f1'];
 const BRUSH_SIZES = [3, 6, 12];

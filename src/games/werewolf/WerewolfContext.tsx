@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
-import { useGameState } from '../../hooks/useGameState';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
+import { useGameState } from '@/hooks';
 import { WOLF_ROLES } from './werewolfLogic';
 import { ROLES } from './werewolfData';
 

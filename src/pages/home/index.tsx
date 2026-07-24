@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { QrCode, X, Sparkles } from 'lucide-react';
 import { ref, set, get } from 'firebase/database';
-import { db, auth, authReady } from '../../firebase';
+import { db, auth, authReady } from '@/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 
 import ThemeToggle from '../../components/ui/ThemeToggle';
 import SoundToggle from '../../components/ui/SoundToggle';
 import ReconnectBanner, { saveSession } from '../../components/core/ReconnectBanner';
-import { loadAvatar, generateRandomSeed, getRandomGradient, saveAvatar } from '../../utils/avatars';
-import { rateLimitCreateRoom, rateLimitJoinRoom } from '../../utils/rateLimit';
-import { useGame } from '../../contexts/GameContext';
-import { useHaptics } from '../../hooks/useHaptics';
+import { loadAvatar, generateRandomSeed, getRandomGradient, saveAvatar } from '@/utils/avatars';
+import { rateLimitCreateRoom, rateLimitJoinRoom } from '@/utils/rateLimit';
+import { useGame } from '@/contexts/GameContext';
+import { useHaptics } from '@/hooks';
 
 import SetupStep from './SetupStep';
 import ActionStep from './ActionStep';

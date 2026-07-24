@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
-import GiantButton from '../../components/ui/GiantButton';
+import { LeaveConfirmModal } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 interface WaitingPhaseProps {
   isHost: boolean;

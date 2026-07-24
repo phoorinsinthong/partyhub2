@@ -1,8 +1,8 @@
 import React from 'react';
 import { Crown, RotateCcw, LogOut } from 'lucide-react';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
-import LeaveConfirmModal from '../../components/ui/LeaveConfirmModal';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
+import { LeaveConfirmModal } from '@/components/ui';
 
 interface FinishedPhaseProps {
   scores: Record<string, number>;

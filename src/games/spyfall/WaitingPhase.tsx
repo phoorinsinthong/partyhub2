@@ -1,9 +1,9 @@
 import React from 'react';
 import { Search, LogOut, MapPin, Clock, Shield } from 'lucide-react';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 import { CAT_META } from './spyfallCats';
-import { TIMER_PRESETS } from '../../hooks/useGameTimer';
+import { TIMER_PRESETS } from '@/hooks';
 
 export interface WaitingPhaseProps {
   renderErrorToast: () => React.ReactNode;

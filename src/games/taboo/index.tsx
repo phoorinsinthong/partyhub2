@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ref, update, increment } from 'firebase/database';
-import { db } from '../../firebase';
+import { db } from '@/firebase';
 import { useTranslation } from 'react-i18next';
-import { useGame } from '../../contexts/GameContext';
-import { useGameUpdate } from '../../hooks/useGameUpdate';
-import { useGameTimer } from '../../hooks/useGameTimer';
+import { useGame } from '@/contexts/GameContext';
+import { useGameUpdate } from '@/hooks';
+import { useGameTimer } from '@/hooks';
 import { getRandomCards } from './tabooData';
-import { recordWin } from '../../components/features/Scoreboard';
-import { recordPersonalWin, recordPersonalGame } from '../../components/features/PersonalStats';
-import { useGameLeave } from '../../hooks/useGameLeave';
-import { useTurnNotification } from '../../hooks/useTurnNotification';
-import { feedback } from '../../utils/feedback';
+import { recordWin } from '@/components/features';
+import { recordPersonalWin, recordPersonalGame } from '@/components/features';
+import { useGameLeave } from '@/hooks';
+import { useTurnNotification } from '@/hooks';
+import { feedback } from '@/utils/feedback';
 
 import { WaitingPhase } from './WaitingPhase';
 import { FinishedPhase } from './FinishedPhase';

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Moon, Sun, CheckCircle2, Skull, Users, LogOut } from 'lucide-react';
-import { useGame } from '../../contexts/GameContext';
-import { useGameLeave } from '../../hooks/useGameLeave';
+import { useGame } from '@/contexts/GameContext';
+import { useGameLeave } from '@/hooks';
 import { useWerewolf } from './WerewolfContext';
 import { useWerewolfActions } from './useWerewolfActions';
 import { WerewolfNightPhase } from './WerewolfNightPhase';
-import NeonCard from '../../components/ui/NeonCard';
-import GiantButton from '../../components/ui/GiantButton';
+import { NeonCard } from '@/components/ui';
+import { GiantButton } from '@/components/ui';
 
 export const WerewolfPhysicalMode: React.FC = () => {
   const { roomId, userNickname } = useGame();
